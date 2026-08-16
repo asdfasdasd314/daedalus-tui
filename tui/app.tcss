@@ -55,6 +55,11 @@ Screen {
 
 #task-select {
     width: 1fr;
+    margin-right: 1;
+}
+
+#new-task-button {
+    width: 14;
 }
 
 #settings Select {

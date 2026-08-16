@@ -126,6 +126,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#pause-button", Button), Button)
             self.assertIsInstance(app.query_one("#resume-button", Button), Button)
             self.assertIsInstance(app.query_one("#cancel-button", Button), Button)
+            self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
             await pilot.pause()
 
     async def test_ctrl_k_opens_shortcuts_menu_with_global_and_vim_keys(self):
@@ -198,6 +199,54 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(str(app.query_one("#status", Static).render()), "Error")
             self.assertIn("cannot be empty", app.query_one("#task-error", TextArea).text)
             self.assertFalse(app.query_one("#send-button", Button).disabled)
+
+    async def test_submitted_prompt_is_visible_and_immutable(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("Keep this prompt available")
+            app.action_submit_prompt()
+            await pilot.pause()
+
+            self.assertEqual(prompt.text, "Keep this prompt available")
+            self.assertTrue(prompt.read_only)
+            self.assertTrue(app.query_one("#send-button", Button).disabled)
+            self.assertEqual(coordinator.records[0].prompt, prompt.text)
+
+    async def test_new_task_unlocks_a_blank_prompt_after_viewing_submitted_task(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("The previous prompt")
+            app.action_submit_prompt()
+            await pilot.pause()
+
+            app.query_one("#new-task-button", Button).press()
+            await pilot.pause()
+
+            self.assertEqual(prompt.text, "")
+            self.assertFalse(prompt.read_only)
+            self.assertFalse(app.query_one("#send-button", Button).disabled)
+            self.assertEqual(str(app.query_one("#phase", Static).render()), "Phase: Idle")
+
+    async def test_failed_task_selection_restores_its_prompt(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("A task that will fail")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "failed"
+            record.phase = "Failed"
+            coordinator.emit(record, "failed", "The task failed.", "error")
+            app.query_one("#new-task-button", Button).press()
+            await pilot.pause()
+            app.query_one("#task-select", Select).value = record.task_id
+            await pilot.pause()
+
+            self.assertEqual(prompt.text, "A task that will fail")
+            self.assertTrue(prompt.read_only)
+            self.assertTrue(app.query_one("#send-button", Button).disabled)
 
     async def test_prompt_supports_modal_vim_modes_and_multiline_insert(self):
         app, _ = self.make_app()
@@ -337,11 +386,12 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
             app.query_one("#model-select", Select).value = "gpt-5.6-terra"
             app.query_one("#reasoning-select", Select).value = "high"
+            app.action_new_task()
             prompt.insert("Second task")
             app.action_submit_prompt()
             second = coordinator.records[1]
 
-            self.assertFalse(app.query_one("#send-button", Button).disabled)
+            self.assertTrue(app.query_one("#send-button", Button).disabled)
             self.assertFalse(prompt.disabled)
             self.assertEqual((first.model, first.reasoning), ("gpt-5.6-luna", "medium"))
             self.assertEqual((second.model, second.reasoning), ("gpt-5.6-terra", "high"))

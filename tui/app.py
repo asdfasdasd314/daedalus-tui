@@ -121,6 +121,7 @@ class DaedalusTuiApp(App[None]):
         self.directory = active_project
         self.coordinator = self._coordinator_for(active_project)
         self._selected_task_id: str | None = None
+        self._new_task_mode = True
         self._vim_pending_g = False
 
     def compose(self) -> ComposeResult:
@@ -139,6 +140,7 @@ class DaedalusTuiApp(App[None]):
                     with Horizontal(id="task-bar"):
                         yield Static("Tasks", id="task-label")
                         yield Select([("No tasks", "")], value="", disabled=True, id="task-select")
+                        yield Button("New Task", id="new-task-button", variant="primary")
                     with Horizontal(id="settings"):
                         yield Select(
                             [(option.label, option.value) for option in self.settings.providers],
@@ -221,6 +223,9 @@ class DaedalusTuiApp(App[None]):
     def action_submit_prompt(self) -> None:
         self._submit_prompt()
 
+    def action_new_task(self) -> None:
+        self._start_new_task()
+
     def action_copy_selection(self) -> None:
         self._copy_selection()
 
@@ -239,6 +244,8 @@ class DaedalusTuiApp(App[None]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "send-button":
             self._submit_prompt()
+        elif event.button.id == "new-task-button":
+            self._start_new_task()
         elif event.button.id == "pause-button":
             self._pause_task()
         elif event.button.id == "resume-button":
@@ -254,6 +261,7 @@ class DaedalusTuiApp(App[None]):
         if event.select.id == "task-select":
             if event.value not in (Select.BLANK, ""):
                 self._selected_task_id = str(event.value)
+                self._new_task_mode = False
                 self._render_selected_task()
             return
         if event.select.id != "provider-select":
@@ -278,6 +286,9 @@ class DaedalusTuiApp(App[None]):
 
     def _submit_prompt(self) -> None:
         prompt_widget = self.query_one("#prompt-input", TextArea)
+        if prompt_widget.read_only:
+            self._set_status("Press New Task first")
+            return
         prompt = prompt_widget.text.strip()
         if not prompt:
             self._set_error("Prompt cannot be empty.")
@@ -297,11 +308,9 @@ class DaedalusTuiApp(App[None]):
             self._set_status("Error")
             return
         self._selected_task_id = record.task_id
-        prompt_widget.clear()
-        prompt_widget.enter_insert_mode()
+        self._new_task_mode = False
         self._refresh_task_selector()
         self._render_selected_task()
-        prompt_widget.focus()
 
     def _on_task_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         if threading.current_thread() is threading.main_thread():
@@ -341,6 +350,7 @@ class DaedalusTuiApp(App[None]):
         self.directory = project_path
         self.coordinator = self._coordinator_for(project_path)
         self._selected_task_id = None
+        self._new_task_mode = False
         self.query_one("#directory", Static).update(self._directory_text())
         self._refresh_task_selector()
         self._render_selected_task()
@@ -362,7 +372,7 @@ class DaedalusTuiApp(App[None]):
     def _refresh_task_selector(self) -> None:
         task_select = self.query_one("#task-select", Select)
         records = self.coordinator.tasks()
-        options = []
+        options = [("Select a task", "")] if records else []
         for record in records:
             summary = " ".join(record.prompt.split())
             if len(summary) > 42:
@@ -370,16 +380,19 @@ class DaedalusTuiApp(App[None]):
             options.append((f"{record.task_id} · {record.status} · {summary}", record.task_id))
         task_select.set_options(options or [("No tasks", "")])
         task_select.disabled = not bool(options)
-        if records and self._selected_task_id not in {record.task_id for record in records}:
+        if records and not self._new_task_mode and self._selected_task_id not in {record.task_id for record in records}:
             self._selected_task_id = records[-1].task_id
         if self._selected_task_id:
             task_select.value = self._selected_task_id
+        else:
+            task_select.value = ""
 
     def _render_selected_task(self) -> None:
         record = self.coordinator.get(self._selected_task_id or "")
         output = self.query_one("#output", RichLog)
         output.clear()
         if record is None:
+            self._set_prompt_text("", editable=True)
             self.query_one("#task-context", Static).update("Task branch: —    Worktree: —")
             self.query_one("#phase", Static).update("Phase: Idle")
             self._set_error("")
@@ -388,6 +401,7 @@ class DaedalusTuiApp(App[None]):
             self.query_one("#cancel-button", Button).disabled = True
             self.query_one("#resume-notes-panel", Vertical).styles.display = "none"
             return
+        self._set_prompt_text(record.prompt, editable=False)
         for message in record.messages:
             output.write(message)
         worktree = str(record.worktree_path) if record.worktree_path else "—"
@@ -407,6 +421,28 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#resume-notes-panel", Vertical).styles.display = (
             "block" if record.status == "paused" else "none"
         )
+
+    def _start_new_task(self) -> None:
+        """Clear the selected task and unlock a fresh prompt editor."""
+        self._selected_task_id = None
+        self._new_task_mode = True
+        self._refresh_task_selector()
+        self._render_selected_task()
+        self._set_status("New task")
+
+    def _set_prompt_text(self, text: str, *, editable: bool) -> None:
+        prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
+        # Loading text is a programmatic operation, so temporarily make the
+        # widget writable even when replacing a submitted task's immutable
+        # prompt.
+        prompt.read_only = False
+        prompt.load_text(text)
+        prompt.read_only = not editable
+        send_button = self.query_one("#send-button", Button)
+        send_button.disabled = not editable
+        if editable:
+            prompt.enter_insert_mode()
+            prompt.focus()
 
     def _copy_selection(self) -> None:
         selection = self._get_selected_text()
@@ -458,6 +494,9 @@ class DaedalusTuiApp(App[None]):
             self._set_status("Clipboard unavailable")
             return
         prompt = self.query_one("#prompt-input", TextArea)
+        if prompt.read_only:
+            self._set_status("Press New Task first")
+            return
         if isinstance(prompt, DaedalusVimTextArea):
             prompt.enter_insert_mode()
         prompt.focus()
