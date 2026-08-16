@@ -1,0 +1,44 @@
+# Daedalus TUI Local Token Usage Memory
+
+## Summary
+The TUI persists completed-task token usage in a project-local JSON file so
+usage history survives application restarts without depending on the Daedalus
+daemon, a remote service, or a database server.
+
+## Key Points
+- **Local persistence**: Each project stores usage in `.daedalus-memory.json`
+  at its repository root. The file is intentionally ignored by Git.
+- **Current record shape**: The tracked attribute is total token usage. Each
+  entry is a JSON object with an ISO-8601 UTC `timestamp` for prompt
+  submission and a non-negative integer `tokens` value.
+- **Append behavior**: A missing memory file starts as an empty list; each
+  successful task appends one record while preserving existing entries.
+- **Completion boundary**: Only successfully completed tasks are recorded.
+  Failed, paused, and cancelled tasks do not contribute telemetry.
+- **Safe writes**: Updates are serialized in-process and written through a
+  temporary file followed by an atomic replacement, so a completed write does
+  not leave a partially written JSON document.
+- **Corrupt input**: Invalid JSON or a non-list top-level value raises a
+  validation error and leaves the existing file unchanged. Telemetry errors
+  are isolated from otherwise successful task completion.
+- **Provider interface**: Provider-specific output parsing supplies the total
+  input/output token count; this feature owns storage, not provider parsing.
+
+## Relevant Files
+- `tui/memory.py`: `TokenUsageStore`, the default memory filename, JSON schema,
+  validation, locking, and atomic file replacement.
+- `tui/task_coordinator.py`: Records usage after successful orchestration and
+  injects the project-local memory path.
+- `tui/agent_runner.py`: Extracts provider-reported token usage consumed by
+  the memory store.
+- `tests/test_memory.py`: Covers JSON record creation and preservation of a
+  corrupt file.
+- `tests/test_task_coordinator.py`: Covers recording only successful task
+  results.
+- `README.md`: Documents the project-local file and its lifecycle.
+
+## Dev Mode
+HACKING
+
+## State Log
+- 2026-08-16: Documented the existing local JSON token-usage store, its completion-only recording boundary, and its atomic write and validation behavior.
