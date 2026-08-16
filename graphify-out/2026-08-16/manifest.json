@@ -145,8 +145,8 @@
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui.md": {
-    "mtime": 1786913786.980765,
-    "ast_hash": "a748818ca0ca2428e258c521d6085f44",
+    "mtime": 1786914831.9611552,
+    "ast_hash": "0873d8ac9a4bfbb382594dfcdc42efe9",
     "semantic_hash": ""
   },
   "requirements.txt": {
@@ -162,6 +162,41 @@
   "tui/memory.py": {
     "mtime": 1786913877.8384736,
     "ast_hash": "a345c89ffa2e27a06cb4657e0b05eba7",
+    "semantic_hash": ""
+  },
+  ".agents/profiles/architecture.md": {
+    "mtime": 1786914812.5628169,
+    "ast_hash": "df5ba21de6f57e60393e2472f3f562a8",
+    "semantic_hash": ""
+  },
+  ".agents/profiles/bridge.md": {
+    "mtime": 1786914812.6708114,
+    "ast_hash": "a0940c26b7340c005a988ed0189d5f01",
+    "semantic_hash": ""
+  },
+  ".agents/profiles/coding.md": {
+    "mtime": 1786914812.459468,
+    "ast_hash": "b71b1457ecd33158aee3f9877aa93135",
+    "semantic_hash": ""
+  },
+  ".agents/profiles/integrating.md": {
+    "mtime": 1786914812.619424,
+    "ast_hash": "94734638d61d20bf312f8a9dbf43b06b",
+    "semantic_hash": ""
+  },
+  ".agents/profiles/planning.md": {
+    "mtime": 1786914812.5113266,
+    "ast_hash": "cef1b95384cb9f2fb232ff024b530b6d",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1786914812.3987312,
+    "ast_hash": "74777aaf548aefe5e956db29026b3d6c",
+    "semantic_hash": ""
+  },
+  "feature_files/daedalus-tui-local-memory.md": {
+    "mtime": 1786915285.3827653,
+    "ast_hash": "f6483ad804986964d0c6710001be18bb",
     "semantic_hash": ""
   }
 }
