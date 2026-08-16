@@ -783,8 +783,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_graphify",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": "test_graphify.py"
     },
     {
@@ -794,8 +794,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "tests_test_graphify_graphifytests",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": "graphifytests"
     },
     {
@@ -805,8 +805,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "tests_test_graphify_graphifytests_test_missing_graphify_is_non_blocking",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": ".test_missing_graphify_is_non_blocking()"
     },
     {
@@ -816,8 +816,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_test_graphify_graphifytests_test_runs_update_from_primary_repository",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": ".test_runs_update_from_primary_repository()"
     },
     {
@@ -827,8 +827,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "tests_test_graphify_graphifytests_test_failed_update_returns_diagnostics_without_raising",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": ".test_failed_update_returns_diagnostics_without_raising()"
     },
     {
@@ -838,8 +838,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_memory",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "test_memory.py"
     },
     {
@@ -849,8 +849,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "tests_test_memory_tokenusagestoretests",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "tokenusagestoretests"
     },
     {
@@ -860,8 +860,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "tests_test_memory_tokenusagestoretests_test_records_timestamp_and_token_count_as_a_json_list",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".test_records_timestamp_and_token_count_as_a_json_list()"
     },
     {
@@ -871,8 +871,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "tests_test_memory_tokenusagestoretests_test_does_not_replace_a_corrupt_memory_file",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".test_does_not_replace_a_corrupt_memory_file()"
     },
     {
@@ -1674,8 +1674,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_init",
-      "community": 3,
-      "community_name": "DaedalusTuiApp",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": ".__init__()"
     },
     {
@@ -1707,8 +1707,8 @@
       "source_location": "L187",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_on_mount",
-      "community": 3,
-      "community_name": "DaedalusTuiApp",
+      "community": 1,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": ".on_mount()"
     },
     {
@@ -2158,8 +2158,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "tui_clipboard_copy_to_system_clipboard",
-      "community": 4,
-      "community_name": "app.py",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": "copy_to_system_clipboard()"
     },
     {
@@ -2367,8 +2367,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "tui_git_worktree_gitworktreeerror",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 6,
+      "community_name": "GitWorktreeManager",
       "norm_label": "gitworktreeerror"
     },
     {
@@ -2378,8 +2378,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tui_git_worktree_py_runtimeerror",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 6,
+      "community_name": "GitWorktreeManager",
       "norm_label": "runtimeerror"
     },
     {
@@ -2488,8 +2488,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "tui_git_worktree_gitworktreemanager_promote",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 6,
+      "community_name": "GitWorktreeManager",
       "norm_label": ".promote()"
     },
     {
@@ -2697,8 +2697,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tui_graphify_update_repository",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": "update_repository()"
     },
     {
@@ -2708,8 +2708,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tui_graphify_py_path",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": "path"
     },
     {
@@ -2730,8 +2730,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tui_graphify_rationale_19",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": "refresh the primary repository graph without affecting task success."
     },
     {
@@ -2741,8 +2741,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_memory",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "memory.py"
     },
     {
@@ -2752,8 +2752,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "tui_memory_tokenusagestore",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "tokenusagestore"
     },
     {
@@ -2763,8 +2763,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tui_memory_tokenusagestore_init",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".__init__()"
     },
     {
@@ -2774,8 +2774,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tui_memory_py_path",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "path"
     },
     {
@@ -2785,8 +2785,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "tui_memory_tokenusagestore_record",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".record()"
     },
     {
@@ -2796,8 +2796,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "tui_memory_tokenusagestore_read_entries",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "._read_entries()"
     },
     {
@@ -2807,8 +2807,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "tui_memory_tokenusagestore_write_entries",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "._write_entries()"
     },
     {
@@ -2818,8 +2818,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_memory_rationale_1",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "small local json stores for persistent task telemetry."
     },
     {
@@ -2829,8 +2829,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tui_memory_rationale_17",
-      "community": 5,
-      "community_name": "TokenUsageStore",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "append completed-task token usage to a local json list."
     },
     {
@@ -2840,8 +2840,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_orchestrator",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": "orchestrator.py"
     },
     {
@@ -3049,8 +3049,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_orchestrator_rationale_1",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 0,
+      "community_name": "WorktreeContext",
       "norm_label": "single-run local agent orchestration without daemon or database dependencies."
     },
     {
@@ -3225,8 +3225,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_task_coordinator",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "task_coordinator.py"
     },
     {
@@ -3445,8 +3445,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_1",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "concurrent task state and serialized local integration."
     },
     {
@@ -3835,6 +3835,391 @@
       "norm_label": "handle movement and operators while whole lines are selected."
     },
     {
+      "label": "architecture.md",
+      "file_type": "document",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_architecture",
+      "community": 15,
+      "community_name": "architecture.md",
+      "norm_label": "architecture.md"
+    },
+    {
+      "label": "Execution Boundaries (CRITICAL)",
+      "file_type": "document",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_architecture_execution_boundaries_critical",
+      "community": 15,
+      "community_name": "architecture.md",
+      "norm_label": "execution boundaries (critical)"
+    },
+    {
+      "label": "Evidence Extraction",
+      "file_type": "document",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "agents_profiles_architecture_evidence_extraction",
+      "community": 15,
+      "community_name": "architecture.md",
+      "norm_label": "evidence extraction"
+    },
+    {
+      "label": "Architecture Boundaries",
+      "file_type": "document",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "agents_profiles_architecture_architecture_boundaries",
+      "community": 15,
+      "community_name": "architecture.md",
+      "norm_label": "architecture boundaries"
+    },
+    {
+      "label": "Parameter Files",
+      "file_type": "document",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L24",
+      "_origin": "ast",
+      "id": "agents_profiles_architecture_parameter_files",
+      "community": 15,
+      "community_name": "architecture.md",
+      "norm_label": "parameter files"
+    },
+    {
+      "label": "Development Lifecycle",
+      "file_type": "document",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L30",
+      "_origin": "ast",
+      "id": "agents_profiles_architecture_development_lifecycle",
+      "community": 15,
+      "community_name": "architecture.md",
+      "norm_label": "development lifecycle"
+    },
+    {
+      "label": "bridge.md",
+      "file_type": "document",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_bridge",
+      "community": 5,
+      "community_name": "TokenUsageStore",
+      "norm_label": "bridge.md"
+    },
+    {
+      "label": "Bridge Agent Profile",
+      "file_type": "document",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_bridge_bridge_agent_profile",
+      "community": 5,
+      "community_name": "TokenUsageStore",
+      "norm_label": "bridge agent profile"
+    },
+    {
+      "label": "Purpose",
+      "file_type": "document",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "agents_profiles_bridge_purpose",
+      "community": 5,
+      "community_name": "TokenUsageStore",
+      "norm_label": "purpose"
+    },
+    {
+      "label": "Applying answers",
+      "file_type": "document",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "agents_profiles_bridge_applying_answers",
+      "community": 5,
+      "community_name": "TokenUsageStore",
+      "norm_label": "applying answers"
+    },
+    {
+      "label": "cp_doc structure",
+      "file_type": "document",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "agents_profiles_bridge_cp_doc_structure",
+      "community": 5,
+      "community_name": "TokenUsageStore",
+      "norm_label": "cp_doc structure"
+    },
+    {
+      "label": "Build-loop tasking",
+      "file_type": "document",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L30",
+      "_origin": "ast",
+      "id": "agents_profiles_bridge_build_loop_tasking",
+      "community": 5,
+      "community_name": "TokenUsageStore",
+      "norm_label": "build-loop tasking"
+    },
+    {
+      "label": "Hard rules",
+      "file_type": "document",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L36",
+      "_origin": "ast",
+      "id": "agents_profiles_bridge_hard_rules",
+      "community": 5,
+      "community_name": "TokenUsageStore",
+      "norm_label": "hard rules"
+    },
+    {
+      "label": "coding.md",
+      "file_type": "document",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_coding",
+      "community": 16,
+      "community_name": "coding.md",
+      "norm_label": "coding.md"
+    },
+    {
+      "label": "Execution Boundaries (CRITICAL)",
+      "file_type": "document",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_coding_execution_boundaries_critical",
+      "community": 16,
+      "community_name": "coding.md",
+      "norm_label": "execution boundaries (critical)"
+    },
+    {
+      "label": "Feature File Automation",
+      "file_type": "document",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "agents_profiles_coding_feature_file_automation",
+      "community": 16,
+      "community_name": "coding.md",
+      "norm_label": "feature file automation"
+    },
+    {
+      "label": "Parameter File Centralization",
+      "file_type": "document",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L28",
+      "_origin": "ast",
+      "id": "agents_profiles_coding_parameter_file_centralization",
+      "community": 16,
+      "community_name": "coding.md",
+      "norm_label": "parameter file centralization"
+    },
+    {
+      "label": "4-Stage Development Lifecycle",
+      "file_type": "document",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L41",
+      "_origin": "ast",
+      "id": "agents_profiles_coding_4_stage_development_lifecycle",
+      "community": 16,
+      "community_name": "coding.md",
+      "norm_label": "4-stage development lifecycle"
+    },
+    {
+      "label": "Debugging",
+      "file_type": "document",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L53",
+      "_origin": "ast",
+      "id": "agents_profiles_coding_debugging",
+      "community": 16,
+      "community_name": "coding.md",
+      "norm_label": "debugging"
+    },
+    {
+      "label": "integrating.md",
+      "file_type": "document",
+      "source_file": ".agents/profiles/integrating.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_integrating",
+      "community": 19,
+      "community_name": "integrating.md",
+      "norm_label": "integrating.md"
+    },
+    {
+      "label": "Execution Boundaries (CRITICAL)",
+      "file_type": "document",
+      "source_file": ".agents/profiles/integrating.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_integrating_execution_boundaries_critical",
+      "community": 19,
+      "community_name": "integrating.md",
+      "norm_label": "execution boundaries (critical)"
+    },
+    {
+      "label": "Integration Boundaries",
+      "file_type": "document",
+      "source_file": ".agents/profiles/integrating.md",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "agents_profiles_integrating_integration_boundaries",
+      "community": 19,
+      "community_name": "integrating.md",
+      "norm_label": "integration boundaries"
+    },
+    {
+      "label": "Parameter Files",
+      "file_type": "document",
+      "source_file": ".agents/profiles/integrating.md",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "agents_profiles_integrating_parameter_files",
+      "community": 19,
+      "community_name": "integrating.md",
+      "norm_label": "parameter files"
+    },
+    {
+      "label": "Development Lifecycle",
+      "file_type": "document",
+      "source_file": ".agents/profiles/integrating.md",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "agents_profiles_integrating_development_lifecycle",
+      "community": 19,
+      "community_name": "integrating.md",
+      "norm_label": "development lifecycle"
+    },
+    {
+      "label": "planning.md",
+      "file_type": "document",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_planning",
+      "community": 17,
+      "community_name": "planning.md",
+      "norm_label": "planning.md"
+    },
+    {
+      "label": "Execution Boundaries (CRITICAL)",
+      "file_type": "document",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_profiles_planning_execution_boundaries_critical",
+      "community": 17,
+      "community_name": "planning.md",
+      "norm_label": "execution boundaries (critical)"
+    },
+    {
+      "label": "Planning Boundaries",
+      "file_type": "document",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "agents_profiles_planning_planning_boundaries",
+      "community": 17,
+      "community_name": "planning.md",
+      "norm_label": "planning boundaries"
+    },
+    {
+      "label": "Feature File Context",
+      "file_type": "document",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L19",
+      "_origin": "ast",
+      "id": "agents_profiles_planning_feature_file_context",
+      "community": 17,
+      "community_name": "planning.md",
+      "norm_label": "feature file context"
+    },
+    {
+      "label": "Parameter Files",
+      "file_type": "document",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "agents_profiles_planning_parameter_files",
+      "community": 17,
+      "community_name": "planning.md",
+      "norm_label": "parameter files"
+    },
+    {
+      "label": "Graphify",
+      "file_type": "document",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L36",
+      "_origin": "ast",
+      "id": "agents_profiles_planning_graphify",
+      "community": 17,
+      "community_name": "planning.md",
+      "norm_label": "graphify"
+    },
+    {
+      "label": "AGENTS.md",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents",
+      "community": 18,
+      "community_name": "Daedalus TUI Project Instructions",
+      "norm_label": "agents.md"
+    },
+    {
+      "label": "Daedalus TUI Project Instructions",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "agents_daedalus_tui_project_instructions",
+      "community": 18,
+      "community_name": "Daedalus TUI Project Instructions",
+      "norm_label": "daedalus tui project instructions"
+    },
+    {
+      "label": "Task mode",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "agents_task_mode",
+      "community": 18,
+      "community_name": "Daedalus TUI Project Instructions",
+      "norm_label": "task mode"
+    },
+    {
+      "label": "Project boundaries",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "agents_project_boundaries",
+      "community": 18,
+      "community_name": "Daedalus TUI Project Instructions",
+      "norm_label": "project boundaries"
+    },
+    {
+      "label": "graphify",
+      "file_type": "document",
+      "source_file": "AGENTS.md",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "agents_graphify",
+      "community": 18,
+      "community_name": "Daedalus TUI Project Instructions",
+      "norm_label": "graphify"
+    },
+    {
       "label": "README.md",
       "file_type": "document",
       "source_file": "README.md",
@@ -3855,6 +4240,83 @@
       "community": 14,
       "community_name": "Path",
       "norm_label": "daedalus tui"
+    },
+    {
+      "label": "daedalus-tui-local-memory.md",
+      "file_type": "document",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "feature_files_daedalus_tui_local_memory",
+      "community": 7,
+      "community_name": "Daedalus TUI Local Token Usage Memory",
+      "norm_label": "daedalus-tui-local-memory.md"
+    },
+    {
+      "label": "Daedalus TUI Local Token Usage Memory",
+      "file_type": "document",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "feature_files_daedalus_tui_local_memory_daedalus_tui_local_token_usage_memory",
+      "community": 7,
+      "community_name": "Daedalus TUI Local Token Usage Memory",
+      "norm_label": "daedalus tui local token usage memory"
+    },
+    {
+      "label": "Summary",
+      "file_type": "document",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "feature_files_daedalus_tui_local_memory_summary",
+      "community": 7,
+      "community_name": "Daedalus TUI Local Token Usage Memory",
+      "norm_label": "summary"
+    },
+    {
+      "label": "Key Points",
+      "file_type": "document",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "feature_files_daedalus_tui_local_memory_key_points",
+      "community": 7,
+      "community_name": "Daedalus TUI Local Token Usage Memory",
+      "norm_label": "key points"
+    },
+    {
+      "label": "Relevant Files",
+      "file_type": "document",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "feature_files_daedalus_tui_local_memory_relevant_files",
+      "community": 7,
+      "community_name": "Daedalus TUI Local Token Usage Memory",
+      "norm_label": "relevant files"
+    },
+    {
+      "label": "Dev Mode",
+      "file_type": "document",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L40",
+      "_origin": "ast",
+      "id": "feature_files_daedalus_tui_local_memory_dev_mode",
+      "community": 7,
+      "community_name": "Daedalus TUI Local Token Usage Memory",
+      "norm_label": "dev mode"
+    },
+    {
+      "label": "State Log",
+      "file_type": "document",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "feature_files_daedalus_tui_local_memory_state_log",
+      "community": 7,
+      "community_name": "Daedalus TUI Local Token Usage Memory",
+      "norm_label": "state log"
     },
     {
       "label": "daedalus-tui-orchestration.md",
@@ -15048,12 +15510,397 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L15",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_architecture",
+      "target": "agents_profiles_architecture_architecture_boundaries",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L30",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_architecture",
+      "target": "agents_profiles_architecture_development_lifecycle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_architecture",
+      "target": "agents_profiles_architecture_evidence_extraction",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_architecture",
+      "target": "agents_profiles_architecture_execution_boundaries_critical",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/architecture.md",
+      "source_location": "L24",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_architecture",
+      "target": "agents_profiles_architecture_parameter_files",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_bridge",
+      "target": "agents_profiles_bridge_bridge_agent_profile",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_bridge_bridge_agent_profile",
+      "target": "agents_profiles_bridge_applying_answers",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L30",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_bridge_bridge_agent_profile",
+      "target": "agents_profiles_bridge_build_loop_tasking",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L17",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_bridge_bridge_agent_profile",
+      "target": "agents_profiles_bridge_cp_doc_structure",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L36",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_bridge_bridge_agent_profile",
+      "target": "agents_profiles_bridge_hard_rules",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/bridge.md",
+      "source_location": "L5",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_bridge_bridge_agent_profile",
+      "target": "agents_profiles_bridge_purpose",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L41",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_coding",
+      "target": "agents_profiles_coding_4_stage_development_lifecycle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L53",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_coding",
+      "target": "agents_profiles_coding_debugging",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_coding",
+      "target": "agents_profiles_coding_execution_boundaries_critical",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_coding",
+      "target": "agents_profiles_coding_feature_file_automation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/coding.md",
+      "source_location": "L28",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_coding",
+      "target": "agents_profiles_coding_parameter_file_centralization",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/integrating.md",
+      "source_location": "L27",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_integrating",
+      "target": "agents_profiles_integrating_development_lifecycle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/integrating.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_integrating",
+      "target": "agents_profiles_integrating_execution_boundaries_critical",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/integrating.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_integrating",
+      "target": "agents_profiles_integrating_integration_boundaries",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/integrating.md",
+      "source_location": "L21",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_integrating",
+      "target": "agents_profiles_integrating_parameter_files",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_planning",
+      "target": "agents_profiles_planning_execution_boundaries_critical",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L19",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_planning",
+      "target": "agents_profiles_planning_feature_file_context",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L36",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_planning",
+      "target": "agents_profiles_planning_graphify",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L29",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_planning",
+      "target": "agents_profiles_planning_parameter_files",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".agents/profiles/planning.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_profiles_planning",
+      "target": "agents_profiles_planning_planning_boundaries",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents",
+      "target": "agents_daedalus_tui_project_instructions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L39",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_daedalus_tui_project_instructions",
+      "target": "agents_graphify",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L27",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_daedalus_tui_project_instructions",
+      "target": "agents_project_boundaries",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "AGENTS.md",
+      "source_location": "L8",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "agents_daedalus_tui_project_instructions",
+      "target": "agents_task_mode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "README.md",
       "source_location": "L1",
       "weight": 1.0,
       "_origin": "ast",
       "source": "readme",
       "target": "readme_daedalus_tui",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "feature_files_daedalus_tui_local_memory",
+      "target": "feature_files_daedalus_tui_local_memory_daedalus_tui_local_token_usage_memory",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L40",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "feature_files_daedalus_tui_local_memory_daedalus_tui_local_token_usage_memory",
+      "target": "feature_files_daedalus_tui_local_memory_dev_mode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L8",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "feature_files_daedalus_tui_local_memory_daedalus_tui_local_token_usage_memory",
+      "target": "feature_files_daedalus_tui_local_memory_key_points",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L27",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "feature_files_daedalus_tui_local_memory_daedalus_tui_local_token_usage_memory",
+      "target": "feature_files_daedalus_tui_local_memory_relevant_files",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L43",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "feature_files_daedalus_tui_local_memory_daedalus_tui_local_token_usage_memory",
+      "target": "feature_files_daedalus_tui_local_memory_state_log",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "feature_files/daedalus-tui-local-memory.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "feature_files_daedalus_tui_local_memory_daedalus_tui_local_token_usage_memory",
+      "target": "feature_files_daedalus_tui_local_memory_summary",
       "confidence_score": 1.0
     },
     {
@@ -15190,5 +16037,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "a4460b3786e3999ca9a53bb864c4d9b3f5fb5914"
+  "built_at_commit": "d71c06f625f2d9f76ce5457903a9b6bc362ccff8"
 }
