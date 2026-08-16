@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "tests/test_app.py": {
-    "mtime": 1786913786.9822214,
-    "ast_hash": "c2c337628cd929cddac6374399898e7b",
+    "mtime": 1786914160.6318371,
+    "ast_hash": "ab1965b5cfb43a8e56eb6b80600af557",
     "semantic_hash": ""
   },
   "tests/test_config.py": {
@@ -75,8 +75,8 @@
     "semantic_hash": ""
   },
   "tui/app.py": {
-    "mtime": 1786913786.9827719,
-    "ast_hash": "8575629f216cafa917db754daa09959f",
+    "mtime": 1786914160.6322386,
+    "ast_hash": "a3f634a61115d8936c2875710e524a88",
     "semantic_hash": ""
   },
   "tui/clipboard.py": {
@@ -130,9 +130,9 @@
     "semantic_hash": "1bcc040fd9a2b515ed3e124b1f4de30a"
   },
   "tui/vim_text_area.py": {
-    "mtime": 1786762652.4576893,
-    "ast_hash": "aa8b6bf0f204f3fb688a96cdbc2a1954",
-    "semantic_hash": "aa8b6bf0f204f3fb688a96cdbc2a1954"
+    "mtime": 1786914160.6329656,
+    "ast_hash": "7d9f0d456d31fb454dc473e0e42442dd",
+    "semantic_hash": ""
   },
   "README.md": {
     "mtime": 1786913877.8358216,
