@@ -1,0 +1,39 @@
+# Daedalus Textual TUI
+
+## Summary
+The standalone Daedalus TUI is an installable Textual application that runs from a target repository and submits independent local, orchestrated coding tasks concurrently.
+
+## Key Points
+- **Independent project boundary**: The exported `tui` project owns its UI, provider execution, configuration, tests, and local orchestration modules without importing `local-daemon`.
+- **Provider controls**: Codex exposes Luna, Terra, and Sol with light, medium, high, and extra-high reasoning; Cursor CLI is a provider-only choice with model and reasoning disabled.
+- **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, a database, or a remote push.
+- **Concurrent task list**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript.
+- **Filtered logs and copying**: The output pane shows completed assistant messages only; the selected task transcript can be copied in full while Textual still supports selected-text copying.
+- **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
+- **Project navigation**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the sidebar switches between per-project task coordinators without mixing transcripts or worktrees.
+
+## Relevant Files
+- `tui/app.py`: Textual layout, selectors, task list, transcript replay, and copy controls.
+- `tui/vim_text_area.py`: Incremental modal Vim prompt adapter and system clipboard integration.
+- `tui/agent_runner.py`: Independent Codex and Cursor subprocess adapter.
+- `tui/task_coordinator.py`: Concurrent task executor and serialized integration gate.
+- `parameter_files/daedalus-tui.toml`: Provider, model, reasoning, and default UI settings.
+- `feature_files/daedalus-tui-orchestration.md`: Local orchestration ownership boundary.
+
+## Dev Mode
+HACKING
+
+## State Log
+- 2026-08-14: Moved the TUI feature ownership into the standalone project boundary and expanded provider/model/reasoning controls for local orchestration.
+- 2026-08-14: Added concurrent task snapshots, assistant-message filtering, selectable transcript replay, and copy-all output for independent worktrees.
+- 2026-08-14: Made failed diagnostics selectable and copyable, added Cursor failure guidance, and hardened successful worktree cleanup.
+- 2026-08-14: Added ignored local Cursor credential loading and a native clipboard fallback for terminals without OSC 52 support.
+- 2026-08-14: Added Coding, Ask, and Plan mode controls plus per-task pause, resume, and cancellation actions.
+- 2026-08-14: Added optional per-resume notes and a continuation prompt that directs agents to inspect existing work before making updates.
+- 2026-08-14: Routed Textual selection copies through the native clipboard fallback and added an explicit partial-output copy action.
+- 2026-08-14: Clarified that task agents edit files only while orchestration owns Git operations and graph refreshes.
+- 2026-08-14: Enabled global Textual selection copying for arbitrary UI text while preserving native TextArea selection and terminal modifier guidance.
+- 2026-08-14: Added non-modal Vim-style output navigation and system clipboard y/p shortcuts without intercepting prompt editor typing.
+- 2026-08-14: Added a modal VimTextArea prompt with multiline Insert mode, Normal/Visual commands, system clipboard yank/paste, and an intentionally incremental command subset for future additions.
+- 2026-08-14: Removed Vim status and shortcut hints from the rendered interface and added Shift+V whole-line visual selection to the prompt editor.
+- 2026-08-14: Added recursive Daedalus project discovery from the launch root and a sidebar that preserves independent task coordinators for each supported project.

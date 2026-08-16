@@ -1,0 +1,151 @@
+Screen {
+    background: $surface;
+}
+
+#screen {
+    height: 1fr;
+    padding: 1 2;
+}
+
+#workspace {
+    height: 1fr;
+}
+
+#project-sidebar {
+    width: 28;
+    min-width: 22;
+    border: round $primary;
+    padding: 1;
+}
+
+#project-main {
+    width: 1fr;
+    padding-left: 1;
+}
+
+#project-label {
+    color: $text-accent;
+    text-style: bold;
+    height: 2;
+}
+
+#project-select {
+    width: 1fr;
+}
+
+#title {
+    color: $text-accent;
+    text-style: bold;
+}
+
+#settings {
+    height: 3;
+    align: left middle;
+}
+
+#task-bar {
+    height: 3;
+    align: left middle;
+}
+
+#task-label {
+    width: 8;
+    color: $text-muted;
+}
+
+#task-select {
+    width: 1fr;
+}
+
+#settings Select {
+    width: 1fr;
+    margin-right: 1;
+}
+
+#directory, #phase, #title, #task-label, #task-context, #status,
+#resume-notes-label, #output, #task-error {
+    color: $text-muted;
+    pointer: text;
+}
+
+#directory, #phase {
+    height: 1;
+}
+
+#task-context {
+    color: $text-muted;
+    height: 2;
+}
+
+#task-error {
+    color: $error;
+    height: 3;
+    min-height: 1;
+    border: none;
+    padding: 0;
+}
+
+#output {
+    height: 1fr;
+    border: round $primary;
+    padding: 1;
+}
+
+#composer {
+    height: auto;
+    min-height: 7;
+}
+
+#prompt-input {
+    height: 7;
+    border: round $secondary;
+}
+
+#resume-notes-panel {
+    display: none;
+    height: 5;
+}
+
+#resume-notes-label {
+    color: $text-muted;
+    height: 1;
+}
+
+#resume-notes {
+    height: 3;
+    border: round $secondary;
+}
+
+#actions {
+    height: 3;
+    align: left middle;
+}
+
+#send-button {
+    width: 12;
+    margin-right: 2;
+}
+
+#pause-button, #resume-button, #cancel-button {
+    width: 11;
+    margin-right: 1;
+}
+
+#copy-button {
+    width: 16;
+    margin-right: 2;
+}
+
+#copy-selection-button {
+    width: 19;
+    margin-right: 2;
+}
+
+#copy-error-button {
+    width: 14;
+    margin-right: 2;
+}
+
+#status {
+    color: $text-muted;
+}

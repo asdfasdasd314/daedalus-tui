@@ -1,0 +1,10 @@
+primary_branch = "main"
+worktree_root = ".daedalus-worktrees"
+task_verification_attempt_limit = 3
+resolver_attempt_limit = 3
+max_concurrent_tasks = 4
+graphify_update_enabled = true
+graphify_executable = "graphify"
+
+# An empty list discovers root and one-level nested npm/pytest suites.
+verification_commands = []

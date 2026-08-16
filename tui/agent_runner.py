@@ -1,0 +1,304 @@
+"""Provider-specific subprocess execution with normalized agent messages."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+import json
+from pathlib import Path
+import shutil
+import subprocess
+from threading import Event, Thread
+import time
+from typing import Callable, Literal
+
+from .environment import cursor_environment
+
+
+@dataclass(frozen=True)
+class AgentLogEvent:
+    kind: Literal["message", "error"]
+    text: str
+
+
+OutputCallback = Callable[[AgentLogEvent], None]
+
+REASONING_MAP = {
+    "light": "low",
+    "medium": "medium",
+    "high": "high",
+    "extra-high": "xhigh",
+}
+
+
+@dataclass(frozen=True)
+class AgentRequest:
+    prompt: str
+    directory: Path
+    provider: str
+    model: str
+    reasoning: str
+    writable_directories: tuple[Path, ...] = field(default_factory=tuple)
+    environment_files: tuple[Path, ...] = field(default_factory=tuple)
+    control: "AgentControl | None" = None
+
+
+@dataclass
+class AgentControl:
+    """Cooperative stop signals shared by a task and its active subprocess."""
+
+    pause_requested: Event = field(default_factory=Event)
+    cancel_requested: Event = field(default_factory=Event)
+
+    def request_pause(self) -> None:
+        self.pause_requested.set()
+
+    def request_cancel(self) -> None:
+        self.cancel_requested.set()
+
+    def clear_pause(self) -> None:
+        self.pause_requested.clear()
+
+    @property
+    def stop_reason(self) -> str | None:
+        if self.cancel_requested.is_set():
+            return "cancelled"
+        if self.pause_requested.is_set():
+            return "paused"
+        return None
+
+
+@dataclass(frozen=True)
+class AgentResult:
+    provider: str
+    returncode: int | None
+    output: str = ""
+    error: str | None = None
+    stderr: str = ""
+    stopped_reason: str | None = None
+
+    @property
+    def succeeded(self) -> bool:
+        return self.returncode == 0 and self.error is None
+
+
+class AgentRunner:
+    """Run Codex or Cursor directly and emit only assistant-facing messages."""
+
+    def command_for(self, request: AgentRequest) -> list[str]:
+        if request.provider == "codex":
+            reasoning = REASONING_MAP.get(request.reasoning, request.reasoning)
+            command = [
+                "codex",
+                "exec",
+                "-m",
+                request.model,
+                "-c",
+                f'model_reasoning_effort="{reasoning}"',
+                "--sandbox",
+                "workspace-write",
+            ]
+            for directory in request.writable_directories:
+                command.extend(["--add-dir", str(directory)])
+            command.extend(["--json", request.prompt])
+            return command
+
+        if request.provider == "cursor":
+            return [
+                "agent",
+                "-p",
+                "--output-format",
+                "json",
+                "--force",
+                request.prompt,
+            ]
+
+        raise ValueError(f"Unsupported agent provider: {request.provider}")
+
+    def run(self, request: AgentRequest, on_output: OutputCallback) -> AgentResult:
+        executable = "codex" if request.provider == "codex" else "agent"
+        name = "Codex CLI" if request.provider == "codex" else "Cursor CLI"
+        if shutil.which(executable) is None:
+            return AgentResult(
+                provider=request.provider,
+                returncode=None,
+                error=f"{name} is unavailable. Install it so `{executable}` is on PATH.",
+            )
+
+        environment = (
+            cursor_environment(request.directory, request.environment_files)
+            if request.provider == "cursor"
+            else None
+        )
+        try:
+            process = subprocess.Popen(
+                self.command_for(request),
+                cwd=request.directory,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+                shell=False,
+                **({"env": environment} if environment is not None else {}),
+            )
+        except FileNotFoundError:
+            return AgentResult(
+                provider=request.provider,
+                returncode=None,
+                error=f"{name} is unavailable. Install it so `{executable}` is on PATH.",
+            )
+        except OSError as error:
+            return AgentResult(
+                provider=request.provider,
+                returncode=None,
+                error=f"{name} could not be started: {error}",
+            )
+
+        output: dict[str, list[str]] = {"stdout": [], "stderr": []}
+        messages: list[str] = []
+        threads = [
+            self._stream_stdout(process.stdout, request.provider, output, messages, on_output),
+            self._stream(process.stderr, "stderr", output),
+        ]
+        stopped_reason = self._wait_for_process(process, request.control)
+        returncode = process.returncode
+        for thread in threads:
+            thread.join()
+
+        stdout = "".join(output["stdout"])
+        stderr = "".join(output["stderr"])
+        if returncode == 0:
+            normalized = self._normalize_output(request.provider, stdout, stderr)
+            if normalized[1] is not None:
+                return AgentResult(request.provider, returncode, stdout, normalized[1], stderr, stopped_reason)
+            if request.provider == "codex":
+                return AgentResult(request.provider, returncode, "\n\n".join(messages), None, stderr, stopped_reason)
+            return AgentResult(request.provider, returncode, normalized[0], None, stderr, stopped_reason)
+
+        if stopped_reason:
+            return AgentResult(
+                request.provider,
+                returncode,
+                stdout,
+                None,
+                stderr,
+                stopped_reason,
+            )
+
+        diagnostics = self._failure_diagnostics(request.provider, stdout, stderr)
+        if request.provider == "cursor" and not environment.get("CURSOR_API_KEY", "").strip():
+            diagnostics += "\n\nCursor authentication: run `agent login` or set CURSOR_API_KEY in .env."
+        return AgentResult(
+            provider=request.provider,
+            returncode=returncode,
+            error=(
+                f"{request.provider.capitalize()} failed with exit code {returncode}."
+                + f"\n\nDiagnostics:\n{diagnostics}"
+            ).strip(),
+            stderr=stderr,
+        )
+
+    @staticmethod
+    def _wait_for_process(process, control: AgentControl | None) -> str | None:
+        if control is None:
+            process.wait()
+            return None
+        while True:
+            returncode = process.poll()
+            if returncode is not None:
+                return None
+            reason = control.stop_reason
+            if reason:
+                process.terminate()
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+                return reason
+            time.sleep(0.05)
+
+    @staticmethod
+    def _stream_stdout(
+        stream,
+        provider: str,
+        output: dict[str, list[str]],
+        messages: list[str],
+        callback: OutputCallback,
+    ) -> Thread:
+        def forward() -> None:
+            if stream is None:
+                return
+            for chunk in iter(stream.readline, ""):
+                if not chunk:
+                    continue
+                output["stdout"].append(chunk)
+                if provider == "codex":
+                    message = AgentRunner.parse_codex_event(chunk)
+                    if message:
+                        messages.append(message)
+                        callback(AgentLogEvent("message", message))
+            stream.close()
+
+        thread = Thread(target=forward, daemon=True)
+        thread.start()
+        return thread
+
+    @staticmethod
+    def _stream(stream, channel: str, output: dict[str, list[str]]) -> Thread:
+        def forward() -> None:
+            if stream is None:
+                return
+            for chunk in iter(stream.readline, ""):
+                if chunk:
+                    output[channel].append(chunk)
+            stream.close()
+
+        thread = Thread(target=forward, daemon=True)
+        thread.start()
+        return thread
+
+    @staticmethod
+    def parse_codex_event(line: str) -> str | None:
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            return None
+        if payload.get("type") != "item.completed":
+            return None
+        item = payload.get("item")
+        if not isinstance(item, dict) or item.get("type") != "agent_message":
+            return None
+        text = item.get("text")
+        return text.strip() if isinstance(text, str) and text.strip() else None
+
+    @staticmethod
+    def _normalize_output(provider: str, stdout: str, stderr: str) -> tuple[str, str | None]:
+        if provider != "cursor":
+            return stdout, None
+        try:
+            payload = json.loads(stdout)
+        except json.JSONDecodeError:
+            return stdout, "Cursor returned malformed JSON.\n\nSTDERR:\n" + stderr
+        result = payload.get("result") if isinstance(payload, dict) else None
+        if not isinstance(result, str):
+            return stdout, "Cursor returned JSON without a result.\n\nSTDERR:\n" + stderr
+        return result, None
+
+    @staticmethod
+    def _failure_diagnostics(provider: str, stdout: str, stderr: str) -> str:
+        if stderr.strip():
+            return stderr.strip()
+        if provider == "cursor":
+            try:
+                payload = json.loads(stdout)
+            except json.JSONDecodeError:
+                payload = None
+            if isinstance(payload, dict):
+                for key in ("error", "message", "result"):
+                    value = payload.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value.strip()
+            if stdout.strip():
+                return stdout.strip()
+            return "No diagnostics were emitted. Check Cursor authentication (CURSOR_API_KEY or `agent login`)."
+        return stdout.strip() or "No diagnostics were emitted."

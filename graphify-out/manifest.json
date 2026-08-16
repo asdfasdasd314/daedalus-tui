@@ -1,0 +1,137 @@
+{
+  "pyproject.toml": {
+    "mtime": 1786762272.1465685,
+    "ast_hash": "38353d9d5f257957b217e3b149c2bb06",
+    "semantic_hash": "38353d9d5f257957b217e3b149c2bb06"
+  },
+  "tests/__init__.py": {
+    "mtime": 1786739016.4997334,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "tests/test_agent_runner.py": {
+    "mtime": 1786758457.241098,
+    "ast_hash": "3dd6673963dddecad417134896d3756a",
+    "semantic_hash": "3dd6673963dddecad417134896d3756a"
+  },
+  "tests/test_app.py": {
+    "mtime": 1786763329.2405834,
+    "ast_hash": "6c091e351c0e9585852cae2c309cbad9",
+    "semantic_hash": "6c091e351c0e9585852cae2c309cbad9"
+  },
+  "tests/test_config.py": {
+    "mtime": 1786760282.8118823,
+    "ast_hash": "4153090e48f5f1140694aebad39c655c",
+    "semantic_hash": "4153090e48f5f1140694aebad39c655c"
+  },
+  "tests/test_git_worktree.py": {
+    "mtime": 1786760226.7135656,
+    "ast_hash": "d77f245560660f339a8b0d2767aab6a4",
+    "semantic_hash": "d77f245560660f339a8b0d2767aab6a4"
+  },
+  "tests/test_graphify.py": {
+    "mtime": 1786760216.7797246,
+    "ast_hash": "06176fbccefeb815625e3d83e44292b2",
+    "semantic_hash": "06176fbccefeb815625e3d83e44292b2"
+  },
+  "tests/test_orchestrator.py": {
+    "mtime": 1786760358.3204644,
+    "ast_hash": "331868d70284763e3bb242bc90a20ddf",
+    "semantic_hash": "331868d70284763e3bb242bc90a20ddf"
+  },
+  "tests/test_projects.py": {
+    "mtime": 1786763349.5367367,
+    "ast_hash": "f3f0aa612fd7444e7dc966423d52efbb",
+    "semantic_hash": "f3f0aa612fd7444e7dc966423d52efbb"
+  },
+  "tests/test_prompts.py": {
+    "mtime": 1786760304.3247662,
+    "ast_hash": "fbbea802f5e1157403f9c3c254f230c4",
+    "semantic_hash": "fbbea802f5e1157403f9c3c254f230c4"
+  },
+  "tests/test_task_coordinator.py": {
+    "mtime": 1786758791.1765964,
+    "ast_hash": "8d32a44ba6762f5e7ef7cc9eb9fa44eb",
+    "semantic_hash": "8d32a44ba6762f5e7ef7cc9eb9fa44eb"
+  },
+  "tests/test_verification.py": {
+    "mtime": 1786740530.397253,
+    "ast_hash": "4c46aac0857b9fd961aa88d810e9059e",
+    "semantic_hash": "4c46aac0857b9fd961aa88d810e9059e"
+  },
+  "tui/__init__.py": {
+    "mtime": 1786763272.4609206,
+    "ast_hash": "ab7ace38f1dc1969bd9703e112eb0954",
+    "semantic_hash": "ab7ace38f1dc1969bd9703e112eb0954"
+  },
+  "tui/__main__.py": {
+    "mtime": 1786740327.3326962,
+    "ast_hash": "84120c28c89cfb4312dbc2f971c5d325",
+    "semantic_hash": "84120c28c89cfb4312dbc2f971c5d325"
+  },
+  "tui/agent_runner.py": {
+    "mtime": 1786758235.4905038,
+    "ast_hash": "90e26ecb1231e93e9197850bbc9ef37f",
+    "semantic_hash": "90e26ecb1231e93e9197850bbc9ef37f"
+  },
+  "tui/app.py": {
+    "mtime": 1786763286.18786,
+    "ast_hash": "31051dbbda296644687ae84ce838d2cd",
+    "semantic_hash": "31051dbbda296644687ae84ce838d2cd"
+  },
+  "tui/clipboard.py": {
+    "mtime": 1786761643.4716413,
+    "ast_hash": "cf5f808e3a03a0cd04a9f08912c9cacd",
+    "semantic_hash": "cf5f808e3a03a0cd04a9f08912c9cacd"
+  },
+  "tui/config.py": {
+    "mtime": 1786760100.086793,
+    "ast_hash": "90de75102568fa6f7d224051f5d9182a",
+    "semantic_hash": "90de75102568fa6f7d224051f5d9182a"
+  },
+  "tui/environment.py": {
+    "mtime": 1786743494.7156985,
+    "ast_hash": "bb33b02128e52fb75d01ce2f86752258",
+    "semantic_hash": "bb33b02128e52fb75d01ce2f86752258"
+  },
+  "tui/git_worktree.py": {
+    "mtime": 1786760200.2088501,
+    "ast_hash": "ceed47cc374b01df32f2e08ce72ac8d9",
+    "semantic_hash": "ceed47cc374b01df32f2e08ce72ac8d9"
+  },
+  "tui/graphify.py": {
+    "mtime": 1786760099.9708357,
+    "ast_hash": "e5c00634ce8bd1e0a3f5dc86854c8119",
+    "semantic_hash": "e5c00634ce8bd1e0a3f5dc86854c8119"
+  },
+  "tui/orchestrator.py": {
+    "mtime": 1786760200.2598734,
+    "ast_hash": "eabdd4c6ccdc44f43b60ec554ad998af",
+    "semantic_hash": "eabdd4c6ccdc44f43b60ec554ad998af"
+  },
+  "tui/projects.py": {
+    "mtime": 1786763422.4878619,
+    "ast_hash": "40f7f904c7d73af9db17b18283a17103",
+    "semantic_hash": "40f7f904c7d73af9db17b18283a17103"
+  },
+  "tui/prompts.py": {
+    "mtime": 1786760200.3106463,
+    "ast_hash": "da846a56fad315bc977d3a03984ad962",
+    "semantic_hash": "da846a56fad315bc977d3a03984ad962"
+  },
+  "tui/task_coordinator.py": {
+    "mtime": 1786758754.9584723,
+    "ast_hash": "28c090eb29eee425bcd22c4b37b58428",
+    "semantic_hash": "28c090eb29eee425bcd22c4b37b58428"
+  },
+  "tui/verification.py": {
+    "mtime": 1786740572.3675084,
+    "ast_hash": "1bcc040fd9a2b515ed3e124b1f4de30a",
+    "semantic_hash": "1bcc040fd9a2b515ed3e124b1f4de30a"
+  },
+  "tui/vim_text_area.py": {
+    "mtime": 1786762652.4576893,
+    "ast_hash": "aa8b6bf0f204f3fb688a96cdbc2a1954",
+    "semantic_hash": "aa8b6bf0f204f3fb688a96cdbc2a1954"
+  }
+}

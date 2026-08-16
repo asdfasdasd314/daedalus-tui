@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "daedalus-tui"
+version = "0.1.0"
+description = "Standalone Textual TUI for local Daedalus agent orchestration"
+requires-python = ">=3.11"
+dependencies = ["textual>=8.2,<9", "textual-vimkeys-input>=0.3.2,<0.4"]
+
+[tool.setuptools.packages.find]
+include = ["tui*"]

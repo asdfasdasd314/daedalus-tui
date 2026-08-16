@@ -1,0 +1,32 @@
+providers = [
+  { label = "Codex", value = "codex" },
+  { label = "Cursor CLI", value = "cursor" },
+]
+
+codex_models = [
+  { label = "GPT-5.6 Luna", value = "gpt-5.6-luna" },
+  { label = "GPT-5.6 Terra", value = "gpt-5.6-terra" },
+  { label = "GPT-5.6 Sol", value = "gpt-5.6-sol" },
+]
+
+codex_reasoning = [
+  { label = "Light", value = "light" },
+  { label = "Medium", value = "medium" },
+  { label = "High", value = "high" },
+  { label = "Extra high", value = "extra-high" },
+]
+
+modes = [
+  { label = "Coding", value = "coding" },
+  { label = "Ask", value = "ask" },
+  { label = "Plan", value = "plan" },
+]
+
+[defaults]
+provider = "codex"
+model = "gpt-5.6-luna"
+reasoning = "medium"
+
+[cursor]
+label = "Cursor CLI"
+value = "cursor"
