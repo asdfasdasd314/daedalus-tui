@@ -38,3 +38,4 @@ HACKING
 - 2026-08-14: Removed Vim status and shortcut hints from the rendered interface and added Shift+V whole-line visual selection to the prompt editor.
 - 2026-08-14: Added recursive Daedalus project discovery from the launch root and a sidebar that preserves independent task coordinators for each supported project.
 - 2026-08-16: Removed copy buttons and dedicated full-output/error copy actions in favor of Vim yank commands.
+- 2026-08-16: Added standalone `AGENTS.md` and task-mode profiles so the TUI retains its operating instructions when moved into its own repository.
