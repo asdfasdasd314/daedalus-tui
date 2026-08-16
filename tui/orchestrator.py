@@ -40,6 +40,7 @@ class OrchestrationResult:
     context: WorktreeContext | None = None
     paused: bool = False
     cancelled: bool = False
+    tokens_consumed: int = 0
 
 
 class AgentStopped(RuntimeError):
@@ -62,6 +63,7 @@ class LocalOrchestrator:
         self.settings = settings
         self.on_event = on_event
         self.integration_gate = integration_gate or (lambda _sequence, operation: operation())
+        self._tokens_consumed = 0
 
     def run(
         self,
@@ -114,7 +116,14 @@ class LocalOrchestrator:
                 manager.discard_graphify_changes(context.path)
                 manager.remove_successful(context)
                 self.emit("completed", f"Completed {mode} task.")
-                return OrchestrationResult(True, task_id, context.branch_name, context.path, context=context)
+                return OrchestrationResult(
+                    True,
+                    task_id,
+                    context.branch_name,
+                    context.path,
+                    context=context,
+                    tokens_consumed=self._tokens_consumed,
+                )
 
             manager.discard_graphify_changes(context.path)
             manager.commit_changes(context.path, f"Daedalus task {task_id}")
@@ -133,7 +142,14 @@ class LocalOrchestrator:
             self.integration_gate(submission_sequence, integrate_and_promote)
             manager.remove_successful(context)
             self.emit("completed", f"Promoted {context.branch_name} into {self.settings.primary_branch}.")
-            return OrchestrationResult(True, task_id, context.branch_name, context.path, context=context)
+            return OrchestrationResult(
+                True,
+                task_id,
+                context.branch_name,
+                context.path,
+                context=context,
+                tokens_consumed=self._tokens_consumed,
+            )
         except AgentStopped as stopped:
             if stopped.reason == "cancelled" and context is not None:
                 manager.remove_cancelled(context)
@@ -190,6 +206,8 @@ class LocalOrchestrator:
             request,
             lambda event: self.emit("agent", event.text, event.kind),
         )
+        if result.tokens_consumed is not None:
+            self._tokens_consumed += result.tokens_consumed
         if provider == "cursor" and result.succeeded and result.output:
             self.emit("agent", result.output, "message")
         if result.stopped_reason:

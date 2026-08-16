@@ -75,6 +75,7 @@ class AgentResult:
     error: str | None = None
     stderr: str = ""
     stopped_reason: str | None = None
+    tokens_consumed: int | None = None
 
     @property
     def succeeded(self) -> bool:
@@ -107,7 +108,7 @@ class AgentRunner:
                 "agent",
                 "-p",
                 "--output-format",
-                "json",
+                "stream-json",
                 "--force",
                 request.prompt,
             ]
@@ -168,11 +169,36 @@ class AgentRunner:
         stderr = "".join(output["stderr"])
         if returncode == 0:
             normalized = self._normalize_output(request.provider, stdout, stderr)
+            tokens_consumed = self._extract_token_usage(request.provider, stdout)
             if normalized[1] is not None:
-                return AgentResult(request.provider, returncode, stdout, normalized[1], stderr, stopped_reason)
+                return AgentResult(
+                    request.provider,
+                    returncode,
+                    stdout,
+                    normalized[1],
+                    stderr,
+                    stopped_reason,
+                    tokens_consumed,
+                )
             if request.provider == "codex":
-                return AgentResult(request.provider, returncode, "\n\n".join(messages), None, stderr, stopped_reason)
-            return AgentResult(request.provider, returncode, normalized[0], None, stderr, stopped_reason)
+                return AgentResult(
+                    request.provider,
+                    returncode,
+                    "\n\n".join(messages),
+                    None,
+                    stderr,
+                    stopped_reason,
+                    tokens_consumed,
+                )
+            return AgentResult(
+                request.provider,
+                returncode,
+                normalized[0],
+                None,
+                stderr,
+                stopped_reason,
+                tokens_consumed,
+            )
 
         if stopped_reason:
             return AgentResult(
@@ -275,14 +301,95 @@ class AgentRunner:
     def _normalize_output(provider: str, stdout: str, stderr: str) -> tuple[str, str | None]:
         if provider != "cursor":
             return stdout, None
-        try:
-            payload = json.loads(stdout)
-        except json.JSONDecodeError:
+        payloads = AgentRunner._json_payloads(stdout)
+        if not payloads:
             return stdout, "Cursor returned malformed JSON.\n\nSTDERR:\n" + stderr
-        result = payload.get("result") if isinstance(payload, dict) else None
+        result = next(
+            (
+                payload.get("result")
+                for payload in reversed(payloads)
+                if isinstance(payload.get("result"), str)
+            ),
+            None,
+        )
         if not isinstance(result, str):
             return stdout, "Cursor returned JSON without a result.\n\nSTDERR:\n" + stderr
         return result, None
+
+    @staticmethod
+    def _json_payloads(stdout: str) -> list[dict]:
+        try:
+            payload = json.loads(stdout)
+        except json.JSONDecodeError:
+            payloads = []
+            for line in stdout.splitlines():
+                try:
+                    value = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(value, dict):
+                    payloads.append(value)
+            return payloads
+        return [payload] if isinstance(payload, dict) else []
+
+    @staticmethod
+    def _extract_token_usage(provider: str, stdout: str) -> int | None:
+        payloads = AgentRunner._json_payloads(stdout)
+        if provider == "codex":
+            payloads = [payload for payload in payloads if payload.get("type") == "turn.completed"]
+        elif any(payload.get("type") == "result" for payload in payloads):
+            payloads = [payload for payload in payloads if payload.get("type") == "result"]
+
+        for payload in reversed(payloads):
+            usage = payload.get("usage")
+            if not isinstance(usage, dict) and any(
+                key in payload
+                for key in (
+                    "total_tokens",
+                    "totalTokens",
+                    "input_tokens",
+                    "inputTokens",
+                    "output_tokens",
+                    "outputTokens",
+                )
+            ):
+                usage = payload
+            if isinstance(usage, dict):
+                tokens = AgentRunner._tokens_from_usage(usage)
+                if tokens is not None:
+                    return tokens
+        return None
+
+    @staticmethod
+    def _tokens_from_usage(usage: dict) -> int | None:
+        for key in ("total_tokens", "totalTokens", "total", "tokens"):
+            value = usage.get(key)
+            if isinstance(value, int) and not isinstance(value, bool):
+                return max(0, value)
+
+        input_tokens = AgentRunner._first_integer(
+            usage, "input_tokens", "inputTokens", "prompt_tokens", "promptTokens"
+        )
+        output_tokens = AgentRunner._first_integer(
+            usage,
+            "output_tokens",
+            "outputTokens",
+            "completion_tokens",
+            "completionTokens",
+            "reasoning_output_tokens",
+            "reasoningOutputTokens",
+        )
+        if input_tokens is None and output_tokens is None:
+            return None
+        return max(0, input_tokens or 0) + max(0, output_tokens or 0)
+
+    @staticmethod
+    def _first_integer(payload: dict, *keys: str) -> int | None:
+        for key in keys:
+            value = payload.get(key)
+            if isinstance(value, int) and not isinstance(value, bool):
+                return value
+        return None
 
     @staticmethod
     def _failure_diagnostics(provider: str, stdout: str, stderr: str) -> str:

@@ -44,6 +44,11 @@ commits `graphify-out` when the target repository has graphify configured;
 graph refresh failures are reported as warnings and never trigger resolver
 attempts.
 
+Completed tasks also append their reported token usage to the project-local
+`.daedalus-memory.json` file. Each entry contains the prompt submission time
+and the total input/output tokens reported by the provider. Failed, paused, and
+cancelled tasks are not recorded; the file is intentionally ignored by Git.
+
 The task list keeps each prompt's provider, model, reasoning, status, branch,
 worktree, and filtered assistant-message transcript separate. Raw diffs,
 command telemetry, and successful process stderr are hidden. Select a task to

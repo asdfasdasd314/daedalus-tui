@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+import json
 import tempfile
 import threading
 import time
@@ -124,6 +126,43 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertEqual(failed.error, "Task failed but worktree is preserved.")
             self.assertEqual(succeeded.status, "completed")
             coordinator.shutdown()
+
+    def test_persists_tokens_only_after_a_task_completes(self):
+        class TokenReportingOrchestrator:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def run(self, prompt, _provider, _model, _reasoning, task_id=None, **_kwargs):
+                if prompt == "bad":
+                    return OrchestrationResult(False, task_id, error="failed")
+                return OrchestrationResult(True, task_id, tokens_consumed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            memory_path = Path(directory) / ".daedalus-memory.json"
+            coordinator = TaskCoordinator(
+                Path(directory),
+                object(),
+                OrchestrationSettings(max_concurrent_tasks=2),
+                memory_path=memory_path,
+            )
+            with patch("tui.task_coordinator.LocalOrchestrator", TokenReportingOrchestrator):
+                failed = coordinator.submit("bad", "codex", "luna", "medium")
+                succeeded = coordinator.submit("good", "codex", "luna", "medium")
+                failed.future.result(timeout=5)
+                succeeded.future.result(timeout=5)
+            coordinator.shutdown()
+
+            self.assertEqual(failed.status, "failed")
+            self.assertEqual(succeeded.status, "completed")
+            entries = json.loads(memory_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0]["tokens"], 42)
+            self.assertEqual(
+                entries[0]["timestamp"],
+                datetime.fromtimestamp(succeeded.submitted_at, timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z"),
+            )
 
     def test_pause_preserves_context_and_resume_reuses_same_worktree(self):
         class PausableOrchestrator:

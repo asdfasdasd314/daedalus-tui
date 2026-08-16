@@ -12,6 +12,7 @@ from typing import Callable
 
 from .agent_runner import AgentControl, AgentRunner
 from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
+from .memory import DEFAULT_MEMORY_FILE, TokenUsageStore
 from .orchestrator import LocalOrchestrator, OrchestrationResult, OrchestrationSettings
 
 
@@ -53,6 +54,7 @@ class TaskRecord:
     context: WorktreeContext | None = field(default=None, repr=False, compare=False)
     control: AgentControl = field(default_factory=AgentControl, repr=False, compare=False)
     future: Future | None = field(default=None, repr=False, compare=False)
+    tokens_consumed: int = 0
 
 
 class IntegrationCoordinator:
@@ -92,6 +94,7 @@ class TaskCoordinator:
         runner: AgentRunner,
         settings: OrchestrationSettings,
         on_event: TaskEventCallback | None = None,
+        memory_path: Path | None = None,
     ) -> None:
         if settings.max_concurrent_tasks < 1:
             raise ValueError("max_concurrent_tasks must be positive")
@@ -105,6 +108,7 @@ class TaskCoordinator:
         self._next_sequence = 1
         self._tasks: dict[str, TaskRecord] = {}
         self._closed = False
+        self.memory = TokenUsageStore(memory_path or self.repository / DEFAULT_MEMORY_FILE)
 
     def set_event_callback(self, callback: TaskEventCallback | None) -> None:
         self.on_event = callback
@@ -255,6 +259,12 @@ class TaskCoordinator:
         if result.succeeded:
             record.status = "completed"
             record.phase = "Completed"
+            record.tokens_consumed = result.tokens_consumed
+            try:
+                self.memory.record(record.submitted_at, record.tokens_consumed)
+            except (OSError, ValueError):
+                # Telemetry must never turn an otherwise completed task into a failure.
+                pass
         else:
             record.status = "failed"
             record.phase = "Failed"

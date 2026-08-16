@@ -68,7 +68,7 @@ class AgentRunnerTests(unittest.TestCase):
     def test_builds_exact_cursor_command(self):
         self.assertEqual(
             AgentRunner().command_for(self.request("cursor", "cursor", "")),
-            ["agent", "-p", "--output-format", "json", "--force", "Inspect this project"],
+            ["agent", "-p", "--output-format", "stream-json", "--force", "Inspect this project"],
         )
 
     @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/codex")
@@ -79,7 +79,7 @@ class AgentRunnerTests(unittest.TestCase):
             {"type": "item.completed", "item": {"type": "command_execution", "command": "ls"}},
             {"type": "item.completed", "item": {"type": "file_change", "path": "feature.md"}},
             {"type": "item.completed", "item": {"type": "agent_message", "text": "Implemented the second page at app/legal/page.tsx"}},
-            {"type": "turn.completed"},
+            {"type": "turn.completed", "usage": {"input_tokens": 120, "output_tokens": 45}},
         ]
         popen.return_value = FakeProcess([*(json.dumps(event) + "\n" for event in events)], ["normal diagnostic\n"])
         output = []
@@ -90,6 +90,7 @@ class AgentRunnerTests(unittest.TestCase):
         self.assertTrue(all(isinstance(event, AgentLogEvent) for event in output))
         self.assertEqual(result.output, "Implemented the second page at app/legal/page.tsx")
         self.assertEqual(result.stderr, "normal diagnostic\n")
+        self.assertEqual(result.tokens_consumed, 165)
         self.assertEqual(popen.call_args.kwargs["cwd"], Path("/workspace/project"))
 
     @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/codex")
@@ -118,12 +119,17 @@ class AgentRunnerTests(unittest.TestCase):
     @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/agent")
     @patch("tui.agent_runner.subprocess.Popen")
     def test_parses_cursor_json_result_without_streaming_raw_output(self, popen, _which):
-        popen.return_value = FakeProcess([json.dumps({"result": "Implemented the page."})], ["diagnostic\n"])
+        events = [
+            {"type": "assistant", "message": {"role": "assistant", "content": []}},
+            {"type": "result", "result": "Implemented the page.", "usage": {"total_tokens": 321}},
+        ]
+        popen.return_value = FakeProcess([*(json.dumps(event) + "\n" for event in events)], ["diagnostic\n"])
         output = []
         result = AgentRunner().run(self.request("cursor", "cursor", ""), output.append)
 
         self.assertTrue(result.succeeded)
         self.assertEqual(result.output, "Implemented the page.")
+        self.assertEqual(result.tokens_consumed, 321)
         self.assertEqual(output, [])
         self.assertIn("env", popen.call_args.kwargs)
 

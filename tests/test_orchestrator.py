@@ -116,7 +116,10 @@ class OrchestratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             repository = Path(directory)
             runner = Mock()
-            runner.run.return_value = AgentResult("codex", 0, "done")
+            runner.run.side_effect = [
+                AgentResult("codex", 0, "done", tokens_consumed=10),
+                AgentResult("codex", 0, "repaired", tokens_consumed=5),
+            ]
             context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
             manager = Mock()
             manager.create.return_value = context
@@ -140,6 +143,7 @@ class OrchestratorTests(unittest.TestCase):
 
         self.assertTrue(result.succeeded)
         self.assertEqual(runner.run.call_count, 2)
+        self.assertEqual(result.tokens_consumed, 15)
         self.assertTrue(any(phase == "repairing" for phase, _, _ in events))
 
     def test_cancelled_agent_removes_unintegrated_worktree(self):
