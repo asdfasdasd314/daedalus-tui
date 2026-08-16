@@ -26,9 +26,7 @@ class DaedalusTuiApp(App[None]):
     BINDINGS = [
         ("ctrl+enter", "submit_prompt", "Send prompt"),
         ("ctrl+c", "copy_selection", "Copy selected text"),
-        ("ctrl+shift+c", "copy_output", "Copy output"),
         ("ctrl+alt+s", "copy_selection", "Copy selection"),
-        ("ctrl+alt+c", "copy_error", "Copy error"),
         ("ctrl+p", "pause_task", "Pause task"),
         ("ctrl+r", "resume_task", "Resume task"),
         ("ctrl+x", "cancel_task", "Cancel task"),
@@ -125,9 +123,6 @@ class DaedalusTuiApp(App[None]):
                             yield Button("Pause", id="pause-button", disabled=True)
                             yield Button("Resume", id="resume-button", disabled=True)
                             yield Button("Cancel", id="cancel-button", disabled=True, variant="error")
-                            yield Button("Copy output", id="copy-button", disabled=True)
-                            yield Button("Copy selection", id="copy-selection-button")
-                            yield Button("Copy error", id="copy-error-button", disabled=True)
                             yield Static("Idle", id="status")
         yield Footer()
 
@@ -168,14 +163,8 @@ class DaedalusTuiApp(App[None]):
     def action_submit_prompt(self) -> None:
         self._submit_prompt()
 
-    def action_copy_output(self) -> None:
-        self._copy_output()
-
     def action_copy_selection(self) -> None:
         self._copy_selection()
-
-    def action_copy_error(self) -> None:
-        self._copy_error()
 
     def action_pause_task(self) -> None:
         self._pause_task()
@@ -189,12 +178,6 @@ class DaedalusTuiApp(App[None]):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "send-button":
             self._submit_prompt()
-        elif event.button.id == "copy-button":
-            self._copy_output()
-        elif event.button.id == "copy-selection-button":
-            self._copy_selection()
-        elif event.button.id == "copy-error-button":
-            self._copy_error()
         elif event.button.id == "pause-button":
             self._pause_task()
         elif event.button.id == "resume-button":
@@ -339,8 +322,6 @@ class DaedalusTuiApp(App[None]):
             self.query_one("#task-context", Static).update("Task branch: —    Worktree: —")
             self.query_one("#phase", Static).update("Phase: Idle")
             self._set_error("")
-            self.query_one("#copy-button", Button).disabled = True
-            self.query_one("#copy-error-button", Button).disabled = True
             self.query_one("#pause-button", Button).disabled = True
             self.query_one("#resume-button", Button).disabled = True
             self.query_one("#cancel-button", Button).disabled = True
@@ -358,8 +339,6 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#phase", Static).update(f"Phase: {record.phase}")
         self._set_error(record.error or "")
         self._set_status(record.status.capitalize())
-        self.query_one("#copy-button", Button).disabled = not bool(record.messages)
-        self.query_one("#copy-error-button", Button).disabled = not bool(record.error)
         active = record.status in {"queued", "running", "verifying", "ready", "integrating", "resolving"}
         self.query_one("#pause-button", Button).disabled = not active
         self.query_one("#resume-button", Button).disabled = record.status != "paused"
@@ -367,22 +346,6 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#resume-notes-panel", Vertical).styles.display = (
             "block" if record.status == "paused" else "none"
         )
-
-    def _copy_output(self) -> None:
-        record = self.coordinator.get(self._selected_task_id or "")
-        if record is None or not record.messages:
-            self._set_status("No output")
-            return
-        self._copy_text("\n\n".join(record.messages))
-        self._set_status("Copied")
-
-    def _copy_error(self) -> None:
-        record = self.coordinator.get(self._selected_task_id or "")
-        if record is None or not record.error:
-            self._set_status("No error")
-            return
-        self._copy_text(record.error)
-        self._set_status("Error copied")
 
     def _copy_selection(self) -> None:
         selection = self._get_selected_text()
@@ -490,4 +453,3 @@ class DaedalusTuiApp(App[None]):
     def _set_error(self, error: str) -> None:
         error_widget = self.query_one("#task-error", TextArea)
         error_widget.load_text(error)
-        self.query_one("#copy-error-button", Button).disabled = not bool(error)

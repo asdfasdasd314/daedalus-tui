@@ -47,14 +47,11 @@ attempts.
 The task list keeps each prompt's provider, model, reasoning, status, branch,
 worktree, and filtered assistant-message transcript separate. Raw diffs,
 command telemetry, and successful process stderr are hidden. Select a task to
-replay its transcript, use `Copy output` (or `Ctrl+Shift+C`) to copy the full
-assistant transcript, or click-drag across any selectable label, log, or error
-surface and press `Ctrl+C` (or `Copy selection` / `Ctrl+Alt+S`) to copy only the
-highlighted text. Textual captures mouse input while the app is running; if
-you want your terminal emulator's native selection instead, hold Option in
-iTerm or Shift in Terminal.app while dragging. Failed-task diagnostics are
-shown in a selectable error pane and can be copied with `Copy error` (or
-`Ctrl+Alt+C`).
+replay its transcript, then click-drag across any selectable label, log, or
+error surface and use the Vim `y` command (or `Ctrl+C` / `Ctrl+Alt+S`) to copy
+the highlighted text. Textual captures mouse input while the app is running;
+if you want your terminal emulator's native selection instead, hold Option in
+iTerm or Shift in Terminal.app while dragging.
 
 Vim-style shortcuts are also available without changing normal prompt typing.
 The prompt itself is a modal Vim text area: it starts in Insert mode, `Esc`

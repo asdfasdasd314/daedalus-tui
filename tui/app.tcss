@@ -131,21 +131,6 @@ Screen {
     margin-right: 1;
 }
 
-#copy-button {
-    width: 16;
-    margin-right: 2;
-}
-
-#copy-selection-button {
-    width: 19;
-    margin-right: 2;
-}
-
-#copy-error-button {
-    width: 14;
-    margin-right: 2;
-}
-
 #status {
     color: $text-muted;
 }
