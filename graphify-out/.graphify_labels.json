@@ -6,11 +6,17 @@
   "4": "app.py",
   "5": "TokenUsageStore",
   "6": "GitWorktreeManager",
+  "7": "Daedalus TUI Local Token Usage Memory",
   "8": "update_repository",
   "9": "daedalus-tui",
   "10": "__init__.py",
   "11": "Key",
   "12": "Path",
   "13": "Path",
-  "14": "Path"
+  "14": "Path",
+  "15": "architecture.md",
+  "16": "coding.md",
+  "17": "planning.md",
+  "18": "Daedalus TUI Project Instructions",
+  "19": "integrating.md"
 }
