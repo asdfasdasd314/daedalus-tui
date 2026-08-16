@@ -8,12 +8,12 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Provider controls**: Codex exposes Luna, Terra, and Sol with light, medium, high, and extra-high reasoning; Cursor CLI is a provider-only choice with model and reasoning disabled.
 - **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, a database, or a remote push.
 - **Concurrent task list**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript.
-- **Filtered logs and copying**: The output pane shows completed assistant messages only; the selected task transcript can be copied in full while Textual still supports selected-text copying.
+- **Filtered logs and copying**: The output pane shows completed assistant messages only; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project navigation**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the sidebar switches between per-project task coordinators without mixing transcripts or worktrees.
 
 ## Relevant Files
-- `tui/app.py`: Textual layout, selectors, task list, transcript replay, and copy controls.
+- `tui/app.py`: Textual layout, selectors, task list, transcript replay, and task controls.
 - `tui/vim_text_area.py`: Incremental modal Vim prompt adapter and system clipboard integration.
 - `tui/agent_runner.py`: Independent Codex and Cursor subprocess adapter.
 - `tui/task_coordinator.py`: Concurrent task executor and serialized integration gate.
@@ -37,3 +37,4 @@ HACKING
 - 2026-08-14: Added a modal VimTextArea prompt with multiline Insert mode, Normal/Visual commands, system clipboard yank/paste, and an intentionally incremental command subset for future additions.
 - 2026-08-14: Removed Vim status and shortcut hints from the rendered interface and added Shift+V whole-line visual selection to the prompt editor.
 - 2026-08-14: Added recursive Daedalus project discovery from the launch root and a sidebar that preserves independent task coordinators for each supported project.
+- 2026-08-16: Removed copy buttons and dedicated full-output/error copy actions in favor of Vim yank commands.

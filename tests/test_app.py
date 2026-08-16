@@ -121,8 +121,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(app.query_one("#prompt-input", DaedalusVimTextArea).vim_mode, VimMode.INSERT)
             self.assertEqual(app.query("#vim-mode").nodes, [])
             self.assertEqual(app.query("#vim-help").nodes, [])
-            self.assertIsInstance(app.query_one("#copy-button", Button), Button)
-            self.assertIsInstance(app.query_one("#copy-selection-button", Button), Button)
+            self.assertEqual(app.query("#copy-button, #copy-selection-button, #copy-error-button").nodes, [])
             self.assertIsInstance(app.query_one("#project-select", Select), Select)
             self.assertIsInstance(app.query_one("#pause-button", Button), Button)
             self.assertIsInstance(app.query_one("#resume-button", Button), Button)
@@ -308,10 +307,8 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             app.on_key(events.Key("j", "j"))
             self.assertEqual(prompt.text, "")
 
-    @patch("tui.app.copy_to_system_clipboard")
-    async def test_multiple_tasks_keep_independent_snapshots_and_transcripts(self, _system_clipboard):
+    async def test_multiple_tasks_keep_independent_snapshots_and_transcripts(self):
         app, coordinator = self.make_app()
-        app.copy_to_clipboard = Mock()
         async with app.run_test() as pilot:
             prompt = app.query_one("#prompt-input", TextArea)
             prompt.insert("First task")
@@ -333,17 +330,9 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             task_select = app.query_one("#task-select", Select)
             task_select.value = first.task_id
             await pilot.pause()
-            app.action_copy_output()
-            app.copy_to_clipboard.assert_called_once_with("Implemented the first task.")
 
             first.error = "Cursor failed with exit code 1.\n\nDiagnostics:\nAuthentication failed."
             coordinator.emit(first, "failed", first.error, "error")
-            self.assertFalse(app.query_one("#copy-error-button", Button).disabled)
-            app.action_copy_error()
-            self.assertEqual(
-                app.copy_to_clipboard.call_args.args[0],
-                "Cursor failed with exit code 1.\n\nDiagnostics:\nAuthentication failed.",
-            )
 
             task_select.value = second.task_id
             await pilot.pause()

@@ -4,6 +4,7 @@
   "2": "AgentRunner",
   "3": "DaedalusTuiApp",
   "4": "app.py",
+  "5": "AgentControl",
   "6": "GitWorktreeManager",
   "7": "build_task_prompt",
   "8": "update_repository",
