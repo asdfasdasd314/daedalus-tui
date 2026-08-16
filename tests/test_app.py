@@ -7,7 +7,7 @@ from textual.widgets import Button, RichLog, Select, Static, TextArea
 from textual.widgets.text_area import Selection
 from vimkeys_input import VimMode
 
-from tui.app import DaedalusTuiApp
+from tui.app import DaedalusTuiApp, KeyboardShortcutsScreen
 from tui.config import ModelOption, TuiSettings
 from tui.projects import DaedalusProject
 from tui.task_coordinator import TaskRecord
@@ -127,6 +127,26 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#resume-button", Button), Button)
             self.assertIsInstance(app.query_one("#cancel-button", Button), Button)
             await pilot.pause()
+
+    async def test_ctrl_k_opens_shortcuts_menu_with_global_and_vim_keys(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            await pilot.press("ctrl+k")
+            await pilot.pause()
+
+            self.assertIsInstance(app.screen, KeyboardShortcutsScreen)
+            shortcut_text = "\n".join(
+                str(widget.render()) for widget in app.screen.query(".shortcut-row")
+            )
+            self.assertIn("Ctrl+Q", shortcut_text)
+            self.assertIn("Ctrl+Enter", shortcut_text)
+            self.assertIn("Ctrl+K", shortcut_text)
+            self.assertIn("Ctrl+P", shortcut_text)
+            self.assertIn("gg / G", shortcut_text)
+
+            await pilot.press("escape")
+            await pilot.pause()
+            self.assertNotIsInstance(app.screen, KeyboardShortcutsScreen)
 
     @patch("tui.app.discover_projects")
     async def test_sidebar_switches_active_project_and_keeps_task_coordinators_separate(self, discover):

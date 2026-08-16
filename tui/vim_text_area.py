@@ -25,6 +25,12 @@ class DaedalusVimTextArea(VimTextArea):
 
     def on_key(self, event: events.Key) -> None:
         """Route visual-line mode and mirror new yanks to the host clipboard."""
+        if event.key == "ctrl+k":
+            # VimTextArea handles several Ctrl keys itself, so route the
+            # application's shortcut before its mode-specific processing.
+            self.app.action_show_shortcuts()
+            event.stop()
+            return
         previous_register = self.yank_register
         if event.key == "escape":
             super().on_key(event)

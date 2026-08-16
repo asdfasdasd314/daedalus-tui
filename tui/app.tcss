@@ -134,3 +134,37 @@ Screen {
 #status {
     color: $text-muted;
 }
+
+KeyboardShortcutsScreen {
+    align: center middle;
+}
+
+#shortcuts-dialog {
+    width: 72;
+    max-height: 90%;
+    border: round $primary;
+    background: $surface;
+    padding: 1 2;
+}
+
+#shortcuts-title {
+    color: $text-accent;
+    text-style: bold;
+    height: 2;
+}
+
+#shortcuts-subtitle {
+    color: $text-muted;
+    height: 2;
+}
+
+.shortcut-section {
+    color: $text-accent;
+    text-style: bold;
+    height: 1;
+    margin-top: 1;
+}
+
+.shortcut-row {
+    height: 1;
+}

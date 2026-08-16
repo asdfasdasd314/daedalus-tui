@@ -8,6 +8,7 @@ import threading
 from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.screen import ModalScreen
 from textual.widgets import Button, Footer, Header, RichLog, Select, Static, TextArea
 from .agent_runner import AgentRunner
 from .clipboard import copy_to_system_clipboard, paste_from_system_clipboard
@@ -17,21 +18,78 @@ from .task_coordinator import TaskCoordinator, TaskRecord
 from .vim_text_area import DaedalusVimTextArea
 
 
+GLOBAL_SHORTCUTS = (
+    ("Ctrl+Enter", "Send prompt", "submit_prompt"),
+    ("Ctrl+C", "Copy selected text", "copy_selection"),
+    ("Ctrl+Alt+S", "Copy selection", "copy_selection"),
+    ("Ctrl+P", "Pause task", "pause_task"),
+    ("Ctrl+R", "Resume task", "resume_task"),
+    ("Ctrl+X", "Cancel task", "cancel_task"),
+    ("Ctrl+Q", "Quit", "quit"),
+    ("Ctrl+K", "Show keyboard shortcuts", "show_shortcuts"),
+)
+
+SHORTCUT_SECTIONS = (
+    (
+        "Global shortcuts",
+        tuple((shortcut, description) for shortcut, description, _ in GLOBAL_SHORTCUTS),
+    ),
+    (
+        "Output navigation",
+        (
+            ("j / k", "Scroll output down / up"),
+            ("gg / G", "Scroll to output start / end"),
+            ("Ctrl+D / Ctrl+U", "Scroll one page down / up"),
+            ("y", "Copy selected text"),
+            ("p", "Paste into the prompt"),
+            ("i", "Focus the prompt"),
+        ),
+    ),
+    (
+        "Prompt (Vim mode)",
+        (
+            ("Esc", "Enter Normal mode"),
+            ("i / a / o", "Enter Insert mode"),
+            ("h / j / k / l", "Move the cursor"),
+            ("w / e / 0 / $", "Move by word or line"),
+            ("gg / G", "Move to document start / end"),
+            ("d / u", "Delete / undo"),
+            ("y / p", "Yank / paste"),
+            ("V", "Select whole lines"),
+            ("Enter", "Insert a newline"),
+        ),
+    ),
+)
+
+
+class KeyboardShortcutsScreen(ModalScreen[None]):
+    """Modal reference for the app and prompt editor keyboard shortcuts."""
+
+    BINDINGS = [
+        ("escape", "close_shortcuts", "Close"),
+        ("ctrl+k", "close_shortcuts", "Close"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="shortcuts-dialog"):
+            yield Static("Keyboard shortcuts", id="shortcuts-title")
+            yield Static("Press Esc or Ctrl+K to close", id="shortcuts-subtitle")
+            for heading, shortcuts in SHORTCUT_SECTIONS:
+                yield Static(heading, classes="shortcut-section")
+                for shortcut, description in shortcuts:
+                    yield Static(f"{shortcut:<18}{description}", classes="shortcut-row")
+
+    def action_close_shortcuts(self) -> None:
+        self.dismiss(None)
+
+
 class DaedalusTuiApp(App[None]):
     TITLE = "Daedalus TUI"
     CSS_PATH = "app.tcss"
     # Keep Textual's arbitrary text selection enabled for labels, logs, and
     # other non-editor widgets. TextArea has its own native selection model.
     ALLOW_SELECT = True
-    BINDINGS = [
-        ("ctrl+enter", "submit_prompt", "Send prompt"),
-        ("ctrl+c", "copy_selection", "Copy selected text"),
-        ("ctrl+alt+s", "copy_selection", "Copy selection"),
-        ("ctrl+p", "pause_task", "Pause task"),
-        ("ctrl+r", "resume_task", "Resume task"),
-        ("ctrl+x", "cancel_task", "Cancel task"),
-        ("ctrl+q", "quit", "Quit"),
-    ]
+    BINDINGS = [(shortcut.lower(), action, description) for shortcut, description, action in GLOBAL_SHORTCUTS]
 
     def __init__(
         self,
@@ -174,6 +232,9 @@ class DaedalusTuiApp(App[None]):
 
     def action_cancel_task(self) -> None:
         self._cancel_task()
+
+    def action_show_shortcuts(self) -> None:
+        self.push_screen(KeyboardShortcutsScreen())
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "send-button":
