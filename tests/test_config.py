@@ -12,6 +12,7 @@ class ConfigTests(unittest.TestCase):
         orchestration = load_orchestration_settings(root / "parameter_files" / "daedalus-tui-orchestration.toml")
 
         self.assertEqual(settings.default_model, "gpt-5.6-luna")
+        self.assertEqual(settings.default_reasoning, "high")
         self.assertEqual([item.value for item in settings.codex_models], [
             "gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol",
         ])
