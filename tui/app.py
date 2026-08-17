@@ -9,7 +9,7 @@ from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Footer, Header, RichLog, Select, Static, TextArea
+from textual.widgets import Button, Footer, Header, Log, Select, Static, TextArea
 from .agent_runner import AgentRunner
 from .clipboard import copy_to_system_clipboard, paste_from_system_clipboard
 from .config import TuiSettings, load_orchestration_settings, load_tui_settings
@@ -166,7 +166,8 @@ class DaedalusTuiApp(App[None]):
                     yield Static("Phase: Idle", id="phase")
                     yield Static("Task branch: —    Worktree: —", id="task-context")
                     yield TextArea("", read_only=True, show_line_numbers=False, id="task-error")
-                    yield RichLog(id="output", markup=False, wrap=True, highlight=False, auto_scroll=True)
+                    # Log supports Textual click-drag selection; RichLog does not.
+                    yield Log(id="output", auto_scroll=True)
                     with Vertical(id="composer"):
                         yield DaedalusVimTextArea(
                             id="prompt-input",
@@ -389,7 +390,7 @@ class DaedalusTuiApp(App[None]):
 
     def _render_selected_task(self) -> None:
         record = self.coordinator.get(self._selected_task_id or "")
-        output = self.query_one("#output", RichLog)
+        output = self.query_one("#output", Log)
         output.clear()
         if record is None:
             self._set_prompt_text("", editable=True)
@@ -403,7 +404,8 @@ class DaedalusTuiApp(App[None]):
             return
         self._set_prompt_text(record.prompt, editable=False)
         for message in record.messages:
-            output.write(message)
+            block = message if message.endswith("\n") else f"{message}\n"
+            output.write(block)
         worktree = str(record.worktree_path) if record.worktree_path else "—"
         branch = record.branch_name or "—"
         reasoning = record.reasoning or "not applicable"
@@ -472,7 +474,7 @@ class DaedalusTuiApp(App[None]):
             self._set_status("Insert")
 
     def _scroll_output(self, direction: str) -> None:
-        output = self.query_one("#output", RichLog)
+        output = self.query_one("#output", Log)
         output.focus()
         scroll_methods = {
             "up": output.scroll_up,
