@@ -394,6 +394,9 @@ class TaskCoordinatorTests(unittest.TestCase):
 
                 self.assertTrue(plan_record.plan_confirmed)
                 self.assertEqual(plan_record.plan_questions, ())
+                persisted = coordinator.memory.get_tasks()[plan_record.memory_task_id]
+                self.assertEqual(persisted["prompt_history"][0], "Choose a store")
+                self.assertIn("User answers:", persisted["prompt_history"][1])
                 coding_record = coordinator.implement_plan(plan_record.task_id)
                 self.assertIsNotNone(coding_record)
                 coding_record.future.result(timeout=5)

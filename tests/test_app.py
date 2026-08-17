@@ -758,6 +758,27 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(str(app.query_one("#status", Static).render()), "Error")
             self.assertIn("synthetic plan widget failure", app.query_one("#task-error", TextArea).text)
 
+    async def test_late_background_event_is_ignored_after_app_shutdown(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            record = coordinator.records[0] if coordinator.records else TaskRecord(
+                "late-task", 1, "late", "codex", "luna", "medium"
+            )
+            app._accept_task_events = False
+            app._on_task_event(record, "agent", "late output", "message")
+            app._accept_task_events = True
+            with patch.object(app, "call_from_thread", side_effect=RuntimeError("App is not running")):
+                event_thread = threading.Thread(
+                    target=app._on_task_event,
+                    args=(record, "agent", "late output", "message"),
+                )
+                event_thread.start()
+                event_thread.join(timeout=1)
+                self.assertFalse(event_thread.is_alive())
+            await pilot.pause()
+
+        self.assertIsNone(app._exception)
+
     async def test_paused_task_exposes_optional_resume_notes(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:

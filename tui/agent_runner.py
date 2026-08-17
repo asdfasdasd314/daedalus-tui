@@ -166,7 +166,10 @@ class AgentRunner:
         stopped_reason, timed_out = self._wait_for_process(process, request.control, request.timeout_seconds)
         returncode = process.returncode
         for thread in threads:
-            thread.join()
+            # A CLI descendant can inherit a pipe and keep a reader blocked
+            # after the direct child has been terminated. Reader threads are
+            # daemonized, so never let that pipe prevent task shutdown.
+            thread.join(timeout=2)
 
         stdout = "".join(output["stdout"])
         stderr = "".join(output["stderr"])

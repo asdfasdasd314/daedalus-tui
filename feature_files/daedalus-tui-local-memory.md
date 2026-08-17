@@ -15,6 +15,9 @@ daemon, a remote service, or a database server.
   resolved project path, and error. The entry is upserted as the task
   progresses, including for planning, questioning, failed, paused, and
   cancelled tasks.
+- **Prompt history**: Plan answer submissions are retained in the task's
+  optional `prompt_history` list, so the original request and each generated
+  review prompt remain visible without creating duplicate worktree records.
 - **Upsert behavior**: A missing memory file starts as an empty list; each
   task creates or updates one worktree-keyed entry while preserving other task
   entries.
@@ -66,3 +69,4 @@ HACKING
 - 2026-08-17: Replaced standalone token-usage entries with timestamped task records while preserving the last-opened-project marker.
 - 2026-08-17: Folded the legacy token count and resolved project path into each central task record and removed the standalone store alias.
 - 2026-08-17: Persisted Plan tasks while they await questions or approval so their planning state and transcript remain selectable.
+- 2026-08-17: Persisted generated plan-review prompts alongside the original task snapshot so submitted answers leave an auditable request history.

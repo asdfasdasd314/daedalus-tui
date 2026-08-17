@@ -90,6 +90,7 @@ class TaskMemoryStore:
         submitted_at: float | None = None,
         tokens: int | None = 0,
         project: Path | None = None,
+        prompt_history: list[str] | tuple[str, ...] = (),
     ) -> None:
         """Upsert a task snapshot keyed by the task worktree's directory name."""
         task = {
@@ -109,6 +110,8 @@ class TaskMemoryStore:
             "tokens": max(0, int(tokens)) if tokens is not None else None,
             "project": str(project.expanduser().resolve()) if project is not None else None,
         }
+        if len(prompt_history) > 1:
+            task["prompt_history"] = list(prompt_history)
         with self._lock:
             entries = self._read_entries()
             updated_entries: list[dict[str, object]] = []

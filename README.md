@@ -50,6 +50,8 @@ prompt, provider/model/reasoning/mode selection, current state, assistant
 outputs, token usage, resolved project path, and any error so failed, paused,
 and cancelled work can be reopened for analysis. The memory file also keeps a
 single `last_opened_project` entry.
+Plan tasks with submitted answers additionally retain generated review requests
+in an optional `prompt_history` list on the same worktree record.
 The first launch initializes it to the default project, every sidebar focus
 change updates it, and the next startup restores it when that project still
 exists. The file is intentionally ignored by Git.

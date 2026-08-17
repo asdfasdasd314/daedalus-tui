@@ -235,6 +235,7 @@ class DaedalusTuiApp(App[None]):
         self._new_task_mode = True
         self._vim_pending_g = False
         self._plan_review_generation = 0
+        self._accept_task_events = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -310,6 +311,7 @@ class DaedalusTuiApp(App[None]):
         yield Footer()
 
     def on_mount(self) -> None:
+        self._accept_task_events = True
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
         prompt.enter_insert_mode()
         prompt.focus()
@@ -340,7 +342,12 @@ class DaedalusTuiApp(App[None]):
             event.stop()
 
     def on_unmount(self) -> None:
+        # Detach callbacks before waiting for worker shutdown. Agent reader
+        # threads may deliver one final event after the Textual app closes.
+        self._accept_task_events = False
         for coordinator in self._coordinators.values():
+            if hasattr(coordinator, "set_event_callback"):
+                coordinator.set_event_callback(None)
             coordinator.shutdown()
 
     def action_submit_prompt(self) -> None:
@@ -467,10 +474,18 @@ class DaedalusTuiApp(App[None]):
         self._render_selected_task()
 
     def _on_task_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
+        if not self._accept_task_events:
+            return
         if threading.current_thread() is threading.main_thread():
             self._apply_task_event(record, phase, message, kind)
         else:
-            self.call_from_thread(self._apply_task_event, record, phase, message, kind)
+            try:
+                self.call_from_thread(self._apply_task_event, record, phase, message, kind)
+            except RuntimeError as error:
+                # A worker can race with Textual's final shutdown transition.
+                # Do not let a late event print an exception after the UI closes.
+                if "App is not running" not in str(error):
+                    raise
 
     def _apply_task_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         self._refresh_project_selector()

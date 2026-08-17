@@ -70,6 +70,7 @@ class TaskRecord:
     plan_answers: dict[str, str] = field(default_factory=dict)
     plan_confirmed: bool = False
     plan_error: str | None = None
+    prompt_history: list[str] = field(default_factory=list, repr=False, compare=False)
     plan_followup_prompt: str | None = field(default=None, repr=False, compare=False)
     retry_prompt: str | None = field(default=None, repr=False, compare=False)
 
@@ -138,6 +139,7 @@ class TaskCoordinator:
             self._next_sequence += 1
             task_id = f"{sequence:03d}-{uuid.uuid4().hex[:8]}"
             record = TaskRecord(task_id, sequence, prompt, provider, model, reasoning, mode=mode)
+            record.prompt_history = [prompt]
             record.memory_task_id = f"task-{task_id}"
             self._tasks[task_id] = record
             record.future = self.executor.submit(self._run, record)
@@ -171,6 +173,7 @@ class TaskCoordinator:
             record.plan_followup_prompt = build_plan_followup_prompt(
                 record.prompt, record.plan_text, record.plan_questions, record.plan_answers
             )
+            record.prompt_history.append(record.plan_followup_prompt)
             record.status = "queued"
             record.phase = "Queued (reviewing answers)"
             record.error = None
@@ -219,7 +222,10 @@ class TaskCoordinator:
                     "resolving",
                 }:
                     record.control.request_cancel()
-        self.executor.shutdown(wait=False, cancel_futures=True)
+        # The app detaches callbacks before calling this method. Wait here so
+        # Python's atexit handler does not hang joining executor threads after
+        # the Textual UI has already disappeared.
+        self.executor.shutdown(wait=True, cancel_futures=True)
 
     def pause(self, task_id: str) -> bool:
         record = self.get(task_id)
@@ -547,6 +553,7 @@ class TaskCoordinator:
                 submitted_at=record.submitted_at,
                 tokens=record.tokens_consumed,
                 project=self.repository,
+                prompt_history=tuple(record.prompt_history or (record.prompt,)),
             )
         except (OSError, ValueError):
             # Persistent task history must never change orchestration behavior.

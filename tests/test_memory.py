@@ -119,6 +119,29 @@ class TaskMemoryStoreTests(unittest.TestCase):
                 ],
             )
 
+    def test_records_plan_prompt_history_when_a_task_has_followups(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / ".daedalus-memory.json"
+            TaskMemoryStore(path).record_task(
+                "task-plan",
+                "Choose a store",
+                "codex",
+                "luna",
+                "medium",
+                "plan",
+                "awaiting_answers",
+                prompt_history=(
+                    "Choose a store",
+                    "Re-evaluate the plan using the user's answers.",
+                ),
+            )
+
+            task = TaskMemoryStore(path).get_tasks()["task-plan"]
+            self.assertEqual(
+                task["prompt_history"],
+                ["Choose a store", "Re-evaluate the plan using the user's answers."],
+            )
+
     def test_upserts_task_history_by_worktree_name(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".daedalus-memory.json"

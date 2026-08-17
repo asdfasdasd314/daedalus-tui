@@ -1,16 +1,16 @@
 # Graph Report - daedalus-tui  (2026-08-17)
 
 ## Corpus Check
-- 45 files · ~23,154 words
+- 45 files · ~23,559 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 600 nodes · 1542 edges · 24 communities (22 shown, 2 thin omitted)
+- 602 nodes · 1548 edges · 25 communities (23 shown, 2 thin omitted)
 - Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 209 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `51485fa9`
+- Built from commit: `13486292`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -37,19 +37,20 @@
 - .__init__
 - TokenUsageStore
 - build_task_prompt
+- update_repository
 - Daedalus TUI Coding Statistics
 
 ## God Nodes (most connected - your core abstractions)
 1. `DaedalusTuiApp` - 77 edges
-2. `TuiAppTests` - 53 edges
+2. `TuiAppTests` - 54 edges
 3. `TaskCoordinator` - 51 edges
 4. `AgentRunner` - 50 edges
 5. `DaedalusVimTextArea` - 49 edges
 6. `GitWorktreeManager` - 44 edges
 7. `OrchestrationSettings` - 41 edges
-8. `TaskRecord` - 40 edges
+8. `TaskRecord` - 41 edges
 9. `WorktreeContext` - 37 edges
-10. `LocalOrchestrator` - 34 edges
+10. `TaskMemoryStore` - 34 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `FakeStream` --uses--> `AgentControl`  [INFERRED]
@@ -66,7 +67,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (24 total, 2 thin omitted)
+## Communities (25 total, 2 thin omitted)
 
 ### Community 0 - "PlanQuestion"
 Cohesion: 0.26
@@ -82,11 +83,11 @@ Nodes (16): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, Interrupt
 
 ### Community 3 - "DaedalusTuiApp"
 Cohesion: 0.07
-Nodes (11): Changed, Pressed, DaedalusTuiApp, Key, Path, Add Vim-like navigation without changing TextArea insert behavior., Replace question controls after Textual has completed child removal., Clear the selected task and unlock a fresh prompt editor. (+3 more)
+Nodes (12): Changed, Pressed, Select, DaedalusTuiApp, Key, Path, Add Vim-like navigation without changing TextArea insert behavior., Replace question controls after Textual has completed child removal. (+4 more)
 
 ### Community 4 - "app.py"
 Cohesion: 0.05
-Nodes (36): ComposeResult, Mount, Select, FakeCoordinator, FakeRunner, settings(), ConfigTests, ProjectDiscoveryTests (+28 more)
+Nodes (35): ComposeResult, Mount, FakeCoordinator, FakeRunner, settings(), ConfigTests, ProjectDiscoveryTests, CodingStatisticsScreen (+27 more)
 
 ### Community 5 - "TokenUsageStore"
 Cohesion: 0.29
@@ -105,8 +106,8 @@ Cohesion: 0.12
 Nodes (10): GitWorktreeTests, GitWorktreeManager, CompletedProcess, Path, Compatibility alias for callers that used the original private helper., Stage the current worktree contents for orchestration checks or commit., Remove graphify output changes from an agent worktree.          Graphify refresh, Keep a read-only planning pass from becoming an implementation change. (+2 more)
 
 ### Community 11 - "Key"
-Cohesion: 0.07
-Nodes (40): EventCallback, IntegrationGate, GraphifyTests, OrchestratorTests, FakeOrchestrator, VerificationTests, AgentControl, AgentResult (+32 more)
+Cohesion: 0.08
+Nodes (35): EventCallback, IntegrationGate, OrchestratorTests, FakeOrchestrator, VerificationTests, AgentControl, AgentResult, Provider-specific subprocess execution with normalized agent messages. (+27 more)
 
 ### Community 12 - "Path"
 Cohesion: 0.29
@@ -148,6 +149,10 @@ Nodes (27): datetime, TaskMemoryStoreTests, TokenUsageTests, Path, Small local J
 Cohesion: 0.33
 Nodes (5): PromptTests, build_repair_prompt(), build_resolver_prompt(), build_task_prompt(), Prompt wrappers used by task and resolver agents.
 
+### Community 23 - "update_repository"
+Cohesion: 0.27
+Nodes (5): GraphifyTests, Path, Refresh the primary repository graph without affecting task success., update_repository(), Refresh graph metadata after promotion without blocking the task.
+
 ### Community 24 - "Daedalus TUI Coding Statistics"
 Cohesion: 0.29
 Nodes (6): Daedalus TUI Coding Statistics, Dev Mode, Key Points, Relevant Files, State Log, Summary
@@ -161,9 +166,9 @@ Nodes (6): Daedalus TUI Coding Statistics, Dev Mode, Key Points, Relevant Files,
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `DaedalusVimTextArea`, `AgentRunner`, `app.py`, `GitWorktreeManager`, `Key`, `.__init__`, `TokenUsageStore`?**
-  _High betweenness centrality (0.188) - this node is a cross-community bridge._
+  _High betweenness centrality (0.187) - this node is a cross-community bridge._
 - **Why does `AgentRunner` connect `AgentRunner` to `DaedalusTuiApp`, `Key`, `app.py`, `.__init__`?**
-  _High betweenness centrality (0.144) - this node is a cross-community bridge._
+  _High betweenness centrality (0.143) - this node is a cross-community bridge._
 - **Why does `DaedalusVimTextArea` connect `DaedalusVimTextArea` to `DaedalusTuiApp`, `app.py`, `GitWorktreeManager`?**
   _High betweenness centrality (0.117) - this node is a cross-community bridge._
 - **Are the 13 inferred relationships involving `DaedalusTuiApp` (e.g. with `FakeCoordinator` and `FakeRunner`) actually correct?**
