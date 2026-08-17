@@ -289,7 +289,10 @@ class TaskCoordinator:
         if status:
             record.status = status
         if kind == "message" and message:
-            record.messages.append(message)
+            if record.provider == "cursor" and record.messages:
+                record.messages[-1] += message
+            else:
+                record.messages.append(message)
         if kind == "error" and message:
             record.error = message
         if phase == "worktree" and message.startswith("Created "):

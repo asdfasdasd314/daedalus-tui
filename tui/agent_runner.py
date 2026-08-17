@@ -76,6 +76,7 @@ class AgentResult:
     stderr: str = ""
     stopped_reason: str | None = None
     tokens_consumed: int | None = None
+    output_streamed: bool = False
 
     @property
     def succeeded(self) -> bool:
@@ -179,6 +180,7 @@ class AgentRunner:
                     stderr,
                     stopped_reason,
                     tokens_consumed,
+                    bool(messages),
                 )
             if request.provider == "codex":
                 return AgentResult(
@@ -198,6 +200,7 @@ class AgentRunner:
                 stderr,
                 stopped_reason,
                 tokens_consumed,
+                bool(messages),
             )
 
         if stopped_reason:
@@ -263,6 +266,11 @@ class AgentRunner:
                     if message:
                         messages.append(message)
                         callback(AgentLogEvent("message", message))
+                elif provider == "cursor":
+                    message = AgentRunner.parse_cursor_event(chunk)
+                    if message:
+                        messages.append(message)
+                        callback(AgentLogEvent("message", message))
             stream.close()
 
         thread = Thread(target=forward, daemon=True)
@@ -296,6 +304,31 @@ class AgentRunner:
             return None
         text = item.get("text")
         return text.strip() if isinstance(text, str) and text.strip() else None
+
+    @staticmethod
+    def parse_cursor_event(line: str) -> str | None:
+        """Return assistant text deltas from Cursor's stream-json events."""
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            return None
+        if payload.get("type") != "assistant":
+            return None
+        message = payload.get("message")
+        if not isinstance(message, dict):
+            return None
+        content = message.get("content")
+        if isinstance(content, str):
+            text = content
+        elif isinstance(content, list):
+            text = "".join(
+                part.get("text", "")
+                for part in content
+                if isinstance(part, dict) and part.get("type") == "text" and isinstance(part.get("text"), str)
+            )
+        else:
+            return None
+        return text if text.strip() else None
 
     @staticmethod
     def _normalize_output(provider: str, stdout: str, stderr: str) -> tuple[str, str | None]:

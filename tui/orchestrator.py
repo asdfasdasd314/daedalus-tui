@@ -208,7 +208,7 @@ class LocalOrchestrator:
         )
         if result.tokens_consumed is not None:
             self._tokens_consumed += result.tokens_consumed
-        if provider == "cursor" and result.succeeded and result.output:
+        if provider == "cursor" and result.succeeded and result.output and not result.output_streamed:
             self.emit("agent", result.output, "message")
         if result.stopped_reason:
             raise AgentStopped(result.stopped_reason)

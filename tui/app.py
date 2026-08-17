@@ -265,10 +265,16 @@ class DaedalusTuiApp(App[None]):
                 self._switch_project(Path(str(event.value)))
             return
         if event.select.id == "task-select":
-            if event.value not in (Select.BLANK, ""):
-                self._selected_task_id = str(event.value)
-                self._new_task_mode = False
-                self._render_selected_task()
+            if event.value in (Select.BLANK, "", getattr(Select, "NULL", None)):
+                return
+            # set_options/value can leave an already-posted Changed message in
+            # Textual's queue. Ignore it if the selector has since been
+            # refreshed to a different value by the app.
+            if event.value != event.select.value:
+                return
+            self._selected_task_id = str(event.value)
+            self._new_task_mode = False
+            self._render_selected_task()
             return
         if event.select.id != "provider-select":
             return
@@ -407,8 +413,6 @@ class DaedalusTuiApp(App[None]):
             options.append((f"{record.task_id} · {record.status} · {summary}", record.task_id))
         task_select.set_options(options or [("No tasks", "")])
         task_select.disabled = not bool(options)
-        if records and not self._new_task_mode and self._selected_task_id not in {record.task_id for record in records}:
-            self._selected_task_id = records[-1].task_id
         if self._selected_task_id:
             task_select.value = self._selected_task_id
         else:

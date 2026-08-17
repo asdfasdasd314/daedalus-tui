@@ -485,6 +485,26 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
             self.assertIn("Task branch: agent/task-2", str(app.query_one("#task-context", Static).render()))
 
+    async def test_background_events_do_not_choose_an_unselected_task(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", TextArea)
+            prompt.insert("First task")
+            app.action_submit_prompt()
+
+            app.action_new_task()
+            prompt.insert("Second task")
+            app.action_submit_prompt()
+            second = coordinator.records[1]
+
+            app._selected_task_id = None
+            app._new_task_mode = False
+            coordinator.emit(second, "agent", "A background update.", "message")
+            await pilot.pause()
+
+            self.assertIsNone(app._selected_task_id)
+            self.assertEqual(app.query_one("#task-select", Select).value, "")
+
 
 if __name__ == "__main__":
     unittest.main()

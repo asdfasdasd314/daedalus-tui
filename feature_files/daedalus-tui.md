@@ -41,3 +41,4 @@ HACKING
 - 2026-08-16: Added standalone `AGENTS.md` and task-mode profiles so the TUI retains its operating instructions when moved into its own repository.
 - 2026-08-16: Preserved submitted prompts in an immutable task view and added an explicit New Task action to unlock a blank prompt editor.
 - 2026-08-16: Switched the output pane from RichLog to Log so transcript text supports click-drag selection and yank without editing.
+- 2026-08-16: Kept task selection user-controlled during background events and streamed Cursor assistant deltas into the live transcript.

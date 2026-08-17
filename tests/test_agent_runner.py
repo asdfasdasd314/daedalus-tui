@@ -133,6 +133,29 @@ class AgentRunnerTests(unittest.TestCase):
         self.assertEqual(output, [])
         self.assertIn("env", popen.call_args.kwargs)
 
+    @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/agent")
+    @patch("tui.agent_runner.subprocess.Popen")
+    def test_streams_cursor_assistant_deltas(self, popen, _which):
+        events = [
+            {
+                "type": "assistant",
+                "message": {"role": "assistant", "content": [{"type": "text", "text": "I'll "}]},
+            },
+            {
+                "type": "assistant",
+                "message": {"role": "assistant", "content": [{"type": "text", "text": "inspect the files."}]},
+            },
+            {"type": "result", "result": "I'll inspect the files."},
+        ]
+        popen.return_value = FakeProcess([*(json.dumps(event) + "\n" for event in events)])
+        output = []
+
+        result = AgentRunner().run(self.request("cursor", "cursor", ""), output.append)
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual([event.text for event in output], ["I'll ", "inspect the files."])
+        self.assertTrue(result.output_streamed)
+
     @patch("tui.agent_runner.cursor_environment", return_value={"CURSOR_API_KEY": "from-env-file"})
     @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/agent")
     @patch("tui.agent_runner.subprocess.Popen")
