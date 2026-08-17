@@ -1,5 +1,4 @@
 {
-  "0": "WorktreeContext",
   "1": "DaedalusVimTextArea",
   "2": "AgentRunner",
   "3": "DaedalusTuiApp",
@@ -19,6 +18,5 @@
   "17": "planning.md",
   "18": "Daedalus TUI Project Instructions",
   "19": "integrating.md",
-  "20": "TokenUsageStore",
   "21": "TokenUsageStore"
 }
