@@ -1,16 +1,16 @@
 # Graph Report - daedalus-tui  (2026-08-17)
 
 ## Corpus Check
-- 40 files · ~17,554 words
+- 40 files · ~17,642 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 482 nodes · 1195 edges · 23 communities (21 shown, 2 thin omitted)
+- 483 nodes · 1199 edges · 23 communities (21 shown, 2 thin omitted)
 - Extraction: 87% EXTRACTED · 13% INFERRED · 0% AMBIGUOUS · INFERRED: 161 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6037f636`
+- Built from commit: `7f561b7e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -43,7 +43,7 @@
 2. `AgentRunner` - 46 edges
 3. `DaedalusVimTextArea` - 45 edges
 4. `GitWorktreeManager` - 43 edges
-5. `TuiAppTests` - 41 edges
+5. `TuiAppTests` - 42 edges
 6. `TaskCoordinator` - 39 edges
 7. `OrchestrationSettings` - 35 edges
 8. `WorktreeContext` - 34 edges
@@ -76,15 +76,15 @@ Cohesion: 0.07
 Nodes (15): TuiAppTests, DaedalusVimTextArea, Key, Keep Enter as a newline; Ctrl+Enter remains the app submit key., Route visual-line mode and mirror new yanks to the host clipboard., Add Daedalus prompt commands that the dependency does not provide., Select the current line and enter Vim visual-line mode., VimTextArea with multiline prompt behavior and system clipboard sync. (+7 more)
 
 ### Community 2 - "AgentRunner"
-Cohesion: 0.08
-Nodes (19): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+11 more)
+Cohesion: 0.09
+Nodes (16): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+8 more)
 
 ### Community 3 - "DaedalusTuiApp"
-Cohesion: 0.09
-Nodes (10): Changed, ComposeResult, Pressed, DaedalusTuiApp, Key, Path, Add Vim-like navigation without changing TextArea insert behavior., Clear the selected task and unlock a fresh prompt editor. (+2 more)
+Cohesion: 0.08
+Nodes (11): Changed, ComposeResult, Pressed, DaedalusTuiApp, Key, Path, Add Vim-like navigation without changing TextArea insert behavior., Clear the selected task and unlock a fresh prompt editor. (+3 more)
 
 ### Community 4 - "app.py"
-Cohesion: 0.06
+Cohesion: 0.07
 Nodes (28): FakeCoordinator, FakeRunner, settings(), ConfigTests, ProjectDiscoveryTests, KeyboardShortcutsScreen, Textual interface for concurrent local agent tasks., Modal reference for the app and prompt editor keyboard shortcuts. (+20 more)
 
 ### Community 5 - "TokenUsageStore"
@@ -104,8 +104,8 @@ Cohesion: 0.13
 Nodes (9): GitWorktreeTests, GitWorktreeManager, CompletedProcess, Path, Compatibility alias for callers that used the original private helper., Stage the current worktree contents for orchestration checks or commit., Remove graphify output changes from an agent worktree.          Graphify refresh, Commit only the generated graph after a successful primary update. (+1 more)
 
 ### Community 11 - "Key"
-Cohesion: 0.08
-Nodes (31): EventCallback, IntegrationGate, TaskEventCallback, OrchestratorTests, FakeOrchestrator, TaskCoordinatorTests, AgentControl, AgentResult (+23 more)
+Cohesion: 0.11
+Nodes (27): OrchestratorTests, VerificationTests, AgentControl, AgentResult, Provider-specific subprocess execution with normalized agent messages., Cooperative stop signals shared by a task and its active subprocess., GitWorktreeError, RuntimeError (+19 more)
 
 ### Community 12 - "Path"
 Cohesion: 0.29
@@ -136,8 +136,8 @@ Cohesion: 0.40
 Nodes (4): Development Lifecycle, Execution Boundaries (CRITICAL), Integration Boundaries, Parameter Files
 
 ### Community 20 - ".__init__"
-Cohesion: 0.29
-Nodes (8): VerificationTests, discover_commands(), format_process_result(), package_has_test_script(), CompletedProcess, Path, Local verification discovery and execution., run_verification()
+Cohesion: 0.12
+Nodes (14): EventCallback, IntegrationGate, TaskEventCallback, FakeOrchestrator, TaskCoordinatorTests, OrchestrationSettings, Path, IntegrationCoordinator (+6 more)
 
 ### Community 21 - "TokenUsageStore"
 Cohesion: 0.15
@@ -155,9 +155,9 @@ Nodes (5): GraphifyTests, Path, Best-effort graph refresh owned by the local orc
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `DaedalusVimTextArea`, `AgentRunner`, `app.py`, `GitWorktreeManager`, `Key`, `TokenUsageStore`?**
+- **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `DaedalusVimTextArea`, `AgentRunner`, `app.py`, `GitWorktreeManager`, `Key`, `.__init__`, `TokenUsageStore`?**
   _High betweenness centrality (0.203) - this node is a cross-community bridge._
-- **Why does `AgentRunner` connect `AgentRunner` to `Key`, `DaedalusTuiApp`, `app.py`?**
+- **Why does `AgentRunner` connect `AgentRunner` to `DaedalusTuiApp`, `Key`, `app.py`, `.__init__`?**
   _High betweenness centrality (0.159) - this node is a cross-community bridge._
 - **Why does `DaedalusVimTextArea` connect `DaedalusVimTextArea` to `DaedalusTuiApp`, `app.py`, `GitWorktreeManager`?**
   _High betweenness centrality (0.136) - this node is a cross-community bridge._

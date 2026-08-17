@@ -46,3 +46,4 @@ HACKING
 - 2026-08-17: Added prompt `yy` coverage, reliable `e` word-end progression, Escape selection clearing, and a steady underline-style insert cursor.
 - 2026-08-17: Added quieter progress-message text, a brighter final assistant summary, and faded styling for immutable submitted prompts.
 - 2026-08-17: Switched the insert caret to a thin white bar, used an underline while yank is pending, and mapped `$` to line-end in command mode.
+- 2026-08-17: Resolved the final transcript color through Textual before passing it to Rich, avoiding invalid `auto` CSS colors during pointer rendering.

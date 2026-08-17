@@ -436,9 +436,11 @@ class DaedalusTuiApp(App[None]):
             self.query_one("#cancel-button", Button).disabled = True
             self.query_one("#resume-notes-panel", Vertical).styles.display = "none"
             return
-        # Resolve this from the theme rather than the current prompt state:
-        # selecting an existing task has already made the prompt read-only.
-        output.set_final_color(self.get_css_variables().get("text"))
+        # Use Textual's resolved Rich color rather than the raw CSS variable:
+        # the default `$text` value is CSS syntax (`auto 87%`), not a Rich
+        # color string, and selecting an existing task has made the prompt
+        # read-only by this point.
+        output.set_final_color(self.screen.rich_style.color)
         self._set_prompt_text(record.prompt, editable=False)
         for index, message in enumerate(record.messages):
             output.write_message(

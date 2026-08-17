@@ -588,6 +588,21 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             output = app.query_one("#output", Log)
             self.assertEqual(output.line_tones[:2], ("generic", "final"))
 
+    async def test_final_assistant_message_renders_with_resolved_theme_color(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#prompt-input", TextArea).insert("Build the feature")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.messages.extend(["I am inspecting the worktree.", "The feature is complete."])
+            record.status = "completed"
+            record.phase = "Completed"
+            coordinator.emit(record, "completed", "", "status")
+            await pilot.pause()
+
+            output = app.query_one("#output", Log)
+            output._render_line_strip(1, output.rich_style)
+
     async def test_submitted_prompt_uses_faded_read_only_text_style(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:
