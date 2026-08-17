@@ -27,6 +27,8 @@ class PromptTests(unittest.TestCase):
         self.assertIn("read-only context", ask)
         self.assertIn("TASK_MODE: plan", plan)
         self.assertIn("implementation plan", plan)
+        self.assertIn("BEGIN_DAEDALUS_PLAN", plan)
+        self.assertIn("no_more_questions", plan)
         self.assertIn("Do not modify files", ask)
         self.assertIn("Do not modify files", plan)
 

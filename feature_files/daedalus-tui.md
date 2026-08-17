@@ -51,4 +51,4 @@ HACKING
 - 2026-08-17: Kept the insert caret between characters so rendering a middle-of-line prompt does not hide the text to its right.
 - 2026-08-17: Fixed insert caret rendering by splitting the full Textual strip at the cursor position and drawing a visible one-cell vertical bar.
 - 2026-08-17: Used a left-aligned thin block for the insert caret so it sits on the left edge of the character cell at the insertion point.
-- 2026-08-17: Kept Plan tasks in a selectable planning/questioning loop with follow-up controls and an explicit transition into coding.
+- 2026-08-17: Kept Plan tasks selectable through a planning/questioning loop with follow-up controls, structured plan/questions review, and an explicit transition into coding.

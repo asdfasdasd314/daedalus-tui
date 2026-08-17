@@ -16,8 +16,17 @@ def build_task_prompt(
         )
     elif mode == "plan":
         instructions = (
-            "Inspect the repository and produce a clear implementation plan. "
-            "Explicitly list unanswered questions, assumptions, and decisions for the user to review. "
+            "Inspect the repository and produce a clear implementation plan. Return exactly one "
+            "payload between BEGIN_DAEDALUS_PLAN and END_DAEDALUS_PLAN, with no prose outside it. "
+            "The payload must be JSON with this shape: {\"plan\": \"...\", "
+            "\"questions\": [{\"id\": \"q1\", \"question\": \"...\", "
+            "\"required\": true, \"options\": [{\"id\": \"a\", \"label\": \"...\"}, "
+            "{\"id\": \"b\", \"label\": \"...\"}]}], "
+            "\"no_more_questions\": false}. Use an empty questions array and "
+            "no_more_questions=true when no decisions are needed. Set it to false whenever "
+            "a required question remains. The plan field contains only the implementation plan; "
+            "questions belong in questions and every question must have at least two choices. "
+            "Explicitly include assumptions and decisions in the plan field for the user to review. "
             "Do not modify files or create generated artifacts."
         )
     elif mode == "coding":

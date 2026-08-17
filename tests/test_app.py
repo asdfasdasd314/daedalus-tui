@@ -14,6 +14,7 @@ from vimkeys_input import VimMode
 from tui.app import CodingStatisticsScreen, DaedalusTuiApp, KeyboardShortcutsScreen
 from tui.config import ModelOption, TuiSettings
 from tui.projects import DaedalusProject
+from tui.plan import PlanOption, PlanQuestion
 from tui.task_coordinator import TaskRecord
 from tui.vim_text_area import DaedalusVimTextArea
 
@@ -593,6 +594,45 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 coordinator.plan_actions[-1],
                 ("coding", record.task_id, "Use the smallest compatible change."),
             )
+
+    async def test_plan_review_renders_choices_and_keeps_implementation_locked(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Choose a storage layer")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = "Use the selected storage layer."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "Which storage layer?",
+                    (PlanOption("a", "SQLite"), PlanOption("b", "JSON")),
+                ),
+            )
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+
+            self.assertEqual(app.query_one("#plan-display", Static).render().plain, record.plan_text)
+            self.assertEqual(app.query_one("#output", Log).styles.display, "none")
+            answer = app.query_one("#plan-question-0", Select)
+            self.assertTrue(app.query_one("#answer-plan-button", Button).disabled)
+            self.assertTrue(app.query_one("#implement-button", Button).disabled)
+
+            answer.value = "b"
+            await pilot.pause()
+            self.assertFalse(app.query_one("#answer-plan-button", Button).disabled)
+            self.assertTrue(app.query_one("#implement-button", Button).disabled)
+
+            record.plan_questions = ()
+            record.plan_confirmed = True
+            record.plan_answers = {"q1": "b"}
+            record.status = "completed"
+            coordinator.emit(record, "completed", "", "status")
+            await pilot.pause()
+            self.assertFalse(app.query_one("#implement-button", Button).disabled)
 
     async def test_paused_task_exposes_optional_resume_notes(self):
         app, coordinator = self.make_app()

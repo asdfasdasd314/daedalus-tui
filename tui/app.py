@@ -264,6 +264,13 @@ class DaedalusTuiApp(App[None]):
                     yield TextArea("", read_only=True, show_line_numbers=False, id="task-error")
                     # Log supports Textual click-drag selection; RichLog does not.
                     yield TranscriptLog(id="output", auto_scroll=True)
+                    with Vertical(id="plan-review"):
+                        yield Static("", id="plan-display")
+                        with Vertical(id="plan-questions"):
+                            yield Static("", id="plan-questions-empty")
+                        with Horizontal(id="plan-actions"):
+                            yield Button("Submit Answers", id="answer-plan-button", disabled=True)
+                            yield Button("Implement", id="implement-button", disabled=True, variant="primary")
                     with Vertical(id="composer"):
                         yield DaedalusVimTextArea(
                             id="prompt-input",
@@ -364,6 +371,10 @@ class DaedalusTuiApp(App[None]):
             self._resume_task()
         elif event.button.id == "cancel-button":
             self._cancel_task()
+        elif event.button.id == "answer-plan-button":
+            self._answer_plan()
+        elif event.button.id == "implement-button":
+            self._implement_plan()
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.select.id == "project-select":
@@ -381,6 +392,9 @@ class DaedalusTuiApp(App[None]):
             self._selected_task_id = str(event.value)
             self._new_task_mode = False
             self._render_selected_task()
+            return
+        if event.select.id and event.select.id.startswith("plan-question-"):
+            self._update_plan_action_buttons()
             return
         if event.select.id != "provider-select":
             return
@@ -547,6 +561,7 @@ class DaedalusTuiApp(App[None]):
         output.clear()
         if record is None:
             self._set_prompt_text("", editable=True)
+            self.query_one("#output", TranscriptLog).styles.display = "block"
             self.query_one("#task-context", Static).update("Task branch: —    Worktree: —")
             self.query_one("#phase", Static).update("Phase: Idle")
             self._set_error("")
@@ -556,6 +571,7 @@ class DaedalusTuiApp(App[None]):
             self.query_one("#continue-plan-button", Button).disabled = True
             self.query_one("#start-coding-button", Button).disabled = True
             self.query_one("#resume-notes-panel", Vertical).styles.display = "none"
+            self.query_one("#plan-review", Vertical).styles.display = "none"
             return
         # Use Textual's resolved Rich color rather than the raw CSS variable:
         # the default `$text` value is CSS syntax (`auto 87%`), not a Rich
@@ -563,11 +579,17 @@ class DaedalusTuiApp(App[None]):
         # read-only by this point.
         output.set_final_color(self.screen.rich_style.color)
         self._set_prompt_text(record.prompt, editable=False)
-        for index, message in enumerate(record.messages):
-            output.write_message(
-                message,
-                final=record.status == "completed" and index == len(record.messages) - 1,
-            )
+        plan_review = self.query_one("#plan-review", Vertical)
+        plan_review.styles.display = "block" if record.mode == "plan" else "none"
+        output.styles.display = "none" if record.mode == "plan" else "block"
+        if record.mode == "plan":
+            self._render_plan_review(record)
+        else:
+            for index, message in enumerate(record.messages):
+                output.write_message(
+                    message,
+                    final=record.status == "completed" and index == len(record.messages) - 1,
+                )
         worktree = str(record.worktree_path) if record.worktree_path else "—"
         branch = record.branch_name or "—"
         reasoning = record.reasoning or "not applicable"
@@ -598,6 +620,100 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#resume-notes-label", Static).update(
             "Plan follow-up or question" if record.status == "questioning" else "Optional notes for resuming this task"
         )
+
+    def _render_plan_review(self, record: TaskRecord) -> None:
+        plan_display = self.query_one("#plan-display", Static)
+        plan_display.update(record.plan_text or "Waiting for the agent to return a structured plan.")
+        questions = record.plan_questions
+
+        async def rebuild_questions() -> None:
+            await self._rebuild_plan_questions(record)
+
+        self.run_worker(rebuild_questions, exclusive=True, group="plan-questions")
+        answer_button = self.query_one("#answer-plan-button", Button)
+        answer_button.disabled = not questions
+        self._update_plan_action_buttons()
+
+    def _update_plan_action_buttons(self) -> None:
+        record = self.coordinator.get(self._selected_task_id or "")
+        if record is None or record.mode != "plan":
+            return
+        selected = {
+            question.question_id: self.query_one(f"#plan-question-{index}", Select).value
+            for index, question in enumerate(record.plan_questions)
+            if self.query(f"#plan-question-{index}").nodes
+        }
+        all_answered = all(self._has_plan_answer(value) for value in selected.values())
+        self.query_one("#answer-plan-button", Button).disabled = not (
+            bool(record.plan_questions)
+            and record.status in {"completed", "awaiting_answers"}
+            and len(selected) == len(record.plan_questions)
+            and all_answered
+            and not record.plan_confirmed
+        )
+        self.query_one("#implement-button", Button).disabled = not (
+            record.plan_confirmed
+            and all(not question.required or question.question_id in record.plan_answers for question in record.plan_questions)
+        )
+
+    @staticmethod
+    def _has_plan_answer(value) -> bool:
+        return value not in (Select.BLANK, "", getattr(Select, "NULL", object()))
+
+    async def _rebuild_plan_questions(self, record: TaskRecord) -> None:
+        """Replace question controls after Textual has completed child removal."""
+        question_container = self.query_one("#plan-questions", Vertical)
+        await question_container.remove_children()
+        if not record.plan_questions:
+            await question_container.mount(Static("No questions from the agent."))
+            return
+        widgets = [Static("Questions", classes="plan-questions-heading")]
+        for index, question in enumerate(record.plan_questions):
+            widgets.extend(
+                (
+                    Static(question.text, classes="plan-question"),
+                    Select(
+                        [(option.label, option.option_id) for option in question.options],
+                        value=record.plan_answers.get(question.question_id, Select.NULL),
+                        allow_blank=True,
+                        id=f"plan-question-{index}",
+                    ),
+                )
+            )
+        await question_container.mount(*widgets)
+
+    def _answer_plan(self) -> None:
+        record = self.coordinator.get(self._selected_task_id or "")
+        if record is None or record.mode != "plan":
+            return
+        answers: dict[str, str] = {}
+        for index, question in enumerate(record.plan_questions):
+            selection = self.query_one(f"#plan-question-{index}", Select).value
+            if self._has_plan_answer(selection):
+                answers[question.question_id] = str(selection)
+        if len(answers) != len(record.plan_questions):
+            self._set_status("Answer every question first")
+            return
+        answer_plan = getattr(self.coordinator, "answer_plan", None)
+        if answer_plan is None or not answer_plan(record.task_id, answers):
+            self._set_status("Plan answers could not be submitted")
+            return
+        self._set_status("Reviewing answers")
+
+    def _implement_plan(self) -> None:
+        record = self.coordinator.get(self._selected_task_id or "")
+        if record is None or record.mode != "plan":
+            return
+        implement_plan = getattr(self.coordinator, "implement_plan", None)
+        coding_record = implement_plan(record.task_id) if implement_plan is not None else None
+        if coding_record is None:
+            self._set_status("The agent must confirm no more questions")
+            return
+        self._selected_task_id = coding_record.task_id
+        self._new_task_mode = False
+        self._refresh_task_selector()
+        self._render_selected_task()
+        self._set_status("Implementation queued")
 
     def _start_new_task(self) -> None:
         """Clear the selected task and unlock a fresh prompt editor."""
