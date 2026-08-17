@@ -310,8 +310,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_app",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "test_app.py"
     },
     {
@@ -744,10 +744,21 @@
       "norm_label": ".test_output_log_supports_textual_selection()"
     },
     {
-      "label": ".test_vim_navigation_scrolls_output_and_keeps_prompt_typing_safe()",
+      "label": ".test_output_selection_uses_prompt_selection_colors()",
       "file_type": "code",
       "source_file": "tests/test_app.py",
       "source_location": "L506",
+      "_origin": "ast",
+      "id": "tests_test_app_tuiapptests_test_output_selection_uses_prompt_selection_colors",
+      "community": 1,
+      "community_name": "DaedalusVimTextArea",
+      "norm_label": ".test_output_selection_uses_prompt_selection_colors()"
+    },
+    {
+      "label": ".test_vim_navigation_scrolls_output_and_keeps_prompt_typing_safe()",
+      "file_type": "code",
+      "source_file": "tests/test_app.py",
+      "source_location": "L517",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_vim_navigation_scrolls_output_and_keeps_prompt_typing_safe",
       "community": 1,
@@ -758,7 +769,7 @@
       "label": ".test_multiple_tasks_keep_independent_snapshots_and_transcripts()",
       "file_type": "code",
       "source_file": "tests/test_app.py",
-      "source_location": "L521",
+      "source_location": "L532",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_multiple_tasks_keep_independent_snapshots_and_transcripts",
       "community": 1,
@@ -769,7 +780,7 @@
       "label": ".test_background_events_do_not_choose_an_unselected_task()",
       "file_type": "code",
       "source_file": "tests/test_app.py",
-      "source_location": "L553",
+      "source_location": "L564",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_background_events_do_not_choose_an_unselected_task",
       "community": 1,
@@ -816,8 +827,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_git_worktree",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "test_git_worktree.py"
     },
     {
@@ -893,7 +904,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_graphify",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": "test_graphify.py"
     },
@@ -904,7 +915,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "tests_test_graphify_graphifytests",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": "graphifytests"
     },
@@ -915,7 +926,7 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "tests_test_graphify_graphifytests_test_missing_graphify_is_non_blocking",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": ".test_missing_graphify_is_non_blocking()"
     },
@@ -926,7 +937,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_test_graphify_graphifytests_test_runs_update_from_primary_repository",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": ".test_runs_update_from_primary_repository()"
     },
@@ -937,7 +948,7 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "tests_test_graphify_graphifytests_test_failed_update_returns_diagnostics_without_raising",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": ".test_failed_update_returns_diagnostics_without_raising()"
     },
@@ -1036,8 +1047,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_orchestrator",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "test_orchestrator.py"
     },
     {
@@ -1047,8 +1058,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "tests_test_orchestrator_orchestratortests",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "orchestratortests"
     },
     {
@@ -1058,8 +1069,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "tests_test_orchestrator_orchestratortests_test_graphify_failure_is_reported_without_failing_promotion",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".test_graphify_failure_is_reported_without_failing_promotion()"
     },
     {
@@ -1069,8 +1080,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "tests_test_orchestrator_orchestratortests_test_successful_graphify_changes_are_committed_after_promotion",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".test_successful_graphify_changes_are_committed_after_promotion()"
     },
     {
@@ -1080,8 +1091,8 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "tests_test_orchestrator_orchestratortests_test_merge_failure_deploys_resolver_and_retries_verification",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".test_merge_failure_deploys_resolver_and_retries_verification()"
     },
     {
@@ -1091,8 +1102,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "tests_test_orchestrator_orchestratortests_test_failed_resolver_preserves_worktree",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".test_failed_resolver_preserves_worktree()"
     },
     {
@@ -1102,8 +1113,8 @@
       "source_location": "L115",
       "_origin": "ast",
       "id": "tests_test_orchestrator_orchestratortests_test_failed_task_verification_runs_repair_agent",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".test_failed_task_verification_runs_repair_agent()"
     },
     {
@@ -1113,8 +1124,8 @@
       "source_location": "L149",
       "_origin": "ast",
       "id": "tests_test_orchestrator_orchestratortests_test_cancelled_agent_removes_unintegrated_worktree",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".test_cancelled_agent_removes_unintegrated_worktree()"
     },
     {
@@ -1498,8 +1509,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "tui_agent_runner_agentcontrol",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 2,
+      "community_name": "AgentRunner",
       "norm_label": "agentcontrol"
     },
     {
@@ -1509,8 +1520,8 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "tui_agent_runner_agentcontrol_request_pause",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 2,
+      "community_name": "AgentRunner",
       "norm_label": ".request_pause()"
     },
     {
@@ -1520,8 +1531,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "tui_agent_runner_agentcontrol_request_cancel",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 2,
+      "community_name": "AgentRunner",
       "norm_label": ".request_cancel()"
     },
     {
@@ -1531,8 +1542,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "tui_agent_runner_agentcontrol_clear_pause",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 2,
+      "community_name": "AgentRunner",
       "norm_label": ".clear_pause()"
     },
     {
@@ -1542,8 +1553,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "tui_agent_runner_agentcontrol_stop_reason",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 2,
+      "community_name": "AgentRunner",
       "norm_label": ".stop_reason()"
     },
     {
@@ -1553,8 +1564,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "tui_agent_runner_agentresult",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "agentresult"
     },
     {
@@ -1564,8 +1575,8 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "tui_agent_runner_agentresult_succeeded",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": ".succeeded()"
     },
     {
@@ -1762,8 +1773,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "tui_agent_runner_rationale_47",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 2,
+      "community_name": "AgentRunner",
       "norm_label": "cooperative stop signals shared by a task and its active subprocess."
     },
     {
@@ -2268,8 +2279,8 @@
       "source_location": "L559",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_copy_to_clipboard",
-      "community": 4,
-      "community_name": "app.py",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".copy_to_clipboard()"
     },
     {
@@ -2400,8 +2411,8 @@
       "source_location": "L560",
       "_origin": "ast",
       "id": "tui_app_rationale_560",
-      "community": 4,
-      "community_name": "app.py",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": "use textual's osc 52 path and a native clipboard fallback."
     },
     {
@@ -2477,8 +2488,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tui_config_modeloption",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "modeloption"
     },
     {
@@ -2488,8 +2499,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "tui_config_tuisettings",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "tuisettings"
     },
     {
@@ -2620,8 +2631,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_git_worktree",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "git_worktree.py"
     },
     {
@@ -2631,8 +2642,8 @@
       "source_location": "L10",
       "_origin": "ast",
       "id": "tui_git_worktree_gitworktreeerror",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "gitworktreeerror"
     },
     {
@@ -2642,8 +2653,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tui_git_worktree_py_runtimeerror",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "runtimeerror"
     },
     {
@@ -2653,8 +2664,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "tui_git_worktree_worktreecontext",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "worktreecontext"
     },
     {
@@ -2884,8 +2895,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_git_worktree_rationale_1",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "local git worktree lifecycle used by the standalone orchestrator."
     },
     {
@@ -2939,7 +2950,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_graphify",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": "graphify.py"
     },
@@ -2950,8 +2961,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "tui_graphify_graphifyresult",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "graphifyresult"
     },
     {
@@ -2961,7 +2972,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tui_graphify_update_repository",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": "update_repository()"
     },
@@ -2972,7 +2983,7 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tui_graphify_py_path",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": "path"
     },
@@ -2983,7 +2994,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_graphify_rationale_1",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": "best-effort graph refresh owned by the local orchestration layer."
     },
@@ -2994,7 +3005,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tui_graphify_rationale_19",
-      "community": 8,
+      "community": 0,
       "community_name": "update_repository",
       "norm_label": "refresh the primary repository graph without affecting task success."
     },
@@ -3852,8 +3863,8 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "tui_verification_verificationresult",
-      "community": 8,
-      "community_name": "update_repository",
+      "community": 11,
+      "community_name": "Key",
       "norm_label": "verificationresult"
     },
     {
@@ -3940,8 +3951,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_vim_text_area",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "vim_text_area.py"
     },
     {
@@ -4083,8 +4094,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_vim_text_area_rationale_1",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "the daedalus prompt's incremental vim editing adapter."
     },
     {
@@ -6415,7 +6426,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L567",
+      "source_location": "L578",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_background_events_do_not_choose_an_unselected_task",
@@ -6439,7 +6450,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L547",
+      "source_location": "L558",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_multiple_tasks_keep_independent_snapshots_and_transcripts",
@@ -6463,7 +6474,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L541",
+      "source_location": "L552",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_multiple_tasks_keep_independent_snapshots_and_transcripts",
@@ -6487,7 +6498,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L568",
+      "source_location": "L579",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_background_events_do_not_choose_an_unselected_task",
@@ -6571,7 +6582,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L544",
+      "source_location": "L555",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_multiple_tasks_keep_independent_snapshots_and_transcripts",
@@ -6667,7 +6678,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L511",
+      "source_location": "L522",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_vim_navigation_scrolls_output_and_keeps_prompt_typing_safe",
@@ -6784,7 +6795,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L553",
+      "source_location": "L564",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests",
@@ -6894,7 +6905,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L521",
+      "source_location": "L532",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests",
@@ -6921,6 +6932,17 @@
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests",
       "target": "tests_test_app_tuiapptests_test_output_log_supports_textual_selection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_app.py",
+      "source_location": "L506",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_test_app_tuiapptests",
+      "target": "tests_test_app_tuiapptests_test_output_selection_uses_prompt_selection_colors",
       "confidence_score": 1.0
     },
     {
@@ -7026,7 +7048,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L506",
+      "source_location": "L517",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests",
@@ -7138,7 +7160,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L554",
+      "source_location": "L565",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_background_events_do_not_choose_an_unselected_task",
@@ -7234,7 +7256,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L522",
+      "source_location": "L533",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_multiple_tasks_keep_independent_snapshots_and_transcripts",
@@ -7262,6 +7284,18 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_output_log_supports_textual_selection",
+      "target": "tests_test_app_tuiapptests_make_app",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_app.py",
+      "source_location": "L507",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_test_app_tuiapptests_test_output_selection_uses_prompt_selection_colors",
       "target": "tests_test_app_tuiapptests_make_app",
       "confidence_score": 1.0
     },
@@ -7366,7 +7400,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_app.py",
-      "source_location": "L507",
+      "source_location": "L518",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_app_tuiapptests_test_vim_navigation_scrolls_output_and_keeps_prompt_typing_safe",
@@ -17722,5 +17756,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "b21d4f29e22fccbb92608acdd4a94f22cf4f5b9f"
+  "built_at_commit": "af6afcd40b4c9623e09475fb6df9425cc16c7331"
 }
