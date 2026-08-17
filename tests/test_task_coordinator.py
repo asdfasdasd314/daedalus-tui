@@ -179,7 +179,10 @@ class TaskCoordinatorTests(unittest.TestCase):
                 {key: succeeded_task[key] for key in ("provider", "model", "reasoning", "mode")},
                 {"provider": "codex", "model": "luna", "reasoning": "medium", "mode": "coding"},
             )
-            self.assertNotIn("tokens", json.dumps(entries))
+            self.assertEqual(succeeded_task["tokens"], 42)
+            self.assertEqual(succeeded_task["project"], str(Path(directory).resolve()))
+            self.assertEqual(failed_task["tokens"], 0)
+            self.assertEqual(failed_task["project"], str(Path(directory).resolve()))
 
     def test_persists_null_model_and_reasoning_for_cursor_task(self):
         class CursorOrchestrator:
@@ -218,6 +221,8 @@ class TaskCoordinatorTests(unittest.TestCase):
                     "state": "completed",
                     "outputs": [],
                     "error": None,
+                    "tokens": 17,
+                    "project": str(Path(directory).resolve()),
                 },
             )
 

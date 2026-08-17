@@ -161,6 +161,7 @@ class LocalOrchestrator:
                     context.path,
                     "Task cancelled.",
                     cancelled=True,
+                    tokens_consumed=self._tokens_consumed,
                 )
             self.emit("paused", "Task paused; its worktree and current progress were preserved.")
             return OrchestrationResult(
@@ -170,6 +171,7 @@ class LocalOrchestrator:
                 context.path if context else None,
                 context=context,
                 paused=True,
+                tokens_consumed=self._tokens_consumed,
             )
         except (GitWorktreeError, RuntimeError, ValueError) as error:
             message = str(error)
@@ -181,6 +183,7 @@ class LocalOrchestrator:
                 context.path if context else None,
                 message,
                 context=context,
+                tokens_consumed=self._tokens_consumed,
             )
 
     def run_agent(

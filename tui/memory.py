@@ -74,6 +74,8 @@ class TaskMemoryStore:
         error: str | None = None,
         previous_task_id: str | None = None,
         submitted_at: float | None = None,
+        tokens: int | None = 0,
+        project: Path | None = None,
     ) -> None:
         """Upsert a task snapshot keyed by the task worktree's directory name."""
         task = {
@@ -90,6 +92,8 @@ class TaskMemoryStore:
             "state": state,
             "outputs": list(outputs),
             "error": error,
+            "tokens": max(0, int(tokens)) if tokens is not None else None,
+            "project": str(project.expanduser().resolve()) if project is not None else None,
         }
         with self._lock:
             entries = self._read_entries()
@@ -150,7 +154,3 @@ class TaskMemoryStore:
                     temporary_path.unlink()
                 except FileNotFoundError:
                     pass
-
-
-# Preserve the old import for callers that used the pre-task-history store.
-TokenUsageStore = TaskMemoryStore

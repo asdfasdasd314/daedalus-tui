@@ -47,6 +47,7 @@ class TaskRecord:
     worktree_path: Path | None = None
     messages: list[str] = field(default_factory=list)
     error: str | None = None
+    tokens_consumed: int = 0
     submitted_at: float = field(default_factory=time.time)
     started_at: float | None = None
     finished_at: float | None = None
@@ -253,6 +254,7 @@ class TaskCoordinator:
         record.branch_name = result.branch_name or record.branch_name
         record.worktree_path = result.worktree or record.worktree_path
         record.context = result.context or record.context
+        record.tokens_consumed += result.tokens_consumed
         if result.paused:
             record.status = "paused"
             record.phase = "Paused"
@@ -326,6 +328,8 @@ class TaskCoordinator:
                 record.error,
                 previous_task_id=previous_task_id,
                 submitted_at=record.submitted_at,
+                tokens=record.tokens_consumed,
+                project=self.repository,
             )
         except (OSError, ValueError):
             # Persistent task history must never change orchestration behavior.

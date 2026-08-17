@@ -11,9 +11,9 @@ daemon, a remote service, or a database server.
   `.daedalus-memory.json` file. The file is intentionally ignored by Git.
 - **Task history**: A single `tasks` entry maps each task worktree directory
   name to an ISO-8601 UTC submission `timestamp`, prompt, provider, model,
-  reasoning, mode, current state, assistant outputs, and error. The entry is
-  upserted as the task progresses, including for failed, paused, and cancelled
-  tasks.
+  reasoning, mode, current state, assistant outputs, non-negative token usage,
+  resolved project path, and error. The entry is upserted as the task
+  progresses, including for failed, paused, and cancelled tasks.
 - **Upsert behavior**: A missing memory file starts as an empty list; each
   task creates or updates one worktree-keyed entry while preserving other task
   entries.
@@ -30,13 +30,14 @@ daemon, a remote service, or a database server.
 - **Corrupt input**: Invalid JSON or a non-list top-level value raises a
   validation error and leaves the existing file unchanged. Memory errors are
   isolated from otherwise successful task completion.
-- **Legacy compatibility**: Older standalone token-usage entries are removed
-  the next time the memory file is saved.
+- **Legacy cleanup**: Older standalone token-usage entries are removed the next
+  time the memory file is saved; new token usage is stored directly on its
+  central task record.
 
 ## Relevant Files
-- `tui/memory.py`: `TaskMemoryStore`, the default memory filename, JSON schema,
-  task-history and last-project entries, validation, locking, and atomic file
-  replacement.
+- `tui/memory.py`: `TaskMemoryStore`, the default memory filename, central JSON
+  schema, task-history and last-project entries, validation, locking, and
+  atomic file replacement.
 - `tui/app.py`: Restores the remembered project at startup and updates it on
   project selection.
 - `tui/task_coordinator.py`: Records task snapshots throughout orchestration.
@@ -62,3 +63,4 @@ HACKING
 - 2026-08-17: Centralized all prompt telemetry in the launch-root memory file and recorded the resolved project destination for each completed prompt.
 - 2026-08-17: Added worktree-keyed task history snapshots so prompt metadata, lifecycle state, outputs, and failure diagnostics survive task completion or failure.
 - 2026-08-17: Replaced standalone token-usage entries with timestamped task records while preserving the last-opened-project marker.
+- 2026-08-17: Folded the legacy token count and resolved project path into each central task record and removed the standalone store alias.

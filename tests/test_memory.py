@@ -11,6 +11,7 @@ class TaskMemoryStoreTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".daedalus-memory.json"
             store = TaskMemoryStore(path)
+            project = Path(directory) / "project"
 
             store.record_task(
                 "task-one",
@@ -22,6 +23,8 @@ class TaskMemoryStoreTests(unittest.TestCase):
                 "completed",
                 ["Done."],
                 submitted_at=0,
+                tokens=165,
+                project=project,
             )
             store.record_task(
                 "task-two",
@@ -34,6 +37,8 @@ class TaskMemoryStoreTests(unittest.TestCase):
                 ["I found an issue."],
                 "The check failed.",
                 submitted_at=1,
+                tokens=321,
+                project=project,
             )
 
             self.assertEqual(
@@ -51,6 +56,8 @@ class TaskMemoryStoreTests(unittest.TestCase):
                                 "state": "completed",
                                 "outputs": ["Done."],
                                 "error": None,
+                                "tokens": 165,
+                                "project": str(project.resolve()),
                             },
                             "task-two": {
                                 "timestamp": "1970-01-01T00:00:01Z",
@@ -62,6 +69,8 @@ class TaskMemoryStoreTests(unittest.TestCase):
                                 "state": "failed",
                                 "outputs": ["I found an issue."],
                                 "error": "The check failed.",
+                                "tokens": 321,
+                                "project": str(project.resolve()),
                             },
                         }
                     },
@@ -102,6 +111,8 @@ class TaskMemoryStoreTests(unittest.TestCase):
                                 "state": "completed",
                                 "outputs": [],
                                 "error": None,
+                                "tokens": 0,
+                                "project": None,
                             }
                         }
                     },
@@ -153,6 +164,8 @@ class TaskMemoryStoreTests(unittest.TestCase):
                                 "state": "failed",
                                 "outputs": ["Inspecting the worktree.", "The check failed."],
                                 "error": "Verification failed.",
+                                "tokens": 0,
+                                "project": None,
                             }
                         }
                     }
@@ -207,6 +220,8 @@ class TaskMemoryStoreTests(unittest.TestCase):
                                 "state": "completed",
                                 "outputs": [],
                                 "error": None,
+                                "tokens": 0,
+                                "project": None,
                             }
                         }
                     },

@@ -47,8 +47,9 @@ attempts.
 The launch root stores task history in `.daedalus-memory.json`. Its `tasks`
 entry maps each task worktree directory name to the submission timestamp,
 prompt, provider/model/reasoning/mode selection, current state, assistant
-outputs, and any error so failed, paused, and cancelled work can be reopened
-for analysis. The memory file also keeps a single `last_opened_project` entry.
+outputs, token usage, resolved project path, and any error so failed, paused,
+and cancelled work can be reopened for analysis. The memory file also keeps a
+single `last_opened_project` entry.
 The first launch initializes it to the default project, every sidebar focus
 change updates it, and the next startup restores it when that project still
 exists. The file is intentionally ignored by Git.
