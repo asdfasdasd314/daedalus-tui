@@ -12,6 +12,7 @@ from .orchestrator import OrchestrationSettings
 PARAMETER_DIRECTORY = "parameter_files"
 TUI_PARAMETER_FILE = "daedalus-tui.toml"
 ORCHESTRATION_PARAMETER_FILE = "daedalus-tui-orchestration.toml"
+CODING_STATISTICS_PARAMETER_FILE = "daedalus-tui-coding-statistics.toml"
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,12 @@ class TuiSettings:
         ModelOption("Ask", "ask"),
         ModelOption("Plan", "plan"),
     )
+
+
+@dataclass(frozen=True)
+class CodingStatisticsSettings:
+    recent_window_hours: int = 1
+    forecast_days: int = 7
 
 
 def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
@@ -91,6 +98,19 @@ def load_orchestration_settings(parameter_path: Path | None = None) -> Orchestra
         graphify_update_enabled=bool(values.get("graphify_update_enabled", True)),
         graphify_executable=str(values.get("graphify_executable", "graphify")),
     )
+
+
+def load_coding_statistics_settings(parameter_path: Path | None = None) -> CodingStatisticsSettings:
+    path = parameter_path or (
+        Path(__file__).resolve().parents[1] / PARAMETER_DIRECTORY / CODING_STATISTICS_PARAMETER_FILE
+    )
+    with path.open("rb") as source:
+        values = tomllib.load(source)
+    recent_window_hours = int(values.get("recent_window_hours", 1))
+    forecast_days = int(values.get("forecast_days", 7))
+    if recent_window_hours < 1 or forecast_days < 1:
+        raise ValueError(f"{path} recent_window_hours and forecast_days must be positive.")
+    return CodingStatisticsSettings(recent_window_hours, forecast_days)
 
 
 def _options(items, kind: str) -> list[ModelOption]:

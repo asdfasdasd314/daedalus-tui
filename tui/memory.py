@@ -61,6 +61,20 @@ class TaskMemoryStore:
         """Backward-compatible alias for :meth:`set_last_opened_project`."""
         self.set_last_opened_project(project_path)
 
+    def get_tasks(self) -> dict[str, dict[str, object]]:
+        """Return persisted task snapshots keyed by their stable task ID."""
+        with self._lock:
+            entries = self._read_entries()
+        tasks: dict[str, dict[str, object]] = {}
+        for entry in entries:
+            value = entry.get(TASKS_KEY)
+            if not isinstance(value, dict):
+                continue
+            for task_id, task in value.items():
+                if isinstance(task_id, str) and isinstance(task, dict):
+                    tasks[task_id] = dict(task)
+        return tasks
+
     def record_task(
         self,
         task_id: str,

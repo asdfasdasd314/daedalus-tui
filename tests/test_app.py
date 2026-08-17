@@ -7,11 +7,11 @@ from unittest.mock import Mock, patch
 from textual import events
 from textual.geometry import Offset
 from textual.selection import Selection as ScreenSelection
-from textual.widgets import Button, Log, Select, Static, TextArea
+from textual.widgets import Button, DataTable, Log, Select, Static, TextArea
 from textual.widgets.text_area import Selection
 from vimkeys_input import VimMode
 
-from tui.app import DaedalusTuiApp, KeyboardShortcutsScreen
+from tui.app import CodingStatisticsScreen, DaedalusTuiApp, KeyboardShortcutsScreen
 from tui.config import ModelOption, TuiSettings
 from tui.projects import DaedalusProject
 from tui.task_coordinator import TaskRecord
@@ -269,11 +269,35 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Ctrl+Enter", shortcut_text)
             self.assertIn("Ctrl+K", shortcut_text)
             self.assertIn("Ctrl+P", shortcut_text)
+            self.assertIn("Ctrl+T", shortcut_text)
             self.assertIn("gg / G", shortcut_text)
 
             await pilot.press("escape")
             await pilot.pause()
             self.assertNotIsInstance(app.screen, KeyboardShortcutsScreen)
+
+    async def test_ctrl_t_opens_coding_statistics_with_usage_columns_and_metrics(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("Track my token usage")
+            app.action_submit_prompt()
+            coordinator.records[0].tokens_consumed = 165
+            await pilot.press("ctrl+t")
+            await pilot.pause()
+
+            self.assertIsInstance(app.screen, CodingStatisticsScreen)
+            self.assertEqual(app.screen.query_one("#usage-table", DataTable).row_count, 1)
+            summary_text = "\n".join(str(widget.render()) for widget in app.screen.query(".usage-metric"))
+            statistics_text = "\n".join(
+                str(widget.render()) for widget in app.screen.query(".statistics-value")
+            )
+            self.assertIn("Cumulative tokens", summary_text)
+            self.assertIn("Average tokens per prompt", statistics_text)
+
+            await pilot.press("escape")
+            await pilot.pause()
+            self.assertNotIsInstance(app.screen, CodingStatisticsScreen)
 
     @patch("tui.app.discover_projects")
     async def test_sidebar_switches_active_project_and_keeps_task_coordinators_separate(self, discover):

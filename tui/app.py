@@ -9,14 +9,21 @@ from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Footer, Header, Log, Select, Static, TextArea
+from textual.widgets import Button, DataTable, Footer, Header, Log, Select, Static, TextArea
 from .agent_runner import AgentRunner
 from .clipboard import copy_to_system_clipboard, paste_from_system_clipboard
-from .config import TuiSettings, load_orchestration_settings, load_tui_settings
+from .config import (
+    CodingStatisticsSettings,
+    TuiSettings,
+    load_coding_statistics_settings,
+    load_orchestration_settings,
+    load_tui_settings,
+)
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .projects import DaedalusProject, discover_projects
 from .task_coordinator import TaskCoordinator, TaskRecord
 from .transcript import TranscriptLog
+from .token_usage import calculate_token_usage, merge_usage_entries, task_usage_entry, usage_entries_from_memory
 from .vim_text_area import DaedalusVimTextArea
 
 
@@ -29,6 +36,7 @@ GLOBAL_SHORTCUTS = (
     ("Ctrl+X", "Cancel task", "cancel_task"),
     ("Ctrl+Q", "Quit", "quit"),
     ("Ctrl+K", "Show keyboard shortcuts", "show_shortcuts"),
+    ("Ctrl+T", "Show coding statistics", "show_statistics"),
 )
 
 SHORTCUT_SECTIONS = (
@@ -85,6 +93,86 @@ class KeyboardShortcutsScreen(ModalScreen[None]):
         self.dismiss(None)
 
 
+class CodingStatisticsScreen(ModalScreen[None]):
+    """Show token usage history and derived coding statistics."""
+
+    BINDINGS = [
+        ("escape", "close_statistics", "Close"),
+        ("ctrl+t", "close_statistics", "Close"),
+    ]
+
+    def __init__(
+        self,
+        entries,
+        settings: CodingStatisticsSettings | None = None,
+    ) -> None:
+        super().__init__()
+        self.settings = settings or CodingStatisticsSettings()
+        self.stats = calculate_token_usage(
+            entries,
+            recent_window_hours=self.settings.recent_window_hours,
+            forecast_days=self.settings.forecast_days,
+        )
+
+    def compose(self) -> ComposeResult:
+        stats = self.stats
+        with Vertical(id="coding-statistics-dialog"):
+            yield Static("Coding statistics", id="coding-statistics-title")
+            yield Static("Token usage from recorded local tasks", id="coding-statistics-subtitle")
+            with Horizontal(id="coding-statistics-summary"):
+                yield Static(f"Cumulative tokens\n{_format_tokens(stats.cumulative_tokens)}", classes="usage-metric")
+                yield Static(f"Today's tokens\n{_format_tokens(stats.daily_tokens)}", classes="usage-metric")
+            with Horizontal(id="coding-statistics-body"):
+                with Vertical(id="usage-history-panel"):
+                    yield Static("Task usage", classes="statistics-heading")
+                    yield DataTable(id="usage-table", cursor_type="row")
+                with Vertical(id="usage-breakdown-panel"):
+                    yield Static("Statistics", classes="statistics-heading")
+                    yield Static(
+                        f"Average tokens per prompt\n{stats.average_tokens_per_prompt:,.0f}",
+                        classes="statistics-value",
+                    )
+                    yield Static(
+                        f"Last hour token usage\n{_format_tokens(stats.last_hour_tokens)}",
+                        classes="statistics-value",
+                    )
+                    yield Static(
+                        f"{self.settings.forecast_days}-day expected token usage\n"
+                        f"{_format_tokens(stats.seven_day_expected_tokens)}",
+                        classes="statistics-value",
+                    )
+                    yield Static(self._provider_split_text(), id="provider-split", classes="statistics-value")
+            yield Static("Press Esc or Ctrl+T to close", id="coding-statistics-footer")
+
+    def on_mount(self) -> None:
+        table = self.query_one("#usage-table", DataTable)
+        table.add_columns("Timestamp", "Provider", "Tokens")
+        if not self.stats.entries:
+            table.add_row("—", "No recorded tasks", "0")
+            return
+        for entry in self.stats.entries:
+            timestamp = entry.timestamp.astimezone().strftime("%Y-%m-%d %H:%M")
+            table.add_row(timestamp, entry.provider, _format_tokens(entry.tokens))
+
+    def action_close_statistics(self) -> None:
+        self.dismiss(None)
+
+    def _provider_split_text(self) -> str:
+        lines = ["Provider split"]
+        if not self.stats.provider_split():
+            lines.append("No token usage recorded")
+        else:
+            lines.extend(
+                f"{provider}: {percentage:.1f}% ({_format_tokens(tokens)})"
+                for provider, tokens, percentage in self.stats.provider_split()
+            )
+        return "\n".join(lines)
+
+
+def _format_tokens(tokens: int) -> str:
+    return f"{tokens:,}"
+
+
 class DaedalusTuiApp(App[None]):
     TITLE = "Daedalus TUI"
     CSS_PATH = "app.tcss"
@@ -99,11 +187,13 @@ class DaedalusTuiApp(App[None]):
         directory: Path | None = None,
         settings: TuiSettings | None = None,
         coordinator: TaskCoordinator | None = None,
+        statistics_settings: CodingStatisticsSettings | None = None,
     ) -> None:
         super().__init__()
         self.launch_root = (directory or Path.cwd()).resolve()
         self.memory = TaskMemoryStore(self.launch_root / DEFAULT_MEMORY_FILE)
         self.settings = settings or load_tui_settings()
+        self.statistics_settings = statistics_settings or load_coding_statistics_settings()
         self.orchestration_settings = load_orchestration_settings()
         self.runner = runner or AgentRunner()
         discovered = list(discover_projects(self.launch_root))
@@ -248,6 +338,9 @@ class DaedalusTuiApp(App[None]):
     def action_show_shortcuts(self) -> None:
         self.push_screen(KeyboardShortcutsScreen())
 
+    def action_show_statistics(self) -> None:
+        self.push_screen(CodingStatisticsScreen(self._usage_entries(), self.statistics_settings))
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "send-button":
             self._submit_prompt()
@@ -354,6 +447,18 @@ class DaedalusTuiApp(App[None]):
             coordinator.set_event_callback(self._on_task_event)
         self._coordinators[project_path] = coordinator
         return coordinator
+
+    def _usage_entries(self):
+        try:
+            persisted = usage_entries_from_memory(self.memory)
+        except (OSError, ValueError):
+            persisted = ()
+        live = tuple(
+            task_usage_entry(record)
+            for coordinator in self._coordinators.values()
+            for record in coordinator.tasks()
+        )
+        return merge_usage_entries(persisted, live)
 
     def _remembered_project(self) -> Path | None:
         try:
