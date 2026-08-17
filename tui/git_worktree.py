@@ -38,9 +38,13 @@ class GitWorktreeManager:
     def commit_changes(self, directory: Path, message: str) -> bool:
         if not self.git_output(["status", "--porcelain"], directory):
             return False
-        self.run_git(["add", "-A"], directory)
+        self.stage_changes(directory)
         self.run_git(["commit", "-m", message], directory)
         return True
+
+    def stage_changes(self, directory: Path) -> None:
+        """Stage the current worktree contents for orchestration checks or commit."""
+        self.run_git(["add", "-A"], directory)
 
     def discard_graphify_changes(self, directory: Path) -> None:
         """Remove graphify output changes from an agent worktree.

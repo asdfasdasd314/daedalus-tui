@@ -303,6 +303,7 @@ class LocalOrchestrator:
                 control,
             )
             if result.succeeded:
+                manager.stage_changes(context.path)
                 if manager.has_unmerged_paths(context.path):
                     failure = "Resolver left unmerged Git paths in the task worktree."
                     continue

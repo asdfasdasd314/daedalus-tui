@@ -32,5 +32,6 @@ HACKING
 - 2026-08-14: Added cooperative subprocess stopping with preserved paused worktrees and force-cleaned cancelled task branches.
 - 2026-08-14: Passed accumulated resume notes into continued task runs without changing the independent worktree lifecycle.
 - 2026-08-14: Kept orchestration transcripts available for Vim selection yanks without changing task execution or integration behavior.
+- 2026-08-17: Staged resolver worktree changes before checking for unmerged paths so file-only conflict resolutions are recognized by the orchestration layer.
 - 2026-08-14: Moved graph refreshes into a best-effort post-promotion hook and discarded accidental task-worktree graph output before orchestration commits.
 - 2026-08-14: Connected orchestration to recursively discovered project roots while preserving independent task state when the sidebar changes projects.

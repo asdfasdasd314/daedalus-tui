@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from tui.agent_runner import AgentResult
 from tui.git_worktree import GitWorktreeError, WorktreeContext
@@ -79,6 +79,10 @@ class OrchestratorTests(unittest.TestCase):
         self.assertTrue(any(phase == "resolving" for phase, _, _ in events))
         self.assertGreaterEqual(runner.run.call_count, 2)
         integrate.assert_called_once()
+        manager.stage_changes.assert_called_once_with(context.path)
+        stage_call = call.stage_changes(context.path)
+        unmerged_call = call.has_unmerged_paths(context.path)
+        self.assertLess(manager.method_calls.index(stage_call), manager.method_calls.index(unmerged_call))
         manager.promote.assert_called_once()
         manager.remove_successful.assert_called_once()
 

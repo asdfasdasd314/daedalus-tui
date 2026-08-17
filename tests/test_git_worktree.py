@@ -66,6 +66,15 @@ class GitWorktreeTests(unittest.TestCase):
                 ],
             )
 
+    def test_stage_changes_stages_the_entire_worktree(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = GitWorktreeManager(Path(directory) / "repo")
+            worktree = Path(directory) / "task"
+            with patch.object(manager, "run_git") as run_git:
+                manager.stage_changes(worktree)
+
+            run_git.assert_called_once_with(["add", "-A"], worktree)
+
 
 if __name__ == "__main__":
     unittest.main()
