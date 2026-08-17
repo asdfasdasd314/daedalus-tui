@@ -1,16 +1,16 @@
 # Graph Report - daedalus-tui  (2026-08-16)
 
 ## Corpus Check
-- 39 files · ~14,305 words
+- 39 files · ~14,392 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 413 nodes · 1027 edges · 21 communities (19 shown, 2 thin omitted)
-- Extraction: 85% EXTRACTED · 15% INFERRED · 0% AMBIGUOUS · INFERRED: 149 edges (avg confidence: 0.53)
+- 414 nodes · 1031 edges · 21 communities (19 shown, 2 thin omitted)
+- Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 149 edges (avg confidence: 0.53)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e7cf071d`
+- Built from commit: `a321aec8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -66,8 +66,8 @@
 ## Communities (21 total, 2 thin omitted)
 
 ### Community 0 - "WorktreeContext"
-Cohesion: 0.15
-Nodes (11): GraphifyTests, PromptTests, Path, Best-effort graph refresh owned by the local orchestration layer., Refresh the primary repository graph without affecting task success., update_repository(), Single-run local agent orchestration without daemon or database dependencies., build_repair_prompt() (+3 more)
+Cohesion: 0.33
+Nodes (5): PromptTests, build_repair_prompt(), build_resolver_prompt(), build_task_prompt(), Prompt wrappers used by task and resolver agents.
 
 ### Community 1 - "DaedalusVimTextArea"
 Cohesion: 0.07
@@ -75,15 +75,15 @@ Nodes (15): FakeCoordinator, TuiAppTests, DaedalusVimTextArea, Key, VimTextArea 
 
 ### Community 2 - "AgentRunner"
 Cohesion: 0.09
-Nodes (17): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+9 more)
+Nodes (16): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+8 more)
 
 ### Community 3 - "DaedalusTuiApp"
 Cohesion: 0.09
 Nodes (11): Changed, ComposeResult, Pressed, DaedalusTuiApp, Key, Path, Add Vim-like navigation without changing TextArea insert behavior., Clear the selected task and unlock a fresh prompt editor. (+3 more)
 
 ### Community 4 - "app.py"
-Cohesion: 0.10
-Nodes (25): FakeRunner, settings(), ConfigTests, ProjectDiscoveryTests, KeyboardShortcutsScreen, Textual interface for concurrent local agent tasks., Modal reference for the app and prompt editor keyboard shortcuts., copy_to_system_clipboard() (+17 more)
+Cohesion: 0.09
+Nodes (26): FakeRunner, settings(), ConfigTests, ProjectDiscoveryTests, KeyboardShortcutsScreen, Textual interface for concurrent local agent tasks., Modal reference for the app and prompt editor keyboard shortcuts., copy_to_system_clipboard() (+18 more)
 
 ### Community 5 - "TokenUsageStore"
 Cohesion: 0.29
@@ -98,12 +98,12 @@ Cohesion: 0.29
 Nodes (6): Daedalus TUI Local Token Usage Memory, Dev Mode, Key Points, Relevant Files, State Log, Summary
 
 ### Community 8 - "update_repository"
-Cohesion: 0.12
-Nodes (17): EventCallback, IntegrationGate, VerificationTests, AgentControl, Cooperative stop signals shared by a task and its active subprocess., AgentStopped, LocalOrchestrator, Path (+9 more)
+Cohesion: 0.11
+Nodes (27): EventCallback, IntegrationGate, OrchestratorTests, VerificationTests, AgentControl, AgentResult, Cooperative stop signals shared by a task and its active subprocess., GitWorktreeError (+19 more)
 
 ### Community 11 - "Key"
-Cohesion: 0.11
-Nodes (20): TaskEventCallback, OrchestratorTests, FakeOrchestrator, TaskCoordinatorTests, AgentResult, GitWorktreeError, RuntimeError, Local Git worktree lifecycle used by the standalone orchestrator. (+12 more)
+Cohesion: 0.09
+Nodes (16): TaskEventCallback, TokenUsageStoreTests, FakeOrchestrator, TaskCoordinatorTests, Path, Small local JSON stores for persistent task telemetry., Append completed-task token usage to a local JSON list., TokenUsageStore (+8 more)
 
 ### Community 12 - "Path"
 Cohesion: 0.29
@@ -134,8 +134,8 @@ Cohesion: 0.40
 Nodes (4): Development Lifecycle, Execution Boundaries (CRITICAL), Integration Boundaries, Parameter Files
 
 ### Community 20 - "TokenUsageStore"
-Cohesion: 0.24
-Nodes (5): TokenUsageStoreTests, Path, Small local JSON stores for persistent task telemetry., Append completed-task token usage to a local JSON list., TokenUsageStore
+Cohesion: 0.27
+Nodes (5): GraphifyTests, Path, Refresh the primary repository graph without affecting task success., update_repository(), Refresh graph metadata after promotion without blocking the task.
 
 ## Knowledge Gaps
 - **44 isolated node(s):** `daedalus-tui`, `Execution Boundaries (CRITICAL)`, `Evidence Extraction`, `Architecture Boundaries`, `Parameter Files` (+39 more)
@@ -147,10 +147,10 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `DaedalusVimTextArea`, `AgentRunner`, `Key`, `app.py`?**
   _High betweenness centrality (0.182) - this node is a cross-community bridge._
-- **Why does `AgentRunner` connect `AgentRunner` to `WorktreeContext`, `DaedalusTuiApp`, `app.py`, `update_repository`, `Key`?**
+- **Why does `AgentRunner` connect `AgentRunner` to `update_repository`, `Key`, `DaedalusTuiApp`, `app.py`?**
   _High betweenness centrality (0.162) - this node is a cross-community bridge._
-- **Why does `TaskRecord` connect `Key` to `DaedalusVimTextArea`, `AgentRunner`, `DaedalusTuiApp`, `app.py`, `GitWorktreeManager`, `update_repository`, `TokenUsageStore`?**
-  _High betweenness centrality (0.114) - this node is a cross-community bridge._
+- **Why does `TaskRecord` connect `Key` to `DaedalusVimTextArea`, `AgentRunner`, `DaedalusTuiApp`, `app.py`, `GitWorktreeManager`, `update_repository`?**
+  _High betweenness centrality (0.116) - this node is a cross-community bridge._
 - **Are the 10 inferred relationships involving `DaedalusTuiApp` (e.g. with `FakeCoordinator` and `FakeRunner`) actually correct?**
   _`DaedalusTuiApp` has 10 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 13 inferred relationships involving `AgentRunner` (e.g. with `AgentRunnerTests` and `FakeProcess`) actually correct?**

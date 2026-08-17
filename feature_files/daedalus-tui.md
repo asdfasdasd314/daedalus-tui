@@ -8,7 +8,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Provider controls**: Codex exposes Luna, Terra, and Sol with light, medium, high, and extra-high reasoning; Cursor CLI is a provider-only choice with model and reasoning disabled.
 - **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, a database, or a remote push.
 - **Concurrent task list**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript.
-- **Filtered logs and copying**: The output pane shows completed assistant messages only; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
+- **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project navigation**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the sidebar switches between per-project task coordinators without mixing transcripts or worktrees.
 
@@ -40,3 +40,4 @@ HACKING
 - 2026-08-16: Removed copy buttons and dedicated full-output/error copy actions in favor of Vim yank commands.
 - 2026-08-16: Added standalone `AGENTS.md` and task-mode profiles so the TUI retains its operating instructions when moved into its own repository.
 - 2026-08-16: Preserved submitted prompts in an immutable task view and added an explicit New Task action to unlock a blank prompt editor.
+- 2026-08-16: Switched the output pane from RichLog to Log so transcript text supports click-drag selection and yank without editing.

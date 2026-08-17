@@ -5,7 +5,9 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from textual import events
-from textual.widgets import Button, RichLog, Select, Static, TextArea
+from textual.geometry import Offset
+from textual.selection import Selection as ScreenSelection
+from textual.widgets import Button, Log, Select, Static, TextArea
 from textual.widgets.text_area import Selection
 from vimkeys_input import VimMode
 
@@ -415,15 +417,31 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
     async def test_vim_paste_inserts_system_clipboard_into_prompt(self, _clipboard):
         app, _ = self.make_app()
         async with app.run_test():
-            app.query_one("#output", RichLog).focus()
+            app.query_one("#output", Log).focus()
             app._handle_vim_key("p")
 
             self.assertEqual(app.query_one("#prompt-input", TextArea).text, "pasted notes")
 
+    async def test_output_log_supports_textual_selection(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#prompt-input", TextArea).insert("Capture selectable output")
+            app.action_submit_prompt()
+            coordinator.finish(coordinator.records[0], "Selectable assistant transcript line.")
+            await pilot.pause()
+
+            output = app.query_one("#output", Log)
+            self.assertTrue(output.allow_select)
+            selected = output.get_selection(
+                ScreenSelection.from_offsets(Offset(0, 0), Offset(10, 0))
+            )
+            self.assertIsNotNone(selected)
+            self.assertEqual(selected[0], "Selectable")
+
     async def test_vim_navigation_scrolls_output_and_keeps_prompt_typing_safe(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:
-            output = app.query_one("#output", RichLog)
+            output = app.query_one("#output", Log)
             output.focus()
             await pilot.pause()
             app._handle_vim_key("j")
