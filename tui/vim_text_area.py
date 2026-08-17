@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from rich.segment import Segment
+from rich.style import Style
 from textual import events
+from textual.strip import Strip
 from textual.widgets.text_area import Selection
 
 from vimkeys_input import VimMode, VimTextArea
 
 from .clipboard import paste_from_system_clipboard
+
+# Textual names `$` `dollar_sign`; vimkeys-input looks for `dollar`.
+_LINE_END_KEYS = {"dollar", "dollar_sign", "$"}
+_INSERT_CURSOR_BAR = "▏"
 
 
 class DaedalusVimTextArea(VimTextArea):
@@ -15,7 +22,13 @@ class DaedalusVimTextArea(VimTextArea):
 
     DEFAULT_CSS = """
     DaedalusVimTextArea.insert-mode .text-area--cursor {
-        color: $input-cursor-foreground;
+        color: $text;
+        background: transparent;
+        text-style: none;
+    }
+
+    DaedalusVimTextArea.operator-pending .text-area--cursor {
+        color: $text;
         background: transparent;
         text-style: underline;
     }
@@ -27,9 +40,43 @@ class DaedalusVimTextArea(VimTextArea):
         # composing a prompt.
         self.cursor_blink = False
 
+    @property
+    def cursor_shape(self) -> str:
+        """Return bar, underline, or block for the current Vim state."""
+        operator_pending = getattr(self, "operator_pending", None)
+        if operator_pending is not None and operator_pending.is_pending():
+            return "underline"
+        vim_mode = getattr(self, "vim_mode", VimMode.INSERT)
+        if vim_mode == VimMode.INSERT:
+            return "bar"
+        return "block"
+
+    @property
+    def _draw_cursor(self) -> bool:
+        # Insert mode paints a thin bar in render_line instead of a block.
+        if self.cursor_shape == "bar" and not self.read_only:
+            return False
+        return super()._draw_cursor
+
     def enter_insert_mode(self) -> None:
         """Return to Insert mode after programmatic prompt operations."""
         self._enter_insert_mode()
+
+    def _enter_insert_mode(self) -> None:
+        self.operator_pending.clear()
+        super()._enter_insert_mode()
+
+    def _enter_command_mode(self) -> None:
+        self.operator_pending.clear()
+        super()._enter_command_mode()
+
+    def _update_mode_display(self) -> None:
+        super()._update_mode_display()
+        self._sync_cursor_classes()
+
+    def _sync_cursor_classes(self) -> None:
+        """Expose operator-pending so the caret can become an underline."""
+        self.set_class(self.operator_pending.is_pending(), "operator-pending")
 
     def nav_word_end(self) -> None:
         """Move to the end of the current word, or the next word when needed."""
@@ -124,7 +171,39 @@ class DaedalusVimTextArea(VimTextArea):
             self.nav_right()
             event.prevent_default()
             return
+        if event.key in _LINE_END_KEYS:
+            # Textual reports `$` as dollar_sign; vimkeys-input listens for dollar.
+            event.key = "dollar"
         super()._handle_command_mode(event)
+        self._sync_cursor_classes()
+
+    def render_line(self, y: int) -> Strip:
+        strip = super().render_line(y)
+        if self.cursor_shape != "bar" or not self.has_focus or self.read_only:
+            return strip
+        cursor_x, cursor_y = self._cursor_offset
+        scroll_x, scroll_y = self.scroll_offset
+        if y + scroll_y != cursor_y:
+            return strip
+        bar_x = cursor_x - scroll_x + self.gutter_width
+        return self._overlay_insert_bar(strip, bar_x)
+
+    def _overlay_insert_bar(self, strip: Strip, x: int) -> Strip:
+        """Paint a thin vertical caret at the insertion point."""
+        if strip.cell_length <= 0:
+            return strip
+        x = max(0, min(x, strip.cell_length - 1))
+        parts = strip.divide([x, x + 1])
+        if len(parts) < 2:
+            return strip
+        cursor_style = self.get_component_rich_style("text-area--cursor")
+        bar_style = Style(
+            color=cursor_style.color or "white",
+            bgcolor=cursor_style.bgcolor,
+        )
+        bar = Strip([Segment(_INSERT_CURSOR_BAR, bar_style)], 1)
+        trailing = parts[2:] if len(parts) > 2 else []
+        return Strip.join([parts[0], bar, *trailing])
 
     def _enter_visual_line_mode(self) -> None:
         """Select the current line and enter Vim visual-line mode."""

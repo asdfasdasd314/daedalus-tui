@@ -453,6 +453,47 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(prompt.yank_register, "copy this line\n")
             clipboard.assert_called_once_with("copy this line\n")
 
+    async def test_prompt_cursor_shape_follows_insert_command_and_yank_pending(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("copy this line")
+
+            self.assertEqual(prompt.vim_mode, VimMode.INSERT)
+            self.assertEqual(prompt.cursor_shape, "bar")
+            self.assertTrue(prompt.has_class("insert-mode"))
+            self.assertFalse(prompt.has_class("operator-pending"))
+
+            await pilot.press("escape")
+            self.assertEqual(prompt.vim_mode, VimMode.COMMAND)
+            self.assertEqual(prompt.cursor_shape, "block")
+            self.assertTrue(prompt.has_class("command-mode"))
+
+            await pilot.press("y")
+            self.assertTrue(prompt.operator_pending.is_pending())
+            self.assertEqual(prompt.cursor_shape, "underline")
+            self.assertTrue(prompt.has_class("operator-pending"))
+
+            await pilot.press("y")
+            self.assertFalse(prompt.operator_pending.is_pending())
+            self.assertEqual(prompt.cursor_shape, "block")
+            self.assertFalse(prompt.has_class("operator-pending"))
+            self.assertEqual(prompt.yank_register, "copy this line\n")
+
+    async def test_prompt_dollar_moves_to_line_end_in_command_mode(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("hello world")
+            prompt.cursor_location = (0, 0)
+
+            await pilot.press("escape")
+            await pilot.press("$")
+
+            self.assertEqual(prompt.text, "hello world")
+            self.assertEqual(prompt.cursor_location, prompt.get_cursor_line_end_location())
+            self.assertEqual(prompt.vim_mode, VimMode.COMMAND)
+
     async def test_plan_mode_is_snapshotted_and_task_controls_are_available(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:

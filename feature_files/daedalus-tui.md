@@ -45,3 +45,4 @@ HACKING
 - 2026-08-17: Matched selectable output highlighting to the prompt selection colors so selected transcript characters remain readable.
 - 2026-08-17: Added prompt `yy` coverage, reliable `e` word-end progression, Escape selection clearing, and a steady underline-style insert cursor.
 - 2026-08-17: Added quieter progress-message text, a brighter final assistant summary, and faded styling for immutable submitted prompts.
+- 2026-08-17: Switched the insert caret to a thin white bar, used an underline while yank is pending, and mapped `$` to line-end in command mode.
