@@ -690,6 +690,35 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(answer.query_one("#label"))
             self.assertIsNone(app._exception)
 
+    async def test_plan_answer_mount_suppresses_textual_select_default_handler(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Choose a model")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = "Use the selected model."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "Which model?",
+                    (PlanOption("a", "Local"), PlanOption("b", "Remote")),
+                ),
+            )
+
+            def unexpected_default_mount(*_args, **_kwargs):
+                raise AssertionError("Textual Select default mount handler ran")
+
+            with patch.object(Select, "_on_mount", unexpected_default_mount):
+                coordinator.emit(record, "questions", "", "status")
+                await pilot.pause()
+                await pilot.pause()
+
+            self.assertEqual(app.query_one("#plan-question-0", Select).value, Select.NULL)
+            self.assertIsNone(app._exception)
+
     async def test_plan_review_survives_streamed_completion_event(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:

@@ -54,6 +54,7 @@ HACKING
 - 2026-08-17: Used a left-aligned thin block for the insert caret so it sits on the left edge of the character cell at the insertion point.
 - 2026-08-17: Kept Plan tasks selectable through a planning/questioning loop with follow-up controls, structured plan/questions review, and an explicit transition into coding.
 - 2026-08-17: Made asynchronous plan-question rendering generation-safe and non-fatal so streamed completion events cannot close the TUI before the review controls appear.
+- 2026-08-17: Suppressed Textual's inherited Select mount handler for dynamic plan answers, preventing a race where SelectCurrent lacked its internal `#label` node during initialization.
 - 2026-08-17: Added visible retry controls for failed agent requests and preserved the last request prompt for connectivity recovery.
 - 2026-08-17: Deferred dynamic plan Select initialization until after Textual's nested SelectCurrent label is mounted, preventing a lifecycle race from terminating the TUI.
 - 2026-08-17: Detached task callbacks before coordinator shutdown, waited for executor workers to finish, and ignored late events after Textual closes.

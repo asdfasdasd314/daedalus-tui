@@ -6,7 +6,7 @@ import asyncio
 from pathlib import Path
 import threading
 
-from textual import events
+from textual import events, on
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
@@ -76,9 +76,13 @@ SHORTCUT_SECTIONS = (
 class PlanAnswerSelect(Select):
     """Initialize dynamic plan selectors after their nested children mount."""
 
-    def _on_mount(self, _event: events.Mount) -> None:
+    @on(events.Mount)
+    def _on_plan_answer_mount(self, event: events.Mount) -> None:
         # Textual 8.2.x can dispatch a dynamically mounted Select's mount
         # handler before SelectCurrent has mounted its internal ``#label``.
+        # The base Select handler is a naming-convention handler and would
+        # otherwise also run after this method, so prevent its default action.
+        event.prevent_default()
         self.call_after_refresh(self._initialize_after_mount)
 
     def _initialize_after_mount(self) -> None:
