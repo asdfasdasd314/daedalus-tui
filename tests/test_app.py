@@ -482,14 +482,19 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_insert_cursor_preserves_text_after_a_middle_position(self):
         app, _ = self.make_app()
-        async with app.run_test():
+        async with app.run_test() as pilot:
             prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.focus()
+            await pilot.pause()
             prompt.insert("beforeafter")
+            self.assertTrue(prompt.has_focus)
+            self.assertEqual(prompt.cursor_shape, "bar")
             prompt.cursor_location = (0, len("before"))
 
             rendered = prompt.render_line(0)
 
             self.assertIn("before", rendered.text)
+            self.assertIn("|", rendered.text)
             self.assertIn("after", rendered.text)
 
     async def test_prompt_dollar_moves_to_line_end_in_command_mode(self):

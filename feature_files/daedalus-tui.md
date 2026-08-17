@@ -48,3 +48,4 @@ HACKING
 - 2026-08-17: Switched the insert caret to a thin white bar, used an underline while yank is pending, and mapped `$` to line-end in command mode.
 - 2026-08-17: Resolved the final transcript color through Textual before passing it to Rich, avoiding invalid `auto` CSS colors during pointer rendering.
 - 2026-08-17: Kept the insert caret between characters so rendering a middle-of-line prompt does not hide the text to its right.
+- 2026-08-17: Fixed insert caret rendering by splitting the full Textual strip at the cursor position and drawing a visible one-cell vertical bar.

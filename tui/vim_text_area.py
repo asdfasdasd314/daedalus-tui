@@ -14,7 +14,7 @@ from .clipboard import paste_from_system_clipboard
 
 # Textual names `$` `dollar_sign`; vimkeys-input looks for `dollar`.
 _LINE_END_KEYS = {"dollar", "dollar_sign", "$"}
-_INSERT_CURSOR_BAR = "▏"
+_INSERT_CURSOR_BAR = "|"
 
 
 class DaedalusVimTextArea(VimTextArea):
@@ -193,14 +193,14 @@ class DaedalusVimTextArea(VimTextArea):
         if strip.cell_length <= 0:
             return strip
         x = max(0, min(x, strip.cell_length))
-        parts = strip.divide([x])
-        if len(parts) != 2:
-            return strip
+        if x == 0:
+            parts = (Strip([], 0), strip)
+        elif x == strip.cell_length:
+            parts = (strip, Strip([], 0))
+        else:
+            parts = strip.divide([x, strip.cell_length])
         cursor_style = self.get_component_rich_style("text-area--cursor")
-        bar_style = Style(
-            color=cursor_style.color or "white",
-            bgcolor=cursor_style.bgcolor,
-        )
+        bar_style = Style(color="white", bgcolor=cursor_style.bgcolor)
         bar = Strip([Segment(_INSERT_CURSOR_BAR, bar_style)], 1)
         return Strip.join([parts[0], bar, parts[1]])
 
