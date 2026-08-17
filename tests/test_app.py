@@ -190,6 +190,45 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
             self.assertEqual(app.directory, first.resolve())
 
+    @patch("tui.app.discover_projects")
+    async def test_initial_launch_records_default_project_and_each_switch_updates_it(self, discover):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "first"
+            second = root / "second"
+            memory_path = root / ".daedalus-memory.json"
+            discover.return_value = (
+                DaedalusProject(first, root),
+                DaedalusProject(second, root),
+            )
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+
+            self.assertEqual(
+                json.loads(memory_path.read_text(encoding="utf-8")),
+                [{"last_opened_project": str(first.resolve())}],
+            )
+            async with app.run_test() as pilot:
+                project_select = app.query_one("#project-select", Select)
+                project_select.value = str(second)
+                await pilot.pause()
+                self.assertEqual(
+                    json.loads(memory_path.read_text(encoding="utf-8")),
+                    [{"last_opened_project": str(second.resolve())}],
+                )
+                project_select.value = str(first)
+                await pilot.pause()
+
+            self.assertEqual(
+                json.loads(memory_path.read_text(encoding="utf-8")),
+                [{"last_opened_project": str(first.resolve())}],
+            )
+
     async def test_ctrl_k_opens_shortcuts_menu_with_global_and_vim_keys(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:

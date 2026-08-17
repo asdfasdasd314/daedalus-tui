@@ -51,9 +51,9 @@ provider, model, and reasoning setting. Model and reasoning are `null` for
 providers without those controls, such as Cursor. Older entries are given
 explicit `null` metadata fields the next time the memory file is saved. When
 the TUI is launched over multiple projects, the launch root's memory file also
-keeps a single `last_opened_project` entry, which is updated when the sidebar
-changes projects and restored on the next startup when that project still
-exists.
+keeps a single `last_opened_project` entry. The first launch initializes it to
+the default project, every sidebar focus change updates it, and the next
+startup restores it when that project still exists.
 Failed, paused, and cancelled tasks are not recorded; the file is intentionally
 ignored by Git.
 

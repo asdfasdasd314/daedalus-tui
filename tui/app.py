@@ -361,7 +361,7 @@ class DaedalusTuiApp(App[None]):
 
     def _remember_project(self, project_path: Path) -> None:
         try:
-            self.memory.record_last_opened_project(project_path)
+            self.memory.set_last_opened_project(project_path)
         except (OSError, ValueError):
             # Project navigation should remain usable if local memory is unavailable.
             pass
@@ -372,9 +372,11 @@ class DaedalusTuiApp(App[None]):
             return
         if project_path not in {project.path.resolve() for project in self.projects}:
             return
-        self._remember_project(project_path)
         self._active_project_path = project_path
         self.directory = project_path
+        # Persist after the active focus changes so the marker mirrors the
+        # project that is currently visible in the TUI.
+        self._remember_project(project_path)
         self.coordinator = self._coordinator_for(project_path)
         self._selected_task_id = None
         self._new_task_mode = False
