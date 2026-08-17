@@ -503,6 +503,17 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(selected)
             self.assertEqual(selected[0], "Selectable")
 
+    async def test_output_selection_uses_prompt_selection_colors(self):
+        app, _ = self.make_app()
+        async with app.run_test():
+            output_selection = app.screen.get_component_rich_style("screen--selection")
+            prompt_selection = app.query_one("#prompt-input").get_component_rich_style(
+                "text-area--selection"
+            )
+
+            self.assertEqual(output_selection.bgcolor, prompt_selection.bgcolor)
+            self.assertEqual(output_selection.color, prompt_selection.color)
+
     async def test_vim_navigation_scrolls_output_and_keeps_prompt_typing_safe(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:

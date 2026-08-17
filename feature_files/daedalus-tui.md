@@ -42,3 +42,4 @@ HACKING
 - 2026-08-16: Preserved submitted prompts in an immutable task view and added an explicit New Task action to unlock a blank prompt editor.
 - 2026-08-16: Switched the output pane from RichLog to Log so transcript text supports click-drag selection and yank without editing.
 - 2026-08-16: Kept task selection user-controlled during background events and streamed Cursor assistant deltas into the live transcript.
+- 2026-08-17: Matched selectable output highlighting to the prompt selection colors so selected transcript characters remain readable.
