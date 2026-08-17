@@ -12,7 +12,7 @@ from typing import Callable
 
 from .agent_runner import AgentControl, AgentRunner
 from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
-from .memory import DEFAULT_MEMORY_FILE, TokenUsageStore
+from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .orchestrator import LocalOrchestrator, OrchestrationResult, OrchestrationSettings
 
 
@@ -54,7 +54,7 @@ class TaskRecord:
     context: WorktreeContext | None = field(default=None, repr=False, compare=False)
     control: AgentControl = field(default_factory=AgentControl, repr=False, compare=False)
     future: Future | None = field(default=None, repr=False, compare=False)
-    tokens_consumed: int = 0
+    memory_task_id: str | None = field(default=None, repr=False, compare=False)
 
 
 class IntegrationCoordinator:
@@ -108,7 +108,7 @@ class TaskCoordinator:
         self._next_sequence = 1
         self._tasks: dict[str, TaskRecord] = {}
         self._closed = False
-        self.memory = TokenUsageStore(memory_path or self.repository / DEFAULT_MEMORY_FILE)
+        self.memory = TaskMemoryStore(memory_path or self.repository / DEFAULT_MEMORY_FILE)
 
     def set_event_callback(self, callback: TaskEventCallback | None) -> None:
         self.on_event = callback
@@ -121,8 +121,10 @@ class TaskCoordinator:
             self._next_sequence += 1
             task_id = f"{sequence:03d}-{uuid.uuid4().hex[:8]}"
             record = TaskRecord(task_id, sequence, prompt, provider, model, reasoning, mode=mode)
+            record.memory_task_id = f"task-{task_id}"
             self._tasks[task_id] = record
             record.future = self.executor.submit(self._run, record)
+        self._persist_task(record)
         self._notify(record, "queued", "Task queued.", "status")
         return record
 
@@ -152,6 +154,7 @@ class TaskCoordinator:
             record.status = "paused"
             record.phase = "Paused"
             record.finished_at = time.time()
+            self._persist_task(record)
             self._notify(record, "paused", "Task paused before execution.", "status")
             return True
         record.control.request_pause()
@@ -172,6 +175,7 @@ class TaskCoordinator:
             if notes.strip():
                 record.resume_notes.append(notes.strip())
             record.future = self.executor.submit(self._run, record)
+        self._persist_task(record)
         self._notify(record, "queued", "Task queued to resume in its existing worktree.", "status")
         return True
 
@@ -191,12 +195,14 @@ class TaskCoordinator:
                     record.status = "failed"
                     record.phase = "Failed"
                     record.error = f"Cancelled task cleanup failed: {error}"
+                    self._persist_task(record)
                     self._notify(record, "failed", record.error, "error")
                     return False
             record.status = "cancelled"
             record.phase = "Cancelled"
             record.error = "Task cancelled and its worktree was removed."
             record.finished_at = time.time()
+            self._persist_task(record)
             self._notify(record, "cancelled", record.error, "error")
             return True
         if record.status == "queued" and record.future is not None and record.future.cancel():
@@ -204,6 +210,7 @@ class TaskCoordinator:
             record.phase = "Cancelled"
             record.error = "Task cancelled before execution."
             record.finished_at = time.time()
+            self._persist_task(record)
             self._notify(record, "cancelled", record.error, "error")
             return True
         record.control.request_cancel()
@@ -213,6 +220,7 @@ class TaskCoordinator:
 
     def _run(self, record: TaskRecord) -> None:
         record.started_at = time.time()
+        self._persist_task(record)
         orchestrator = LocalOrchestrator(
             self.repository,
             self.runner,
@@ -238,6 +246,7 @@ class TaskCoordinator:
             record.status = "failed"
             record.phase = "Failed"
             record.error = str(error)
+            self._persist_task(record)
             self._notify(record, "failed", str(error), "error")
             return
         record.finished_at = time.time()
@@ -248,34 +257,24 @@ class TaskCoordinator:
             record.status = "paused"
             record.phase = "Paused"
             record.error = None
+            self._persist_task(record)
             self._notify(record, "paused", "Task paused; progress preserved.", "status")
             return
         if result.cancelled:
             record.status = "cancelled"
             record.phase = "Cancelled"
             record.error = result.error or "Task cancelled."
+            self._persist_task(record)
             self._notify(record, "cancelled", record.error, "error")
             return
         if result.succeeded:
             record.status = "completed"
             record.phase = "Completed"
-            record.tokens_consumed = result.tokens_consumed
-            try:
-                self.memory.record(
-                    record.submitted_at,
-                    record.tokens_consumed,
-                    provider=record.provider,
-                    model=None if record.provider == "cursor" else record.model or None,
-                    reasoning=None if record.provider == "cursor" else record.reasoning or None,
-                    project=self.repository,
-                )
-            except (OSError, ValueError):
-                # Telemetry must never turn an otherwise completed task into a failure.
-                pass
         else:
             record.status = "failed"
             record.phase = "Failed"
             record.error = record.error or result.error or "Task failed."
+        self._persist_task(record)
         self._notify(record, "completed" if result.succeeded else "failed", "", "status")
 
     def _handle_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
@@ -307,7 +306,31 @@ class TaskCoordinator:
             if branch and worktree:
                 record.branch_name = branch
                 record.worktree_path = Path(worktree)
+        self._persist_task(record)
         self._notify(record, phase, message, kind)
+
+    def _persist_task(self, record: TaskRecord) -> None:
+        """Persist the latest task state without affecting task execution."""
+        task_id = record.worktree_path.name if record.worktree_path is not None else f"task-{record.task_id}"
+        previous_task_id = record.memory_task_id
+        try:
+            self.memory.record_task(
+                task_id,
+                record.prompt,
+                record.provider,
+                None if record.provider == "cursor" else record.model or None,
+                None if record.provider == "cursor" else record.reasoning or None,
+                record.mode,
+                record.status,
+                record.messages,
+                record.error,
+                previous_task_id=previous_task_id,
+                submitted_at=record.submitted_at,
+            )
+        except (OSError, ValueError):
+            # Persistent task history must never change orchestration behavior.
+            return
+        record.memory_task_id = task_id
 
     def _notify(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         if self.on_event is not None:

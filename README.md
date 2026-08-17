@@ -44,18 +44,14 @@ commits `graphify-out` when the target repository has graphify configured;
 graph refresh failures are reported as warnings and never trigger resolver
 attempts.
 
-Completed tasks also append their reported token usage to the single
-launch-root `.daedalus-memory.json` file. Each usage entry contains the prompt
-submission time, the total input/output tokens reported by the provider, the
-selected provider, model, and reasoning setting, and the resolved project path
-that received the prompt. Model and reasoning are `null` for providers without
-those controls, such as Cursor. Older entries are given explicit `null`
-metadata fields the next time the memory file is saved. The launch root's
-memory file also keeps a single `last_opened_project` entry. The first launch
-initializes it to the default project, every sidebar focus change updates it,
-and the next startup restores it when that project still exists.
-Failed, paused, and cancelled tasks are not recorded; the file is intentionally
-ignored by Git.
+The launch root stores task history in `.daedalus-memory.json`. Its `tasks`
+entry maps each task worktree directory name to the submission timestamp,
+prompt, provider/model/reasoning/mode selection, current state, assistant
+outputs, and any error so failed, paused, and cancelled work can be reopened
+for analysis. The memory file also keeps a single `last_opened_project` entry.
+The first launch initializes it to the default project, every sidebar focus
+change updates it, and the next startup restores it when that project still
+exists. The file is intentionally ignored by Git.
 
 The task list keeps each prompt's provider, model, reasoning, status, branch,
 worktree, and filtered assistant-message transcript separate. Raw diffs,

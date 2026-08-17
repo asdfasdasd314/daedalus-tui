@@ -125,9 +125,16 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertEqual(failed.status, "failed")
             self.assertEqual(failed.error, "Task failed but worktree is preserved.")
             self.assertEqual(succeeded.status, "completed")
+            tasks = next(
+                item["tasks"]
+                for item in json.loads(coordinator.memory.path.read_text(encoding="utf-8"))
+                if "tasks" in item
+            )
+            self.assertEqual(tasks[failed.worktree_path.name]["state"], "failed")
+            self.assertEqual(tasks[failed.worktree_path.name]["error"], failed.error)
             coordinator.shutdown()
 
-    def test_persists_tokens_only_after_a_task_completes(self):
+    def test_persists_task_details_for_failed_and_completed_tasks(self):
         class TokenReportingOrchestrator:
             def __init__(self, *_args, **_kwargs):
                 pass
@@ -155,21 +162,26 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertEqual(failed.status, "failed")
             self.assertEqual(succeeded.status, "completed")
             entries = json.loads(memory_path.read_text(encoding="utf-8"))
-            self.assertEqual(len(entries), 1)
-            self.assertEqual(entries[0]["tokens"], 42)
+            tasks = next(entry["tasks"] for entry in entries if "tasks" in entry)
+            failed_task = tasks[f"task-{failed.task_id}"]
+            succeeded_task = tasks[f"task-{succeeded.task_id}"]
+            self.assertEqual(failed_task["state"], "failed")
+            self.assertEqual(succeeded_task["state"], "completed")
+            self.assertEqual(failed_task["prompt"], "bad")
+            self.assertEqual(succeeded_task["prompt"], "good")
             self.assertEqual(
-                entries[0]["timestamp"],
+                succeeded_task["timestamp"],
                 datetime.fromtimestamp(succeeded.submitted_at, timezone.utc)
                 .isoformat()
                 .replace("+00:00", "Z"),
             )
             self.assertEqual(
-                {key: entries[0][key] for key in ("provider", "model", "reasoning")},
-                {"provider": "codex", "model": "luna", "reasoning": "medium"},
+                {key: succeeded_task[key] for key in ("provider", "model", "reasoning", "mode")},
+                {"provider": "codex", "model": "luna", "reasoning": "medium", "mode": "coding"},
             )
-            self.assertEqual(entries[0]["project"], str(Path(directory).resolve()))
+            self.assertNotIn("tokens", json.dumps(entries))
 
-    def test_persists_null_model_and_reasoning_for_cursor_usage(self):
+    def test_persists_null_model_and_reasoning_for_cursor_task(self):
         class CursorOrchestrator:
             def __init__(self, *_args, **_kwargs):
                 pass
@@ -190,20 +202,23 @@ class TaskCoordinatorTests(unittest.TestCase):
                 record.future.result(timeout=5)
             coordinator.shutdown()
 
+            entries = json.loads(memory_path.read_text(encoding="utf-8"))
+            tasks = next(entry["tasks"] for entry in entries if "tasks" in entry)
             self.assertEqual(
-                json.loads(memory_path.read_text(encoding="utf-8")),
-                [
-                    {
-                        "timestamp": datetime.fromtimestamp(record.submitted_at, timezone.utc)
+                tasks[f"task-{record.task_id}"],
+                {
+                    "timestamp": datetime.fromtimestamp(record.submitted_at, timezone.utc)
                         .isoformat()
                         .replace("+00:00", "Z"),
-                        "tokens": 17,
-                        "provider": "cursor",
-                        "model": None,
-                        "reasoning": None,
-                        "project": str(Path(directory).resolve()),
-                    }
-                ],
+                    "prompt": "cursor task",
+                    "provider": "cursor",
+                    "model": None,
+                    "reasoning": None,
+                    "mode": "coding",
+                    "state": "completed",
+                    "outputs": [],
+                    "error": None,
+                },
             )
 
     def test_pause_preserves_context_and_resume_reuses_same_worktree(self):

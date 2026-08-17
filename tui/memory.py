@@ -1,4 +1,4 @@
-"""Small local JSON stores for persistent task telemetry."""
+"""Small local JSON stores for persistent task history."""
 
 from __future__ import annotations
 
@@ -12,10 +12,11 @@ from threading import Lock
 
 DEFAULT_MEMORY_FILE = ".daedalus-memory.json"
 LAST_OPENED_PROJECT_KEY = "last_opened_project"
+TASKS_KEY = "tasks"
 
 
-class TokenUsageStore:
-    """Persist task telemetry and the most recently opened project."""
+class TaskMemoryStore:
+    """Persist task history and the most recently opened project."""
 
     _locks_guard = Lock()
     _locks: dict[Path, Lock] = {}
@@ -25,30 +26,6 @@ class TokenUsageStore:
         lock_key = path.expanduser().resolve()
         with self._locks_guard:
             self._lock = self._locks.setdefault(lock_key, Lock())
-
-    def record(
-        self,
-        submitted_at: float,
-        tokens: int,
-        provider: str | None = None,
-        model: str | None = None,
-        reasoning: str | None = None,
-        project: Path | None = None,
-    ) -> None:
-        entry = {
-            "timestamp": datetime.fromtimestamp(submitted_at, timezone.utc)
-            .isoformat()
-            .replace("+00:00", "Z"),
-            "tokens": max(0, int(tokens)),
-            "provider": provider,
-            "model": model,
-            "reasoning": reasoning,
-            "project": str(project.expanduser().resolve()) if project is not None else None,
-        }
-        with self._lock:
-            entries = self._read_entries()
-            entries.append(entry)
-            self._write_entries(entries)
 
     def get_last_opened_project(self) -> Path | None:
         """Return the remembered project path, if the memory contains one."""
@@ -61,7 +38,7 @@ class TokenUsageStore:
         return None
 
     def set_last_opened_project(self, project_path: Path) -> None:
-        """Set the single project marker without losing telemetry records."""
+        """Set the single project marker without losing task records."""
         entry = {LAST_OPENED_PROJECT_KEY: str(project_path.expanduser().resolve())}
         with self._lock:
             entries = self._read_entries()
@@ -73,6 +50,8 @@ class TokenUsageStore:
                         updated_entries.append(entry)
                         replaced = True
                     continue
+                if "tokens" in existing:
+                    continue
                 updated_entries.append(existing)
             if not replaced:
                 updated_entries.append(entry)
@@ -81,6 +60,57 @@ class TokenUsageStore:
     def record_last_opened_project(self, project_path: Path) -> None:
         """Backward-compatible alias for :meth:`set_last_opened_project`."""
         self.set_last_opened_project(project_path)
+
+    def record_task(
+        self,
+        task_id: str,
+        prompt: str,
+        provider: str | None,
+        model: str | None,
+        reasoning: str | None,
+        mode: str,
+        state: str,
+        outputs: list[str] | tuple[str, ...] = (),
+        error: str | None = None,
+        previous_task_id: str | None = None,
+        submitted_at: float | None = None,
+    ) -> None:
+        """Upsert a task snapshot keyed by the task worktree's directory name."""
+        task = {
+            "timestamp": datetime.fromtimestamp(submitted_at or 0, timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z")
+            if submitted_at is not None
+            else datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "prompt": prompt,
+            "provider": provider,
+            "model": model,
+            "reasoning": reasoning,
+            "mode": mode,
+            "state": state,
+            "outputs": list(outputs),
+            "error": error,
+        }
+        with self._lock:
+            entries = self._read_entries()
+            updated_entries: list[dict[str, object]] = []
+            tasks: dict[str, object] = {}
+            replaced = False
+            for existing in entries:
+                existing_tasks = existing.get(TASKS_KEY)
+                if isinstance(existing_tasks, dict):
+                    if not replaced:
+                        tasks.update(existing_tasks)
+                        replaced = True
+                    continue
+                if "tokens" in existing:
+                    continue
+                updated_entries.append(existing)
+            if previous_task_id and previous_task_id != task_id:
+                tasks.pop(previous_task_id, None)
+            tasks[task_id] = task
+            updated_entries.append({TASKS_KEY: tasks})
+            self._write_entries(updated_entries)
 
     def _read_entries(self) -> list[dict[str, object]]:
         try:
@@ -93,20 +123,7 @@ class TokenUsageStore:
             raise ValueError(f"Memory file {self.path} is not valid JSON.") from error
         if not isinstance(value, list):
             raise ValueError(f"Memory file {self.path} must contain a JSON list.")
-        return [self._normalize_entry(entry) for entry in value if isinstance(entry, dict)]
-
-    @staticmethod
-    def _normalize_entry(entry: dict[str, object]) -> dict[str, object]:
-        """Give legacy telemetry entries the current nullable metadata shape."""
-        if "timestamp" not in entry or "tokens" not in entry:
-            return entry
-        return {
-            **entry,
-            "provider": entry.get("provider"),
-            "model": entry.get("model"),
-            "reasoning": entry.get("reasoning"),
-            "project": entry.get("project"),
-        }
+        return [entry for entry in value if isinstance(entry, dict)]
 
     def _write_entries(self, entries: list[dict[str, object]]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -133,3 +150,7 @@ class TokenUsageStore:
                     temporary_path.unlink()
                 except FileNotFoundError:
                     pass
+
+
+# Preserve the old import for callers that used the pre-task-history store.
+TokenUsageStore = TaskMemoryStore

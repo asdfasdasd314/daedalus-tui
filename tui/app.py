@@ -13,7 +13,7 @@ from textual.widgets import Button, Footer, Header, Log, Select, Static, TextAre
 from .agent_runner import AgentRunner
 from .clipboard import copy_to_system_clipboard, paste_from_system_clipboard
 from .config import TuiSettings, load_orchestration_settings, load_tui_settings
-from .memory import DEFAULT_MEMORY_FILE, TokenUsageStore
+from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .projects import DaedalusProject, discover_projects
 from .task_coordinator import TaskCoordinator, TaskRecord
 from .vim_text_area import DaedalusVimTextArea
@@ -101,7 +101,7 @@ class DaedalusTuiApp(App[None]):
     ) -> None:
         super().__init__()
         self.launch_root = (directory or Path.cwd()).resolve()
-        self.memory = TokenUsageStore(self.launch_root / DEFAULT_MEMORY_FILE)
+        self.memory = TaskMemoryStore(self.launch_root / DEFAULT_MEMORY_FILE)
         self.settings = settings or load_tui_settings()
         self.orchestration_settings = load_orchestration_settings()
         self.runner = runner or AgentRunner()

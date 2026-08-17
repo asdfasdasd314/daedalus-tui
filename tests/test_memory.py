@@ -3,41 +3,72 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tui.memory import TokenUsageStore
+from tui.memory import TaskMemoryStore
 
 
-class TokenUsageStoreTests(unittest.TestCase):
-    def test_records_usage_metadata_with_nullable_provider_fields(self):
+class TaskMemoryStoreTests(unittest.TestCase):
+    def test_records_task_metadata_with_nullable_provider_fields(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".daedalus-memory.json"
-            store = TokenUsageStore(path)
+            store = TaskMemoryStore(path)
 
-            store.record(0, 165, "codex", "gpt-5.6-luna", "high")
-            store.record(1, 321, "cursor")
+            store.record_task(
+                "task-one",
+                "Make the change",
+                "codex",
+                "gpt-5.6-luna",
+                "high",
+                "coding",
+                "completed",
+                ["Done."],
+                submitted_at=0,
+            )
+            store.record_task(
+                "task-two",
+                "Review the change",
+                "cursor",
+                None,
+                None,
+                "ask",
+                "failed",
+                ["I found an issue."],
+                "The check failed.",
+                submitted_at=1,
+            )
 
             self.assertEqual(
                 json.loads(path.read_text(encoding="utf-8")),
                 [
                     {
-                        "timestamp": "1970-01-01T00:00:00Z",
-                        "tokens": 165,
-                        "provider": "codex",
-                        "model": "gpt-5.6-luna",
-                        "reasoning": "high",
-                        "project": None,
-                    },
-                    {
-                        "timestamp": "1970-01-01T00:00:01Z",
-                        "tokens": 321,
-                        "provider": "cursor",
-                        "model": None,
-                        "reasoning": None,
-                        "project": None,
+                        "tasks": {
+                            "task-one": {
+                                "timestamp": "1970-01-01T00:00:00Z",
+                                "prompt": "Make the change",
+                                "provider": "codex",
+                                "model": "gpt-5.6-luna",
+                                "reasoning": "high",
+                                "mode": "coding",
+                                "state": "completed",
+                                "outputs": ["Done."],
+                                "error": None,
+                            },
+                            "task-two": {
+                                "timestamp": "1970-01-01T00:00:01Z",
+                                "prompt": "Review the change",
+                                "provider": "cursor",
+                                "model": None,
+                                "reasoning": None,
+                                "mode": "ask",
+                                "state": "failed",
+                                "outputs": ["I found an issue."],
+                                "error": "The check failed.",
+                            },
+                        }
                     },
                 ],
             )
 
-    def test_normalizes_legacy_usage_entries_when_appending(self):
+    def test_removes_legacy_usage_entries_when_recording_a_task(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".daedalus-memory.json"
             path.write_text(
@@ -45,47 +76,85 @@ class TokenUsageStoreTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            TokenUsageStore(path).record(1, 321, "codex", "gpt-5.6-terra", "medium")
+            TaskMemoryStore(path).record_task(
+                "task-one",
+                "Make the change",
+                "codex",
+                "gpt-5.6-terra",
+                "medium",
+                "coding",
+                "completed",
+                submitted_at=1,
+            )
 
             self.assertEqual(
                 json.loads(path.read_text(encoding="utf-8")),
                 [
                     {
-                        "timestamp": "1970-01-01T00:00:00Z",
-                        "tokens": 165,
-                        "provider": None,
-                        "model": None,
-                        "reasoning": None,
-                        "project": None,
-                    },
-                    {
-                        "timestamp": "1970-01-01T00:00:01Z",
-                        "tokens": 321,
-                        "provider": "codex",
-                        "model": "gpt-5.6-terra",
-                        "reasoning": "medium",
-                        "project": None,
+                        "tasks": {
+                            "task-one": {
+                                "timestamp": "1970-01-01T00:00:01Z",
+                                "prompt": "Make the change",
+                                "provider": "codex",
+                                "model": "gpt-5.6-terra",
+                                "reasoning": "medium",
+                                "mode": "coding",
+                                "state": "completed",
+                                "outputs": [],
+                                "error": None,
+                            }
+                        }
                     },
                 ],
             )
 
-    def test_records_the_project_that_received_the_prompt(self):
+    def test_upserts_task_history_by_worktree_name(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".daedalus-memory.json"
-            project = Path(directory) / "project"
+            store = TaskMemoryStore(path)
 
-            TokenUsageStore(path).record(0, 165, "codex", "gpt-5.6-luna", "high", project)
+            store.record_task(
+                "task-one",
+                "Make the change",
+                "codex",
+                "gpt-5.6-luna",
+                "high",
+                "coding",
+                "running",
+                ["Inspecting the worktree."],
+                submitted_at=0,
+            )
+            store.record_task(
+                "task-one-renamed",
+                "Make the change",
+                "codex",
+                "gpt-5.6-luna",
+                "high",
+                "coding",
+                "failed",
+                ["Inspecting the worktree.", "The check failed."],
+                "Verification failed.",
+                previous_task_id="task-one",
+                submitted_at=0,
+            )
 
             self.assertEqual(
                 json.loads(path.read_text(encoding="utf-8")),
                 [
                     {
-                        "timestamp": "1970-01-01T00:00:00Z",
-                        "tokens": 165,
-                        "provider": "codex",
-                        "model": "gpt-5.6-luna",
-                        "reasoning": "high",
-                        "project": str(project.resolve()),
+                        "tasks": {
+                            "task-one-renamed": {
+                                "timestamp": "1970-01-01T00:00:00Z",
+                                "prompt": "Make the change",
+                                "provider": "codex",
+                                "model": "gpt-5.6-luna",
+                                "reasoning": "high",
+                                "mode": "coding",
+                                "state": "failed",
+                                "outputs": ["Inspecting the worktree.", "The check failed."],
+                                "error": "Verification failed.",
+                            }
+                        }
                     }
                 ],
             )
@@ -96,18 +165,29 @@ class TokenUsageStoreTests(unittest.TestCase):
             path.write_text("not json", encoding="utf-8")
 
             with self.assertRaises(ValueError):
-                TokenUsageStore(path).record(0, 1)
+                TaskMemoryStore(path).record_task(
+                    "task-one", "Make the change", "codex", "luna", "medium", "coding", "failed"
+                )
 
             self.assertEqual(path.read_text(encoding="utf-8"), "not json")
 
-    def test_tracks_last_opened_project_without_replacing_token_usage(self):
+    def test_tracks_last_opened_project_without_replacing_task_history(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".daedalus-memory.json"
-            store = TokenUsageStore(path)
+            store = TaskMemoryStore(path)
             first_project = Path(directory) / "first"
             second_project = Path(directory) / "second"
 
-            store.record(0, 165)
+            store.record_task(
+                "task-one",
+                "Make the change",
+                "codex",
+                "luna",
+                "medium",
+                "coding",
+                "completed",
+                submitted_at=0,
+            )
             store.set_last_opened_project(first_project)
             store.set_last_opened_project(second_project)
 
@@ -116,12 +196,19 @@ class TokenUsageStoreTests(unittest.TestCase):
                 json.loads(path.read_text(encoding="utf-8")),
                 [
                     {
-                        "timestamp": "1970-01-01T00:00:00Z",
-                        "tokens": 165,
-                        "provider": None,
-                        "model": None,
-                        "reasoning": None,
-                        "project": None,
+                        "tasks": {
+                            "task-one": {
+                                "timestamp": "1970-01-01T00:00:00Z",
+                                "prompt": "Make the change",
+                                "provider": "codex",
+                                "model": "luna",
+                                "reasoning": "medium",
+                                "mode": "coding",
+                                "state": "completed",
+                                "outputs": [],
+                                "error": None,
+                            }
+                        }
                     },
                     {"last_opened_project": str(second_project.resolve())},
                 ],
@@ -130,7 +217,7 @@ class TokenUsageStoreTests(unittest.TestCase):
     def test_set_last_opened_project_keeps_one_marker_when_focus_changes_repeatedly(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".daedalus-memory.json"
-            store = TokenUsageStore(path)
+            store = TaskMemoryStore(path)
             first_project = Path(directory) / "first"
             second_project = Path(directory) / "second"
 
