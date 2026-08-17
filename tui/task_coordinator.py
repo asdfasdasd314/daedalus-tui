@@ -160,8 +160,8 @@ class TaskCoordinator:
             record.prompt_history = [prompt]
             record.memory_task_id = f"task-{task_id}"
             self._tasks[task_id] = record
+            self._persist_task(record)
             record.future = self.executor.submit(self._run, record)
-        self._persist_task(record)
         self._notify(record, "queued", "Task queued.", "status")
         return record
 
@@ -196,8 +196,8 @@ class TaskCoordinator:
             record.phase = "Queued (reviewing answers)"
             record.error = None
             record.plan_error = None
+            self._persist_task(record)
             record.future = self.executor.submit(self._run, record)
-        self._persist_task(record)
         self._notify(record, "queued", "Plan answers queued for agent confirmation.", "status")
         return True
 
@@ -292,8 +292,8 @@ class TaskCoordinator:
             record.finished_at = None
             if notes.strip():
                 record.resume_notes.append(notes.strip())
+            self._persist_task(record)
             record.future = self.executor.submit(self._run, record)
-        self._persist_task(record)
         self._notify(record, "queued", "Task queued to resume in its existing worktree.", "status")
         return True
 
@@ -311,8 +311,8 @@ class TaskCoordinator:
             record.status = "queued"
             record.phase = "Queued (continuing plan)"
             record.error = None
+            self._persist_task(record)
             record.future = self.executor.submit(self._run, record)
-        self._persist_task(record)
         self._notify(record, "queued", "Task queued for another planning pass.", "status")
         return True
 
@@ -333,8 +333,8 @@ class TaskCoordinator:
             record.status = "queued"
             record.phase = "Queued (starting coding)"
             record.error = None
+            self._persist_task(record)
             record.future = self.executor.submit(self._run, record)
-        self._persist_task(record)
         self._notify(record, "queued", "Task queued to start coding from its plan.", "status")
         return True
 
@@ -355,8 +355,8 @@ class TaskCoordinator:
             record.phase = "Queued (retrying)"
             record.error = None
             record.finished_at = None
+            self._persist_task(record)
             record.future = self.executor.submit(self._run, record)
-        self._persist_task(record)
         self._notify(record, "queued", "Task queued for retry.", "status")
         return True
 
