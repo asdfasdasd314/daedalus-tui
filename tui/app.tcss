@@ -104,6 +104,52 @@ Screen {
     color: $text-disabled;
 }
 
+#plan-review {
+    display: none;
+    height: 1fr;
+    border: round $primary;
+    padding: 1;
+    overflow-y: auto;
+}
+
+#plan-display {
+    color: $text;
+    height: auto;
+    margin-bottom: 1;
+}
+
+#plan-questions {
+    height: auto;
+}
+
+.plan-questions-heading {
+    color: $text-accent;
+    text-style: bold;
+    height: 1;
+}
+
+.plan-question {
+    color: $text;
+    height: auto;
+    margin-top: 1;
+}
+
+#plan-questions Select {
+    width: 1fr;
+    margin-top: 1;
+}
+
+#plan-actions {
+    height: 3;
+    align: left middle;
+    margin-top: 1;
+}
+
+#answer-plan-button, #implement-button {
+    width: 18;
+    margin-right: 1;
+}
+
 #prompt-input {
     color: $text;
 }

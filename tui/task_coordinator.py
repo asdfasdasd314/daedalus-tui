@@ -14,6 +14,12 @@ from .agent_runner import AgentControl, AgentRunner
 from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .orchestrator import LocalOrchestrator, OrchestrationResult, OrchestrationSettings
+from .plan import (
+    PlanQuestion,
+    build_implementation_prompt,
+    build_plan_followup_prompt,
+    parse_plan_response,
+)
 
 
 TaskEventCallback = Callable[["TaskRecord", str, str, str], None]
@@ -29,6 +35,7 @@ TASK_STATUSES = (
     "blocked",
     "paused",
     "cancelled",
+    "awaiting_answers",
 )
 
 
@@ -56,6 +63,12 @@ class TaskRecord:
     control: AgentControl = field(default_factory=AgentControl, repr=False, compare=False)
     future: Future | None = field(default=None, repr=False, compare=False)
     memory_task_id: str | None = field(default=None, repr=False, compare=False)
+    plan_text: str = ""
+    plan_questions: tuple[PlanQuestion, ...] = ()
+    plan_answers: dict[str, str] = field(default_factory=dict)
+    plan_confirmed: bool = False
+    plan_error: str | None = None
+    plan_followup_prompt: str | None = field(default=None, repr=False, compare=False)
 
 
 class IntegrationCoordinator:
@@ -128,6 +141,56 @@ class TaskCoordinator:
         self._persist_task(record)
         self._notify(record, "queued", "Task queued.", "status")
         return record
+
+    def answer_plan(self, task_id: str, answers: dict[str, str]) -> bool:
+        """Send selected plan answers back to the planning agent for confirmation."""
+        with self._lock:
+            record = self._tasks.get(task_id)
+            if (
+                record is None
+                or record.mode != "plan"
+                or record.plan_confirmed
+                or record.status not in {"completed", "awaiting_answers"}
+            ):
+                return False
+            question_ids = {question.question_id for question in record.plan_questions}
+            if not question_ids.issubset(answers):
+                return False
+            valid_answers = {
+                question.question_id: answer
+                for question in record.plan_questions
+                for answer in [answers.get(question.question_id)]
+                if answer is not None and any(option.option_id == answer for option in question.options)
+            }
+            if question_ids - valid_answers.keys():
+                return False
+            record.plan_answers.update(valid_answers)
+            record.plan_followup_prompt = build_plan_followup_prompt(
+                record.prompt, record.plan_text, record.plan_questions, record.plan_answers
+            )
+            record.status = "queued"
+            record.phase = "Queued (reviewing answers)"
+            record.error = None
+            record.plan_error = None
+            record.future = self.executor.submit(self._run, record)
+        self._persist_task(record)
+        self._notify(record, "queued", "Plan answers queued for agent confirmation.", "status")
+        return True
+
+    def implement_plan(self, task_id: str) -> TaskRecord | None:
+        """Create a new coding task from a confirmed plan review."""
+        record = self.get(task_id)
+        if record is None or record.mode != "plan" or record.status != "completed" or not record.plan_confirmed:
+            return None
+        if any(question.question_id not in record.plan_answers for question in record.plan_questions):
+            return None
+        return self.submit(
+            build_implementation_prompt(record.prompt, record.plan_text, record.plan_answers),
+            record.provider,
+            record.model,
+            record.reasoning,
+            mode="coding",
+        )
 
     def tasks(self) -> tuple[TaskRecord, ...]:
         with self._lock:
@@ -222,6 +285,13 @@ class TaskCoordinator:
     def _run(self, record: TaskRecord) -> None:
         record.started_at = time.time()
         self._persist_task(record)
+        message_start = len(record.messages)
+        if record.mode == "plan" and record.plan_followup_prompt and record.provider == "cursor":
+            # Cursor streams deltas by extending the last stored message. Give a
+            # follow-up response its own transcript slot before starting it.
+            record.messages.append("")
+        prompt = record.plan_followup_prompt or record.prompt
+        record.plan_followup_prompt = None
         orchestrator = LocalOrchestrator(
             self.repository,
             self.runner,
@@ -231,7 +301,7 @@ class TaskCoordinator:
         )
         try:
             result = orchestrator.run(
-                record.prompt,
+                prompt,
                 record.provider,
                 record.model,
                 record.reasoning,
@@ -254,6 +324,10 @@ class TaskCoordinator:
         record.branch_name = result.branch_name or record.branch_name
         record.worktree_path = result.worktree or record.worktree_path
         record.context = result.context or record.context
+        if record.mode == "plan":
+            # Plan worktrees are deliberately discarded by the orchestrator;
+            # the next answer round should inspect a fresh read-only worktree.
+            record.context = None
         record.tokens_consumed += result.tokens_consumed
         if result.paused:
             record.status = "paused"
@@ -270,14 +344,36 @@ class TaskCoordinator:
             self._notify(record, "cancelled", record.error, "error")
             return
         if result.succeeded:
-            record.status = "completed"
-            record.phase = "Completed"
+            if record.mode == "plan":
+                self._update_plan_state(record, record.messages[message_start:])
+            if record.mode == "plan" and not record.plan_confirmed:
+                record.status = "awaiting_answers"
+                record.phase = "Questions"
+            else:
+                record.status = "completed"
+                record.phase = "Completed"
         else:
             record.status = "failed"
             record.phase = "Failed"
             record.error = record.error or result.error or "Task failed."
         self._persist_task(record)
-        self._notify(record, "completed" if result.succeeded else "failed", "", "status")
+        self._notify(
+            record,
+            "questions" if result.succeeded and record.mode == "plan" and not record.plan_confirmed else
+            ("completed" if result.succeeded else "failed"),
+            "",
+            "status",
+        )
+
+    def _update_plan_state(self, record: TaskRecord, new_messages: list[str]) -> None:
+        response = "\n\n".join(new_messages).strip()
+        parsed = parse_plan_response(response)
+        record.plan_text = parsed.plan
+        record.plan_questions = parsed.questions
+        record.plan_confirmed = parsed.valid and parsed.no_more_questions and not parsed.questions
+        record.plan_error = parsed.error
+        if parsed.error:
+            record.error = parsed.error
 
     def _handle_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         record.phase = phase.replace("_", " ").capitalize()

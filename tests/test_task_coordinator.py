@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from tui.orchestrator import OrchestrationResult, OrchestrationSettings
 from tui.git_worktree import WorktreeContext
+from tui.plan import PlanOption, PlanQuestion
 from tui.task_coordinator import TASK_STATUSES, IntegrationCoordinator, TaskCoordinator, TaskRecord
 
 
@@ -282,6 +283,51 @@ class TaskCoordinatorTests(unittest.TestCase):
                 self.assertTrue(coordinator.cancel(record.task_id))
                 manager_class.return_value.remove_cancelled.assert_called_once_with(record.context)
             self.assertEqual(record.status, "cancelled")
+            coordinator.shutdown()
+
+    def test_plan_answers_require_agent_confirmation_before_implementation(self):
+        class PlanOrchestrator:
+            responses = [
+                '{"plan":"Add the selected store.","questions":[{"id":"q1",'
+                '"question":"Which store?","options":[{"id":"a","label":"SQLite"},'
+                '{"id":"b","label":"JSON"}]}],"no_more_questions":false}',
+                '{"plan":"Add the JSON store.","questions":[],"no_more_questions":true}',
+                "Implemented the approved plan.",
+            ]
+            prompts = []
+
+            def __init__(self, _repository, _runner, _settings, on_event, integration_gate=None):
+                self.on_event = on_event
+
+            def run(self, prompt, _provider, _model, _reasoning, task_id=None, **_kwargs):
+                type(self).prompts.append(prompt)
+                response = type(self).responses.pop(0)
+                self.on_event("agent", response, "message")
+                return OrchestrationResult(True, task_id)
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", PlanOrchestrator):
+                plan_record = coordinator.submit("Choose a store", "codex", "luna", "medium", mode="plan")
+                plan_record.future.result(timeout=5)
+
+                self.assertEqual(plan_record.status, "awaiting_answers")
+                self.assertFalse(plan_record.plan_confirmed)
+                self.assertFalse(
+                    coordinator.implement_plan(plan_record.task_id)
+                )
+                self.assertTrue(coordinator.answer_plan(plan_record.task_id, {"q1": "b"}))
+                plan_record.future.result(timeout=5)
+
+                self.assertTrue(plan_record.plan_confirmed)
+                self.assertEqual(plan_record.plan_questions, ())
+                coding_record = coordinator.implement_plan(plan_record.task_id)
+                self.assertIsNotNone(coding_record)
+                coding_record.future.result(timeout=5)
+
+            self.assertEqual(coding_record.mode, "coding")
+            self.assertIn("Add the JSON store", coding_record.prompt)
+            self.assertIn("Original user request", coding_record.prompt)
             coordinator.shutdown()
 
 
