@@ -10,13 +10,13 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "tests/test_agent_runner.py": {
-    "mtime": 1786913877.8365207,
-    "ast_hash": "bac9f63d98c8c4eb38eac589d308764f",
+    "mtime": 1786931990.2274833,
+    "ast_hash": "2366c881899dae5ed9d06c1593852647",
     "semantic_hash": ""
   },
   "tests/test_app.py": {
-    "mtime": 1786931589.829611,
-    "ast_hash": "83d9405bbb663bd4586ee7efe6341eb5",
+    "mtime": 1786931990.227912,
+    "ast_hash": "70aa67b3a5b0dc3c73a36e245c241aae",
     "semantic_hash": ""
   },
   "tests/test_config.py": {
@@ -70,13 +70,13 @@
     "semantic_hash": "84120c28c89cfb4312dbc2f971c5d325"
   },
   "tui/agent_runner.py": {
-    "mtime": 1786913877.838239,
-    "ast_hash": "4bddc095ee95e72662c85bde49f3ea41",
+    "mtime": 1786931990.2286766,
+    "ast_hash": "13a9798676bfd6e575fb5cba3805f7c8",
     "semantic_hash": ""
   },
   "tui/app.py": {
-    "mtime": 1786931589.830045,
-    "ast_hash": "6614193d9f23dcd07f490ac625181ed9",
+    "mtime": 1786931990.2289722,
+    "ast_hash": "7e611a4e86ebe3ec07d2a4e7896e4c9d",
     "semantic_hash": ""
   },
   "tui/clipboard.py": {
@@ -105,8 +105,8 @@
     "semantic_hash": "e5c00634ce8bd1e0a3f5dc86854c8119"
   },
   "tui/orchestrator.py": {
-    "mtime": 1786913877.8389485,
-    "ast_hash": "bb26a03c7b803797e4b9938487cec981",
+    "mtime": 1786931990.229279,
+    "ast_hash": "d4a6a184b1522f4242d612cfbde5ea51",
     "semantic_hash": ""
   },
   "tui/projects.py": {
@@ -120,8 +120,8 @@
     "semantic_hash": "da846a56fad315bc977d3a03984ad962"
   },
   "tui/task_coordinator.py": {
-    "mtime": 1786913877.8394322,
-    "ast_hash": "c2dcd786ef7f2e64fa94e20ef3c71ab9",
+    "mtime": 1786931990.2296689,
+    "ast_hash": "f95ec66ab13296b5ae8ba5b7bce9a52a",
     "semantic_hash": ""
   },
   "tui/verification.py": {
@@ -145,8 +145,8 @@
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui.md": {
-    "mtime": 1786931545.0362809,
-    "ast_hash": "2cce4f3dd5293047b560dc9a74691ff9",
+    "mtime": 1786931990.2270582,
+    "ast_hash": "98644f9a0816e4016b31d02591c3567e",
     "semantic_hash": ""
   },
   "requirements.txt": {
