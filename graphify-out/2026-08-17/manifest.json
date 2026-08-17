@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "tests/test_app.py": {
-    "mtime": 1787003379.9613655,
-    "ast_hash": "77f944cd01fe20b7ac1c4eb38c81efd1",
+    "mtime": 1787003474.4661098,
+    "ast_hash": "2ae6fd8fa9f4c01abf15a1985faf3428",
     "semantic_hash": ""
   },
   "tests/test_config.py": {

@@ -1,7 +1,7 @@
 # Graph Report - daedalus-tui  (2026-08-17)
 
 ## Corpus Check
-- 45 files · ~23,551 words
+- 45 files · ~23,559 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
