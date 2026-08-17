@@ -189,12 +189,12 @@ class DaedalusVimTextArea(VimTextArea):
         return self._overlay_insert_bar(strip, bar_x)
 
     def _overlay_insert_bar(self, strip: Strip, x: int) -> Strip:
-        """Paint a thin vertical caret at the insertion point."""
+        """Paint a thin vertical caret between characters at the insertion point."""
         if strip.cell_length <= 0:
             return strip
-        x = max(0, min(x, strip.cell_length - 1))
-        parts = strip.divide([x, x + 1])
-        if len(parts) < 2:
+        x = max(0, min(x, strip.cell_length))
+        parts = strip.divide([x])
+        if len(parts) != 2:
             return strip
         cursor_style = self.get_component_rich_style("text-area--cursor")
         bar_style = Style(
@@ -202,8 +202,7 @@ class DaedalusVimTextArea(VimTextArea):
             bgcolor=cursor_style.bgcolor,
         )
         bar = Strip([Segment(_INSERT_CURSOR_BAR, bar_style)], 1)
-        trailing = parts[2:] if len(parts) > 2 else []
-        return Strip.join([parts[0], bar, *trailing])
+        return Strip.join([parts[0], bar, parts[1]])
 
     def _enter_visual_line_mode(self) -> None:
         """Select the current line and enter Vim visual-line mode."""
