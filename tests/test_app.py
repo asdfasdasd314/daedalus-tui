@@ -1,5 +1,6 @@
 import json
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -633,6 +634,74 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             coordinator.emit(record, "completed", "", "status")
             await pilot.pause()
             self.assertFalse(app.query_one("#implement-button", Button).disabled)
+
+    async def test_plan_review_survives_streamed_completion_event(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Plan the storage change")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            response = (
+                'BEGIN_DAEDALUS_PLAN{"plan":"Use the selected storage layer.",'
+                '"questions":[{"id":"q1","question":"Which storage layer?",'
+                '"options":[{"id":"a","label":"SQLite"},{"id":"b","label":"JSON"}]},'
+                '{"id":"q2","question":"Which format?",'
+                '"options":[{"id":"a","label":"Compact"},{"id":"b","label":"Readable"}]}],'
+                '"no_more_questions":false}END_DAEDALUS_PLAN'
+            )
+
+            def emit_realistic_plan_events() -> None:
+                record.messages.append(response)
+                record.status = "planning"
+                record.phase = "Planning"
+                coordinator.emit(record, "agent", response, "message")
+                record.status = "awaiting_answers"
+                record.phase = "Questions"
+                record.plan_text = "Use the selected storage layer."
+                record.plan_questions = (
+                    PlanQuestion(
+                        "q1",
+                        "Which storage layer?",
+                        (PlanOption("a", "SQLite"), PlanOption("b", "JSON")),
+                    ),
+                    PlanQuestion(
+                        "q2",
+                        "Which format?",
+                        (PlanOption("a", "Compact"), PlanOption("b", "Readable")),
+                    ),
+                )
+                coordinator.emit(record, "questions", "", "status")
+
+            event_thread = threading.Thread(target=emit_realistic_plan_events)
+            event_thread.start()
+            await pilot.pause()
+            event_thread.join(timeout=1)
+            await pilot.pause()
+
+            self.assertFalse(event_thread.is_alive())
+            self.assertEqual(
+                [app.query_one(f"#plan-question-{index}", Select).value for index in range(2)],
+                [Select.NULL, Select.NULL],
+            )
+            self.assertEqual(app.query_one("#phase", Static).render().plain, "Phase: Questions")
+
+    async def test_plan_review_render_error_does_not_exit_tui(self):
+        app, _coordinator = self.make_app()
+
+        async def fail_rebuild(*_args):
+            raise RuntimeError("synthetic plan widget failure")
+
+        async with app.run_test() as pilot:
+            with patch.object(app, "_rebuild_plan_questions", fail_rebuild):
+                app.query_one("#mode-select", Select).value = "plan"
+                app.query_one("#prompt-input", TextArea).insert("Plan safely")
+                app.action_submit_prompt()
+                await pilot.pause()
+
+            self.assertIsNone(app._exception)
+            self.assertEqual(str(app.query_one("#status", Static).render()), "Error")
+            self.assertIn("synthetic plan widget failure", app.query_one("#task-error", TextArea).text)
 
     async def test_paused_task_exposes_optional_resume_notes(self):
         app, coordinator = self.make_app()

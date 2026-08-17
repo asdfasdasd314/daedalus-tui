@@ -1,16 +1,16 @@
 # Graph Report - daedalus-tui  (2026-08-17)
 
 ## Corpus Check
-- 45 files · ~22,127 words
+- 45 files · ~22,451 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 581 nodes · 1480 edges · 25 communities (23 shown, 2 thin omitted)
+- 584 nodes · 1491 edges · 25 communities (23 shown, 2 thin omitted)
 - Extraction: 87% EXTRACTED · 13% INFERRED · 0% AMBIGUOUS · INFERRED: 199 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0f7bafec`
+- Built from commit: `ccdda5a1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -41,28 +41,28 @@
 - Daedalus TUI Coding Statistics
 
 ## God Nodes (most connected - your core abstractions)
-1. `DaedalusTuiApp` - 74 edges
-2. `TuiAppTests` - 49 edges
+1. `DaedalusTuiApp` - 75 edges
+2. `TuiAppTests` - 51 edges
 3. `TaskCoordinator` - 48 edges
 4. `DaedalusVimTextArea` - 48 edges
 5. `AgentRunner` - 47 edges
 6. `GitWorktreeManager` - 44 edges
 7. `OrchestrationSettings` - 40 edges
-8. `TaskRecord` - 38 edges
+8. `TaskRecord` - 39 edges
 9. `WorktreeContext` - 37 edges
 10. `LocalOrchestrator` - 34 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `FakeStream` --uses--> `AgentControl`  [INFERRED]
+  tests/test_agent_runner.py → tui/agent_runner.py
+- `FakeProcess` --uses--> `AgentControl`  [INFERRED]
+  tests/test_agent_runner.py → tui/agent_runner.py
+- `InterruptibleProcess` --uses--> `AgentControl`  [INFERRED]
+  tests/test_agent_runner.py → tui/agent_runner.py
+- `AgentRunnerTests` --uses--> `AgentControl`  [INFERRED]
+  tests/test_agent_runner.py → tui/agent_runner.py
 - `FakeRunner` --uses--> `DaedalusTuiApp`  [INFERRED]
   tests/test_app.py → tui/app.py
-- `FakeRunner` --uses--> `PlanOption`  [INFERRED]
-  tests/test_app.py → tui/plan.py
-- `FakeRunner` --uses--> `PlanQuestion`  [INFERRED]
-  tests/test_app.py → tui/plan.py
-- `FakeRunner` --uses--> `TaskRecord`  [INFERRED]
-  tests/test_app.py → tui/task_coordinator.py
-- `FakeRunner` --uses--> `DaedalusVimTextArea`  [INFERRED]
-  tests/test_app.py → tui/vim_text_area.py
 
 ## Import Cycles
 - None detected.
@@ -78,12 +78,12 @@ Cohesion: 0.06
 Nodes (17): TuiAppTests, DaedalusVimTextArea, Key, Keep Enter as a newline; Ctrl+Enter remains the app submit key., Route visual-line mode and mirror new yanks to the host clipboard., Paste Vim's register, falling back to the system clipboard., Paste before the cursor, including from the system clipboard., Add Daedalus prompt commands that the dependency does not provide. (+9 more)
 
 ### Community 2 - "AgentRunner"
-Cohesion: 0.08
-Nodes (19): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentControl, AgentLogEvent (+11 more)
+Cohesion: 0.09
+Nodes (16): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+8 more)
 
 ### Community 3 - "DaedalusTuiApp"
-Cohesion: 0.09
-Nodes (9): Changed, Pressed, DaedalusTuiApp, Key, Path, Add Vim-like navigation without changing TextArea insert behavior., Clear the selected task and unlock a fresh prompt editor., Return a TextArea selection or the active screen selection. (+1 more)
+Cohesion: 0.08
+Nodes (11): Changed, Pressed, DaedalusTuiApp, Key, Path, Add Vim-like navigation without changing TextArea insert behavior., Replace question controls after Textual has completed child removal., Clear the selected task and unlock a fresh prompt editor. (+3 more)
 
 ### Community 4 - "app.py"
 Cohesion: 0.06
@@ -106,8 +106,8 @@ Cohesion: 0.12
 Nodes (10): GitWorktreeTests, GitWorktreeManager, CompletedProcess, Path, Compatibility alias for callers that used the original private helper., Stage the current worktree contents for orchestration checks or commit., Remove graphify output changes from an agent worktree.          Graphify refresh, Keep a read-only planning pass from becoming an implementation change. (+2 more)
 
 ### Community 11 - "Key"
-Cohesion: 0.08
-Nodes (33): EventCallback, IntegrationGate, OrchestratorTests, FakeOrchestrator, TaskCoordinatorTests, VerificationTests, AgentResult, GitWorktreeError (+25 more)
+Cohesion: 0.07
+Nodes (36): EventCallback, IntegrationGate, OrchestratorTests, FakeOrchestrator, TaskCoordinatorTests, VerificationTests, AgentControl, AgentResult (+28 more)
 
 ### Community 12 - "Path"
 Cohesion: 0.29
@@ -138,8 +138,8 @@ Cohesion: 0.40
 Nodes (4): Development Lifecycle, Execution Boundaries (CRITICAL), Integration Boundaries, Parameter Files
 
 ### Community 20 - ".__init__"
-Cohesion: 0.16
-Nodes (11): TaskEventCallback, Replace question controls after Textual has completed child removal., Path, Submit independent prompts while sharing a serialized integration gate., Send selected plan answers back to the planning agent for confirmation., Create a new coding task from a confirmed plan review., Run another planning pass while keeping the task in questioning., Promote a reviewed plan into the normal coding and verification route. (+3 more)
+Cohesion: 0.19
+Nodes (10): TaskEventCallback, Path, Submit independent prompts while sharing a serialized integration gate., Send selected plan answers back to the planning agent for confirmation., Create a new coding task from a confirmed plan review., Run another planning pass while keeping the task in questioning., Promote a reviewed plan into the normal coding and verification route., Persist the latest task state without affecting task execution. (+2 more)
 
 ### Community 21 - "TokenUsageStore"
 Cohesion: 0.07
@@ -150,8 +150,8 @@ Cohesion: 0.26
 Nodes (12): Any, PlanTests, build_implementation_prompt(), build_plan_followup_prompt(), parse_plan_response(), _parse_question(), _payload_text(), PlanOption (+4 more)
 
 ### Community 23 - "update_repository"
-Cohesion: 0.23
-Nodes (6): GraphifyTests, Path, Best-effort graph refresh owned by the local orchestration layer., Refresh the primary repository graph without affecting task success., update_repository(), Refresh graph metadata after promotion without blocking the task.
+Cohesion: 0.29
+Nodes (5): GraphifyTests, Path, Best-effort graph refresh owned by the local orchestration layer., Refresh the primary repository graph without affecting task success., update_repository()
 
 ### Community 24 - "Daedalus TUI Coding Statistics"
 Cohesion: 0.29
@@ -167,7 +167,7 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `DaedalusVimTextArea`, `AgentRunner`, `app.py`, `GitWorktreeManager`, `Key`, `.__init__`, `TokenUsageStore`?**
   _High betweenness centrality (0.190) - this node is a cross-community bridge._
-- **Why does `AgentRunner` connect `AgentRunner` to `Key`, `DaedalusTuiApp`, `app.py`, `.__init__`?**
+- **Why does `AgentRunner` connect `AgentRunner` to `DaedalusTuiApp`, `Key`, `app.py`, `.__init__`?**
   _High betweenness centrality (0.140) - this node is a cross-community bridge._
 - **Why does `DaedalusVimTextArea` connect `DaedalusVimTextArea` to `DaedalusTuiApp`, `app.py`, `GitWorktreeManager`?**
   _High betweenness centrality (0.118) - this node is a cross-community bridge._

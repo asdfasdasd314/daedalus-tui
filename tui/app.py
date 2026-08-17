@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 import threading
 
@@ -219,6 +220,7 @@ class DaedalusTuiApp(App[None]):
         self._selected_task_id: str | None = None
         self._new_task_mode = True
         self._vim_pending_g = False
+        self._plan_review_generation = 0
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -557,6 +559,8 @@ class DaedalusTuiApp(App[None]):
 
     def _render_selected_task(self) -> None:
         record = self.coordinator.get(self._selected_task_id or "")
+        self._plan_review_generation += 1
+        plan_review_generation = self._plan_review_generation
         output = self.query_one("#output", TranscriptLog)
         output.clear()
         if record is None:
@@ -583,7 +587,7 @@ class DaedalusTuiApp(App[None]):
         plan_review.styles.display = "block" if record.mode == "plan" else "none"
         output.styles.display = "none" if record.mode == "plan" else "block"
         if record.mode == "plan":
-            self._render_plan_review(record)
+            self._render_plan_review(record, plan_review_generation)
         else:
             for index, message in enumerate(record.messages):
                 output.write_message(
@@ -621,17 +625,34 @@ class DaedalusTuiApp(App[None]):
             "Plan follow-up or question" if record.status == "questioning" else "Optional notes for resuming this task"
         )
 
-    def _render_plan_review(self, record: TaskRecord) -> None:
+    def _render_plan_review(self, record: TaskRecord, generation: int) -> None:
         plan_display = self.query_one("#plan-display", Static)
         plan_display.update(record.plan_text or "Waiting for the agent to return a structured plan.")
-        questions = record.plan_questions
+        questions = tuple(record.plan_questions)
+        answers = dict(record.plan_answers)
 
         async def rebuild_questions() -> None:
-            await self._rebuild_plan_questions(record)
+            try:
+                await self._rebuild_plan_questions(record, questions, answers, generation)
+            except asyncio.CancelledError:
+                raise
+            except Exception as error:
+                # A stale dynamic widget must never terminate the whole TUI.
+                # Textual workers exit the app on uncaught errors by default.
+                if generation == self._plan_review_generation:
+                    self._set_error(f"Plan review could not be rendered: {error}")
+                    self._set_status("Error")
 
-        self.run_worker(rebuild_questions, exclusive=True, group="plan-questions")
+        self.run_worker(
+            rebuild_questions,
+            exclusive=True,
+            group="plan-questions",
+            exit_on_error=False,
+        )
         answer_button = self.query_one("#answer-plan-button", Button)
-        answer_button.disabled = not questions
+        # The button stays disabled until the asynchronous controls have been
+        # mounted, so a fast click cannot query widgets that do not exist yet.
+        answer_button.disabled = True
         self._update_plan_action_buttons()
 
     def _update_plan_action_buttons(self) -> None:
@@ -660,27 +681,46 @@ class DaedalusTuiApp(App[None]):
     def _has_plan_answer(value) -> bool:
         return value not in (Select.BLANK, "", getattr(Select, "NULL", object()))
 
-    async def _rebuild_plan_questions(self, record: TaskRecord) -> None:
+    async def _rebuild_plan_questions(
+        self,
+        record: TaskRecord,
+        questions: tuple[PlanQuestion, ...],
+        answers: dict[str, str],
+        generation: int,
+    ) -> None:
         """Replace question controls after Textual has completed child removal."""
+        if not self._is_current_plan_review(record, generation):
+            return
         question_container = self.query_one("#plan-questions", Vertical)
         await question_container.remove_children()
-        if not record.plan_questions:
-            await question_container.mount(Static("No questions from the agent."))
+        if not self._is_current_plan_review(record, generation):
             return
-        widgets = [Static("Questions", classes="plan-questions-heading")]
-        for index, question in enumerate(record.plan_questions):
-            widgets.extend(
-                (
-                    Static(question.text, classes="plan-question"),
-                    Select(
-                        [(option.label, option.option_id) for option in question.options],
-                        value=record.plan_answers.get(question.question_id, Select.NULL),
-                        allow_blank=True,
-                        id=f"plan-question-{index}",
-                    ),
+        if not questions:
+            await question_container.mount(Static("No questions from the agent."))
+        else:
+            widgets = [Static("Questions", classes="plan-questions-heading")]
+            for index, question in enumerate(questions):
+                widgets.extend(
+                    (
+                        Static(question.text, classes="plan-question"),
+                        Select(
+                            [(option.label, option.option_id) for option in question.options],
+                            value=answers.get(question.question_id, Select.NULL),
+                            allow_blank=True,
+                            id=f"plan-question-{index}",
+                        ),
+                    )
                 )
-            )
-        await question_container.mount(*widgets)
+            await question_container.mount(*widgets)
+        if self._is_current_plan_review(record, generation):
+            self._update_plan_action_buttons()
+
+    def _is_current_plan_review(self, record: TaskRecord, generation: int) -> bool:
+        return (
+            generation == self._plan_review_generation
+            and self.coordinator.get(record.task_id) is record
+            and self._selected_task_id == record.task_id
+        )
 
     def _answer_plan(self) -> None:
         record = self.coordinator.get(self._selected_task_id or "")
