@@ -50,8 +50,8 @@
     "semantic_hash": "fbbea802f5e1157403f9c3c254f230c4"
   },
   "tests/test_task_coordinator.py": {
-    "mtime": 1786986445.0448258,
-    "ast_hash": "b42803b23a6d50ec730ac4b83cff4e0f",
+    "mtime": 1786990656.5008578,
+    "ast_hash": "3cd2b14bb1bf2b42ee3700f19137cd6e",
     "semantic_hash": ""
   },
   "tests/test_verification.py": {
@@ -105,8 +105,8 @@
     "semantic_hash": "e5c00634ce8bd1e0a3f5dc86854c8119"
   },
   "tui/orchestrator.py": {
-    "mtime": 1786931990.229279,
-    "ast_hash": "d4a6a184b1522f4242d612cfbde5ea51",
+    "mtime": 1786990656.5014265,
+    "ast_hash": "6f0b6c402ca82725992984b93bb04ac0",
     "semantic_hash": ""
   },
   "tui/projects.py": {
@@ -120,8 +120,8 @@
     "semantic_hash": "da846a56fad315bc977d3a03984ad962"
   },
   "tui/task_coordinator.py": {
-    "mtime": 1786986445.0461707,
-    "ast_hash": "9cb9b29056fe5a0758879f1e0884d7c6",
+    "mtime": 1786990656.5016158,
+    "ast_hash": "27ee911584663e636ed009b697e8ce61",
     "semantic_hash": ""
   },
   "tui/verification.py": {
@@ -135,8 +135,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1786986445.0438924,
-    "ast_hash": "fb821d65099133f0ae4ff350cd7b8b24",
+    "mtime": 1786990656.4989288,
+    "ast_hash": "2865d67627c538572d9144460f20f079",
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-orchestration.md": {
@@ -155,13 +155,13 @@
     "semantic_hash": ""
   },
   "tests/test_memory.py": {
-    "mtime": 1786986445.0444531,
-    "ast_hash": "8ebeb193efed2f10a9c6c41ecb79935d",
+    "mtime": 1786990656.500391,
+    "ast_hash": "2be5bda1665701b3fcd61b8b56503cec",
     "semantic_hash": ""
   },
   "tui/memory.py": {
-    "mtime": 1786986445.045636,
-    "ast_hash": "0f1a7576bdf0fa8eb520289e0654235c",
+    "mtime": 1786990656.5010726,
+    "ast_hash": "1c8e8316bc8c6c0d553bac77d87a4af9",
     "semantic_hash": ""
   },
   ".agents/profiles/architecture.md": {
@@ -195,8 +195,8 @@
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-local-memory.md": {
-    "mtime": 1786986445.044157,
-    "ast_hash": "f0cf782b0269ab91f939b17052c416a5",
+    "mtime": 1786990656.4992743,
+    "ast_hash": "cee0b3311866c3408b2a38fe1ca0cfeb",
     "semantic_hash": ""
   }
 }
