@@ -43,3 +43,4 @@ HACKING
 - 2026-08-16: Switched the output pane from RichLog to Log so transcript text supports click-drag selection and yank without editing.
 - 2026-08-16: Kept task selection user-controlled during background events and streamed Cursor assistant deltas into the live transcript.
 - 2026-08-17: Matched selectable output highlighting to the prompt selection colors so selected transcript characters remain readable.
+- 2026-08-17: Added quieter progress-message text, a brighter final assistant summary, and faded styling for immutable submitted prompts.

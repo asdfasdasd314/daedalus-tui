@@ -503,6 +503,32 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsNotNone(selected)
             self.assertEqual(selected[0], "Selectable")
 
+    async def test_final_assistant_message_uses_brighter_transcript_tone(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#prompt-input", TextArea).insert("Build the feature")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.messages.extend(["I am inspecting the worktree.", "The feature is complete."])
+            record.status = "completed"
+            record.phase = "Completed"
+            coordinator.emit(record, "completed", "", "status")
+            await pilot.pause()
+
+            output = app.query_one("#output", Log)
+            self.assertEqual(output.line_tones[:2], ("generic", "final"))
+
+    async def test_submitted_prompt_uses_faded_read_only_text_style(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("Keep this task immutable")
+            app.action_submit_prompt()
+            await pilot.pause()
+
+            self.assertTrue(prompt.read_only)
+            self.assertTrue(prompt.has_class("-read-only"))
+
     async def test_output_selection_uses_prompt_selection_colors(self):
         app, _ = self.make_app()
         async with app.run_test():

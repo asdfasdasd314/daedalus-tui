@@ -16,6 +16,7 @@ from .config import TuiSettings, load_orchestration_settings, load_tui_settings
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .projects import DaedalusProject, discover_projects
 from .task_coordinator import TaskCoordinator, TaskRecord
+from .transcript import TranscriptLog
 from .vim_text_area import DaedalusVimTextArea
 
 
@@ -172,7 +173,7 @@ class DaedalusTuiApp(App[None]):
                     yield Static("Task branch: —    Worktree: —", id="task-context")
                     yield TextArea("", read_only=True, show_line_numbers=False, id="task-error")
                     # Log supports Textual click-drag selection; RichLog does not.
-                    yield Log(id="output", auto_scroll=True)
+                    yield TranscriptLog(id="output", auto_scroll=True)
                     with Vertical(id="composer"):
                         yield DaedalusVimTextArea(
                             id="prompt-input",
@@ -423,7 +424,7 @@ class DaedalusTuiApp(App[None]):
 
     def _render_selected_task(self) -> None:
         record = self.coordinator.get(self._selected_task_id or "")
-        output = self.query_one("#output", Log)
+        output = self.query_one("#output", TranscriptLog)
         output.clear()
         if record is None:
             self._set_prompt_text("", editable=True)
@@ -435,10 +436,15 @@ class DaedalusTuiApp(App[None]):
             self.query_one("#cancel-button", Button).disabled = True
             self.query_one("#resume-notes-panel", Vertical).styles.display = "none"
             return
+        # Resolve this from the theme rather than the current prompt state:
+        # selecting an existing task has already made the prompt read-only.
+        output.set_final_color(self.get_css_variables().get("text"))
         self._set_prompt_text(record.prompt, editable=False)
-        for message in record.messages:
-            block = message if message.endswith("\n") else f"{message}\n"
-            output.write(block)
+        for index, message in enumerate(record.messages):
+            output.write_message(
+                message,
+                final=record.status == "completed" and index == len(record.messages) - 1,
+            )
         worktree = str(record.worktree_path) if record.worktree_path else "—"
         branch = record.branch_name or "—"
         reasoning = record.reasoning or "not applicable"
@@ -473,6 +479,7 @@ class DaedalusTuiApp(App[None]):
         prompt.read_only = False
         prompt.load_text(text)
         prompt.read_only = not editable
+        self.query_one("#output", TranscriptLog).invalidate_render_cache()
         send_button = self.query_one("#send-button", Button)
         send_button.disabled = not editable
         if editable:

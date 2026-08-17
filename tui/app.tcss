@@ -74,7 +74,7 @@ Screen {
 }
 
 #directory, #phase, #title, #task-label, #task-context, #status,
-#resume-notes-label, #output, #task-error {
+#resume-notes-label, #task-error {
     color: $text-muted;
     pointer: text;
 }
@@ -100,6 +100,17 @@ Screen {
     height: 1fr;
     border: round $primary;
     padding: 1;
+    /* Keep progress narration quiet until the agent's final summary. */
+    color: $text-disabled;
+}
+
+#prompt-input {
+    color: $text;
+}
+
+#prompt-input.-read-only {
+    /* Submitted prompts are still selectable, but are no longer editable. */
+    color: $text-disabled 75%;
 }
 
 #composer {
