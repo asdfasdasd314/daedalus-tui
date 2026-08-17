@@ -1,16 +1,16 @@
 # Graph Report - daedalus-tui  (2026-08-17)
 
 ## Corpus Check
-- 40 files · ~17,642 words
+- 40 files · ~17,677 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 483 nodes · 1199 edges · 23 communities (21 shown, 2 thin omitted)
-- Extraction: 87% EXTRACTED · 13% INFERRED · 0% AMBIGUOUS · INFERRED: 161 edges (avg confidence: 0.55)
+- 484 nodes · 1202 edges · 22 communities (20 shown, 2 thin omitted)
+- Extraction: 87% EXTRACTED · 13% INFERRED · 0% AMBIGUOUS · INFERRED: 162 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7f561b7e`
+- Built from commit: `8b17f084`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -36,14 +36,13 @@
 - integrating.md
 - .__init__
 - TokenUsageStore
-- update_repository
 
 ## God Nodes (most connected - your core abstractions)
 1. `DaedalusTuiApp` - 61 edges
 2. `AgentRunner` - 46 edges
-3. `DaedalusVimTextArea` - 45 edges
-4. `GitWorktreeManager` - 43 edges
-5. `TuiAppTests` - 42 edges
+3. `DaedalusVimTextArea` - 46 edges
+4. `TuiAppTests` - 43 edges
+5. `GitWorktreeManager` - 43 edges
 6. `TaskCoordinator` - 39 edges
 7. `OrchestrationSettings` - 35 edges
 8. `WorktreeContext` - 34 edges
@@ -65,27 +64,27 @@
 ## Import Cycles
 - None detected.
 
-## Communities (23 total, 2 thin omitted)
+## Communities (22 total, 2 thin omitted)
 
 ### Community 0 - "update_repository"
 Cohesion: 0.33
 Nodes (5): PromptTests, build_repair_prompt(), build_resolver_prompt(), build_task_prompt(), Prompt wrappers used by task and resolver agents.
 
 ### Community 1 - "DaedalusVimTextArea"
-Cohesion: 0.07
-Nodes (15): TuiAppTests, DaedalusVimTextArea, Key, Keep Enter as a newline; Ctrl+Enter remains the app submit key., Route visual-line mode and mirror new yanks to the host clipboard., Add Daedalus prompt commands that the dependency does not provide., Select the current line and enter Vim visual-line mode., VimTextArea with multiline prompt behavior and system clipboard sync. (+7 more)
+Cohesion: 0.06
+Nodes (16): FakeCoordinator, TuiAppTests, DaedalusVimTextArea, Key, Keep Enter as a newline; Ctrl+Enter remains the app submit key., Route visual-line mode and mirror new yanks to the host clipboard., Add Daedalus prompt commands that the dependency does not provide., Select the current line and enter Vim visual-line mode. (+8 more)
 
 ### Community 2 - "AgentRunner"
-Cohesion: 0.09
-Nodes (16): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+8 more)
+Cohesion: 0.08
+Nodes (18): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+10 more)
 
 ### Community 3 - "DaedalusTuiApp"
-Cohesion: 0.08
+Cohesion: 0.09
 Nodes (11): Changed, ComposeResult, Pressed, DaedalusTuiApp, Key, Path, Add Vim-like navigation without changing TextArea insert behavior., Clear the selected task and unlock a fresh prompt editor. (+3 more)
 
 ### Community 4 - "app.py"
-Cohesion: 0.07
-Nodes (28): FakeCoordinator, FakeRunner, settings(), ConfigTests, ProjectDiscoveryTests, KeyboardShortcutsScreen, Textual interface for concurrent local agent tasks., Modal reference for the app and prompt editor keyboard shortcuts. (+20 more)
+Cohesion: 0.08
+Nodes (27): FakeRunner, settings(), ConfigTests, ProjectDiscoveryTests, KeyboardShortcutsScreen, Textual interface for concurrent local agent tasks., Modal reference for the app and prompt editor keyboard shortcuts., copy_to_system_clipboard() (+19 more)
 
 ### Community 5 - "TokenUsageStore"
 Cohesion: 0.29
@@ -104,8 +103,8 @@ Cohesion: 0.13
 Nodes (9): GitWorktreeTests, GitWorktreeManager, CompletedProcess, Path, Compatibility alias for callers that used the original private helper., Stage the current worktree contents for orchestration checks or commit., Remove graphify output changes from an agent worktree.          Graphify refresh, Commit only the generated graph after a successful primary update. (+1 more)
 
 ### Community 11 - "Key"
-Cohesion: 0.11
-Nodes (27): OrchestratorTests, VerificationTests, AgentControl, AgentResult, Provider-specific subprocess execution with normalized agent messages., Cooperative stop signals shared by a task and its active subprocess., GitWorktreeError, RuntimeError (+19 more)
+Cohesion: 0.08
+Nodes (29): EventCallback, IntegrationGate, GraphifyTests, OrchestratorTests, VerificationTests, AgentControl, AgentResult, Cooperative stop signals shared by a task and its active subprocess. (+21 more)
 
 ### Community 12 - "Path"
 Cohesion: 0.29
@@ -136,16 +135,12 @@ Cohesion: 0.40
 Nodes (4): Development Lifecycle, Execution Boundaries (CRITICAL), Integration Boundaries, Parameter Files
 
 ### Community 20 - ".__init__"
-Cohesion: 0.12
-Nodes (14): EventCallback, IntegrationGate, TaskEventCallback, FakeOrchestrator, TaskCoordinatorTests, OrchestrationSettings, Path, IntegrationCoordinator (+6 more)
+Cohesion: 0.13
+Nodes (15): TaskEventCallback, FakeOrchestrator, TaskCoordinatorTests, Local Git worktree lifecycle used by the standalone orchestrator., WorktreeContext, OrchestrationResult, OrchestrationSettings, IntegrationCoordinator (+7 more)
 
 ### Community 21 - "TokenUsageStore"
 Cohesion: 0.15
 Nodes (9): TaskMemoryStoreTests, Path, Small local JSON stores for persistent task history., Persist task history and the most recently opened project., Return the remembered project path, if the memory contains one., Set the single project marker without losing task records., Backward-compatible alias for :meth:`set_last_opened_project`., Upsert a task snapshot keyed by the task worktree's directory name. (+1 more)
-
-### Community 22 - "update_repository"
-Cohesion: 0.29
-Nodes (5): GraphifyTests, Path, Best-effort graph refresh owned by the local orchestration layer., Refresh the primary repository graph without affecting task success., update_repository()
 
 ## Knowledge Gaps
 - **44 isolated node(s):** `daedalus-tui`, `Execution Boundaries (CRITICAL)`, `Evidence Extraction`, `Architecture Boundaries`, `Parameter Files` (+39 more)
@@ -155,17 +150,17 @@ Nodes (5): GraphifyTests, Path, Best-effort graph refresh owned by the local orc
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `DaedalusVimTextArea`, `AgentRunner`, `app.py`, `GitWorktreeManager`, `Key`, `.__init__`, `TokenUsageStore`?**
+- **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `DaedalusVimTextArea`, `AgentRunner`, `app.py`, `GitWorktreeManager`, `.__init__`, `TokenUsageStore`?**
   _High betweenness centrality (0.203) - this node is a cross-community bridge._
-- **Why does `AgentRunner` connect `AgentRunner` to `DaedalusTuiApp`, `Key`, `app.py`, `.__init__`?**
+- **Why does `AgentRunner` connect `AgentRunner` to `Key`, `DaedalusTuiApp`, `app.py`, `.__init__`?**
   _High betweenness centrality (0.159) - this node is a cross-community bridge._
 - **Why does `DaedalusVimTextArea` connect `DaedalusVimTextArea` to `DaedalusTuiApp`, `app.py`, `GitWorktreeManager`?**
-  _High betweenness centrality (0.136) - this node is a cross-community bridge._
+  _High betweenness centrality (0.137) - this node is a cross-community bridge._
 - **Are the 12 inferred relationships involving `DaedalusTuiApp` (e.g. with `FakeCoordinator` and `FakeRunner`) actually correct?**
   _`DaedalusTuiApp` has 12 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 13 inferred relationships involving `AgentRunner` (e.g. with `AgentRunnerTests` and `FakeProcess`) actually correct?**
   _`AgentRunner` has 13 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 21 inferred relationships involving `DaedalusVimTextArea` (e.g. with `FakeCoordinator` and `FakeRunner`) actually correct?**
-  _`DaedalusVimTextArea` has 21 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 8 inferred relationships involving `GitWorktreeManager` (e.g. with `GitWorktreeTests` and `AgentStopped`) actually correct?**
-  _`GitWorktreeManager` has 8 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 22 inferred relationships involving `DaedalusVimTextArea` (e.g. with `FakeCoordinator` and `FakeRunner`) actually correct?**
+  _`DaedalusVimTextArea` has 22 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 7 inferred relationships involving `TuiAppTests` (e.g. with `DaedalusTuiApp` and `KeyboardShortcutsScreen`) actually correct?**
+  _`TuiAppTests` has 7 INFERRED edges - model-reasoned connections that need verification._
