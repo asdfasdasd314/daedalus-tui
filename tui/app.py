@@ -454,9 +454,11 @@ class DaedalusTuiApp(App[None]):
         except (OSError, ValueError):
             persisted = ()
         live = tuple(
-            task_usage_entry(record)
+            entry
             for coordinator in self._coordinators.values()
             for record in coordinator.tasks()
+            for entry in (task_usage_entry(record),)
+            if entry is not None
         )
         return merge_usage_entries(persisted, live)
 

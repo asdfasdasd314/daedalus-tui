@@ -141,7 +141,7 @@ class TaskCoordinatorTests(unittest.TestCase):
 
             def run(self, prompt, _provider, _model, _reasoning, task_id=None, **_kwargs):
                 if prompt == "bad":
-                    return OrchestrationResult(False, task_id, error="failed")
+                    return OrchestrationResult(False, task_id, error="failed", tokens_consumed=99)
                 return OrchestrationResult(True, task_id, tokens_consumed=42)
 
         with tempfile.TemporaryDirectory() as directory:

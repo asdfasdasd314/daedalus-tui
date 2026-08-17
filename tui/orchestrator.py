@@ -122,7 +122,7 @@ class LocalOrchestrator:
                     context.branch_name,
                     context.path,
                     context=context,
-                    tokens_consumed=self._tokens_consumed,
+                    tokens_consumed=self._completed_tokens(),
                 )
 
             manager.discard_graphify_changes(context.path)
@@ -148,7 +148,7 @@ class LocalOrchestrator:
                 context.branch_name,
                 context.path,
                 context=context,
-                tokens_consumed=self._tokens_consumed,
+                tokens_consumed=self._completed_tokens(),
             )
         except AgentStopped as stopped:
             if stopped.reason == "cancelled" and context is not None:
@@ -161,7 +161,7 @@ class LocalOrchestrator:
                     context.path,
                     "Task cancelled.",
                     cancelled=True,
-                    tokens_consumed=self._tokens_consumed,
+                    tokens_consumed=self._completed_tokens(False),
                 )
             self.emit("paused", "Task paused; its worktree and current progress were preserved.")
             return OrchestrationResult(
@@ -171,7 +171,7 @@ class LocalOrchestrator:
                 context.path if context else None,
                 context=context,
                 paused=True,
-                tokens_consumed=self._tokens_consumed,
+                tokens_consumed=self._completed_tokens(False),
             )
         except (GitWorktreeError, RuntimeError, ValueError) as error:
             message = str(error)
@@ -183,7 +183,7 @@ class LocalOrchestrator:
                 context.path if context else None,
                 message,
                 context=context,
-                tokens_consumed=self._tokens_consumed,
+                tokens_consumed=self._completed_tokens(False),
             )
 
     def run_agent(
@@ -359,6 +359,10 @@ class LocalOrchestrator:
 
     def emit(self, phase: str, message: str, kind: str = "status") -> None:
         self.on_event(phase, message, kind)
+
+    def _completed_tokens(self, completed: bool = True) -> int:
+        """Expose usage only after the whole task reaches completion."""
+        return self._tokens_consumed if completed else 0
 
     @staticmethod
     def _raise_if_stopped(control: AgentControl | None) -> None:

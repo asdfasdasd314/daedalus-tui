@@ -254,7 +254,8 @@ class TaskCoordinator:
         record.branch_name = result.branch_name or record.branch_name
         record.worktree_path = result.worktree or record.worktree_path
         record.context = result.context or record.context
-        record.tokens_consumed += result.tokens_consumed
+        if result.succeeded:
+            record.tokens_consumed += result.tokens_consumed
         if result.paused:
             record.status = "paused"
             record.phase = "Paused"

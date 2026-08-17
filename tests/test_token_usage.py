@@ -47,6 +47,48 @@ class TokenUsageTests(unittest.TestCase):
             self.assertEqual(entries[0].provider, "codex")
             self.assertEqual(entries[0].tokens, 165)
 
+    def test_counts_completed_plan_and_coding_tasks_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = TaskMemoryStore(Path(directory) / ".daedalus-memory.json")
+            store.record_task(
+                "completed-plan",
+                "Make a plan",
+                "codex",
+                "luna",
+                "high",
+                "plan",
+                "completed",
+                submitted_at=1,
+                tokens=40,
+            )
+            store.record_task(
+                "failed-coding",
+                "Implement the plan",
+                "codex",
+                "luna",
+                "high",
+                "coding",
+                "failed",
+                submitted_at=2,
+                tokens=300,
+            )
+
+            entries = usage_entries_from_memory(store)
+            stats = calculate_token_usage(entries)
+
+            self.assertEqual([entry.task_id for entry in entries], ["completed-plan"])
+            self.assertEqual(stats.cumulative_tokens, 40)
+
+    def test_calculation_ignores_non_completed_entries(self):
+        entries = (
+            TokenUsageEntry("completed", datetime.now(timezone.utc), "codex", 25),
+            TokenUsageEntry("failed", datetime.now(timezone.utc), "codex", 100, state="failed"),
+        )
+
+        stats = calculate_token_usage(entries)
+
+        self.assertEqual(stats.cumulative_tokens, 25)
+
     def test_rejects_invalid_window_settings(self):
         with self.assertRaises(ValueError):
             calculate_token_usage((), recent_window_hours=0)
