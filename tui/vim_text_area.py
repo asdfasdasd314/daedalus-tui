@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from rich.segment import Segment
 from rich.style import Style
 from textual import events
-from textual.strip import Strip
 from textual.widgets.text_area import Selection
 
 from vimkeys_input import VimMode, VimTextArea
@@ -14,9 +12,6 @@ from .clipboard import paste_from_system_clipboard
 
 # Textual names `$` `dollar_sign`; vimkeys-input looks for `dollar`.
 _LINE_END_KEYS = {"dollar", "dollar_sign", "$"}
-# Use a left-aligned one-eighth block so the caret sits on the left edge of
-# the character cell at the insertion point instead of in its visual center.
-_INSERT_CURSOR_BAR = "▏"
 
 
 class DaedalusVimTextArea(VimTextArea):
@@ -24,19 +19,25 @@ class DaedalusVimTextArea(VimTextArea):
 
     DEFAULT_CSS = """
     DaedalusVimTextArea.insert-mode .text-area--cursor {
-        color: $text;
-        background: transparent;
-        text-style: none;
+        /* The native cursor styles the character cell itself. Keep that
+           character visible instead of replacing it with a caret glyph. */
+        color: $text !important;
+        background: transparent !important;
+        text-style: underline !important;
     }
 
     DaedalusVimTextArea.operator-pending .text-area--cursor {
-        color: $text;
-        background: transparent;
-        text-style: underline;
+        color: $text !important;
+        background: transparent !important;
+        text-style: underline !important;
     }
     """
 
     def __init__(self, *args, **kwargs) -> None:
+        # TextArea's active-line highlight uses the dark `$boost` background.
+        # It is applied before the cursor style, so a transparent cursor still
+        # leaves a dark cell behind the character it is meant to underline.
+        kwargs.setdefault("highlight_cursor_line", False)
         super().__init__(*args, **kwargs)
         # Keep the cursor visible continuously; blinking is distracting while
         # composing a prompt.
@@ -55,9 +56,8 @@ class DaedalusVimTextArea(VimTextArea):
 
     @property
     def _draw_cursor(self) -> bool:
-        # Insert mode paints a thin bar in render_line instead of a block.
-        if self.cursor_shape == "bar" and not self.read_only:
-            return False
+        # Let Textual style the actual character at the insertion point. A
+        # separate bar glyph replaces that character and makes it unreadable.
         return super()._draw_cursor
 
     def enter_insert_mode(self) -> None:
@@ -179,33 +179,14 @@ class DaedalusVimTextArea(VimTextArea):
         super()._handle_command_mode(event)
         self._sync_cursor_classes()
 
-    def render_line(self, y: int) -> Strip:
-        strip = super().render_line(y)
-        if self.cursor_shape != "bar" or not self.has_focus or self.read_only:
-            return strip
-        cursor_x, cursor_y = self._cursor_offset
-        scroll_x, scroll_y = self.scroll_offset
-        if y + scroll_y != cursor_y:
-            return strip
-        bar_x = cursor_x - scroll_x + self.gutter_width
-        return self._overlay_insert_bar(strip, bar_x)
-
-    def _overlay_insert_bar(self, strip: Strip, x: int) -> Strip:
-        """Paint a thin left-aligned caret at the insertion point."""
-        if strip.cell_length <= 0:
-            return strip
-        # Replace the cell at the insertion point instead of joining an
-        # additional caret cell. This keeps text to the right from shifting
-        # while the underlying TextArea document remains unchanged.
-        x = max(0, min(x, strip.cell_length - 1))
-        parts = strip.divide([x, x + 1, strip.cell_length])
-        if len(parts) < 2:
-            return strip
-        cursor_style = self.get_component_rich_style("text-area--cursor")
-        bar_style = Style(color="white", bgcolor=cursor_style.bgcolor)
-        bar = Strip([Segment(_INSERT_CURSOR_BAR, bar_style)], 1)
-        trailing = parts[2:] if len(parts) > 2 else []
-        return Strip.join([parts[0], bar, *trailing])
+    def render_line(self, y: int):
+        """Render the native cursor without a background in visible modes."""
+        if self.cursor_shape in {"bar", "underline"}:
+            # TextArea copies the component CSS into its theme before it
+            # renders. Override that copied style here because the built-in
+            # dark theme otherwise restores its opaque cursor background.
+            self._theme.cursor_style = Style(bgcolor="default", underline=True)
+        return super().render_line(y)
 
     def _enter_visual_line_mode(self) -> None:
         """Select the current line and enter Vim visual-line mode."""

@@ -59,3 +59,5 @@ HACKING
 - 2026-08-17: Deferred dynamic plan Select initialization until after Textual's nested SelectCurrent label is mounted, preventing a lifecycle race from terminating the TUI.
 - 2026-08-17: Detached task callbacks before coordinator shutdown, waited for executor workers to finish, and ignored late events after Textual closes.
 - 2026-08-17: Replaced the insert caret's rendered cell instead of adding one, so middle-of-line text no longer shifts while the prompt document stays unchanged.
+- 2026-08-17: Let Textual underline the real insert cursor cell with a transparent background so the character beneath the caret remains visible.
+- 2026-08-17: Disabled Textual's dark active-line highlight for the Vim prompt because it remained underneath the transparent cursor cell.
