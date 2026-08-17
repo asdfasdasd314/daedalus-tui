@@ -13,6 +13,7 @@ from textual.widgets import Button, Footer, Header, RichLog, Select, Static, Tex
 from .agent_runner import AgentRunner
 from .clipboard import copy_to_system_clipboard, paste_from_system_clipboard
 from .config import TuiSettings, load_orchestration_settings, load_tui_settings
+from .memory import DEFAULT_MEMORY_FILE, TokenUsageStore
 from .projects import DaedalusProject, discover_projects
 from .task_coordinator import TaskCoordinator, TaskRecord
 from .vim_text_area import DaedalusVimTextArea
@@ -100,6 +101,7 @@ class DaedalusTuiApp(App[None]):
     ) -> None:
         super().__init__()
         self.launch_root = (directory or Path.cwd()).resolve()
+        self.memory = TokenUsageStore(self.launch_root / DEFAULT_MEMORY_FILE)
         self.settings = settings or load_tui_settings()
         self.orchestration_settings = load_orchestration_settings()
         self.runner = runner or AgentRunner()
@@ -108,8 +110,10 @@ class DaedalusTuiApp(App[None]):
             # Keep the app usable when launched in a new or test directory;
             # orchestration will provide the actionable Git error if needed.
             discovered = [DaedalusProject(self.launch_root, self.launch_root)]
-        if self.launch_root in {project.path for project in discovered}:
-            active_project = self.launch_root
+        discovered_paths = {project.path for project in discovered}
+        remembered_project = self._remembered_project()
+        if remembered_project in discovered_paths:
+            active_project = remembered_project
         else:
             active_project = discovered[0].path
         if coordinator is not None and active_project not in {project.path for project in discovered}:
@@ -119,6 +123,7 @@ class DaedalusTuiApp(App[None]):
         self._external_coordinator = coordinator
         self._active_project_path = active_project
         self.directory = active_project
+        self._remember_project(active_project)
         self.coordinator = self._coordinator_for(active_project)
         self._selected_task_id: str | None = None
         self._new_task_mode = True
@@ -341,11 +346,25 @@ class DaedalusTuiApp(App[None]):
         self._coordinators[project_path] = coordinator
         return coordinator
 
+    def _remembered_project(self) -> Path | None:
+        try:
+            return self.memory.get_last_opened_project()
+        except (OSError, ValueError):
+            return None
+
+    def _remember_project(self, project_path: Path) -> None:
+        try:
+            self.memory.record_last_opened_project(project_path)
+        except (OSError, ValueError):
+            # Project navigation should remain usable if local memory is unavailable.
+            pass
+
     def _switch_project(self, project_path: Path) -> None:
         if project_path == self._active_project_path:
             return
         if project_path not in {project.path for project in self.projects}:
             return
+        self._remember_project(project_path)
         self._active_project_path = project_path
         self.directory = project_path
         self.coordinator = self._coordinator_for(project_path)

@@ -45,9 +45,13 @@ graph refresh failures are reported as warnings and never trigger resolver
 attempts.
 
 Completed tasks also append their reported token usage to the project-local
-`.daedalus-memory.json` file. Each entry contains the prompt submission time
-and the total input/output tokens reported by the provider. Failed, paused, and
-cancelled tasks are not recorded; the file is intentionally ignored by Git.
+`.daedalus-memory.json` file. Each usage entry contains the prompt submission
+time and the total input/output tokens reported by the provider. When the TUI
+is launched over multiple projects, the launch root's memory file also keeps a
+single `last_opened_project` entry, which is updated when the sidebar changes
+projects and restored on the next startup when that project still exists.
+Failed, paused, and cancelled tasks are not recorded; the file is intentionally
+ignored by Git.
 
 The task list keeps each prompt's provider, model, reasoning, status, branch,
 worktree, and filtered assistant-message transcript separate. Raw diffs,

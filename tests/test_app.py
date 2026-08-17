@@ -1,3 +1,5 @@
+import json
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -128,6 +130,63 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#cancel-button", Button), Button)
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
             await pilot.pause()
+
+    @patch("tui.app.discover_projects")
+    async def test_restores_and_updates_last_opened_project(self, discover):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "first"
+            second = root / "second"
+            memory_path = root / ".daedalus-memory.json"
+            memory_path.write_text(
+                json.dumps([{"last_opened_project": str(second)}]),
+                encoding="utf-8",
+            )
+            discover.return_value = (
+                DaedalusProject(first, root),
+                DaedalusProject(second, root),
+            )
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+
+            self.assertEqual(app.directory, second.resolve())
+            async with app.run_test() as pilot:
+                project_select = app.query_one("#project-select", Select)
+                project_select.value = str(first)
+                await pilot.pause()
+
+            self.assertEqual(
+                json.loads(memory_path.read_text(encoding="utf-8"))[-1],
+                {"last_opened_project": str(first.resolve())},
+            )
+
+    @patch("tui.app.discover_projects")
+    async def test_falls_back_to_first_project_when_memory_target_is_missing(self, discover):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "first"
+            second = root / "second"
+            (root / ".daedalus-memory.json").write_text(
+                json.dumps([{"last_opened_project": str(root / "missing")}]),
+                encoding="utf-8",
+            )
+            discover.return_value = (
+                DaedalusProject(first, root),
+                DaedalusProject(second, root),
+            )
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+
+            self.assertEqual(app.directory, first.resolve())
 
     async def test_ctrl_k_opens_shortcuts_menu_with_global_and_vim_keys(self):
         app, _ = self.make_app()

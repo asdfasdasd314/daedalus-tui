@@ -11,14 +11,20 @@ from threading import Lock
 
 
 DEFAULT_MEMORY_FILE = ".daedalus-memory.json"
+LAST_OPENED_PROJECT_KEY = "last_opened_project"
 
 
 class TokenUsageStore:
-    """Append completed-task token usage to a local JSON list."""
+    """Persist task telemetry and the most recently opened project."""
+
+    _locks_guard = Lock()
+    _locks: dict[Path, Lock] = {}
 
     def __init__(self, path: Path):
         self.path = path
-        self._lock = Lock()
+        lock_key = path.expanduser().resolve()
+        with self._locks_guard:
+            self._lock = self._locks.setdefault(lock_key, Lock())
 
     def record(self, submitted_at: float, tokens: int) -> None:
         entry = {
@@ -31,6 +37,34 @@ class TokenUsageStore:
             entries = self._read_entries()
             entries.append(entry)
             self._write_entries(entries)
+
+    def get_last_opened_project(self) -> Path | None:
+        """Return the remembered project path, if the memory contains one."""
+        with self._lock:
+            entries = self._read_entries()
+        for entry in reversed(entries):
+            value = entry.get(LAST_OPENED_PROJECT_KEY)
+            if isinstance(value, str) and value:
+                return Path(value).expanduser().resolve()
+        return None
+
+    def record_last_opened_project(self, project_path: Path) -> None:
+        """Update the single last-opened-project entry without losing telemetry."""
+        entry = {LAST_OPENED_PROJECT_KEY: str(project_path.expanduser().resolve())}
+        with self._lock:
+            entries = self._read_entries()
+            updated_entries: list[dict[str, object]] = []
+            replaced = False
+            for existing in entries:
+                if LAST_OPENED_PROJECT_KEY in existing:
+                    if not replaced:
+                        updated_entries.append(entry)
+                        replaced = True
+                    continue
+                updated_entries.append(existing)
+            if not replaced:
+                updated_entries.append(entry)
+            self._write_entries(updated_entries)
 
     def _read_entries(self) -> list[dict[str, object]]:
         try:
