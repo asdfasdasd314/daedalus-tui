@@ -48,8 +48,8 @@ class TokenUsageStore:
                 return Path(value).expanduser().resolve()
         return None
 
-    def record_last_opened_project(self, project_path: Path) -> None:
-        """Update the single last-opened-project entry without losing telemetry."""
+    def set_last_opened_project(self, project_path: Path) -> None:
+        """Set the single project marker without losing telemetry records."""
         entry = {LAST_OPENED_PROJECT_KEY: str(project_path.expanduser().resolve())}
         with self._lock:
             entries = self._read_entries()
@@ -65,6 +65,10 @@ class TokenUsageStore:
             if not replaced:
                 updated_entries.append(entry)
             self._write_entries(updated_entries)
+
+    def record_last_opened_project(self, project_path: Path) -> None:
+        """Backward-compatible alias for :meth:`set_last_opened_project`."""
+        self.set_last_opened_project(project_path)
 
     def _read_entries(self) -> list[dict[str, object]]:
         try:

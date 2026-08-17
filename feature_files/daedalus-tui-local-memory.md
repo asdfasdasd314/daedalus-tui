@@ -16,9 +16,11 @@ database server.
   successful task appends one record while preserving existing entries.
 - **Project restoration**: The launch root's memory file keeps one
   `last_opened_project` entry. Startup selects it when it is still among the
-  discovered projects, and otherwise selects the first discovered project.
-- **Project updates**: Selecting a different project replaces the existing
-  `last_opened_project` entry without changing token-usage records.
+  discovered projects, and otherwise selects the first discovered project and
+  creates or repairs the marker.
+- **Project updates**: Selecting a different project immediately replaces the
+  existing `last_opened_project` entry, including when focus later switches
+  back to an earlier project, without changing token-usage records.
 - **Completion boundary**: Only successfully completed tasks are recorded.
   Failed, paused, and cancelled tasks do not contribute telemetry.
 - **Safe writes**: Updates are serialized in-process and written through a
@@ -55,3 +57,4 @@ HACKING
 - 2026-08-16: Added an updatable launch-root project marker so startup restores the last available project and falls back to the first discovered project.
 - 2026-08-16: Normalized discovered project paths at app startup so memory restoration and fallback remain canonical across symlinked temporary paths.
 - 2026-08-16: Seeded the ignored launch-root memory file with the canonical path of the active daedalus-tui worktree.
+- 2026-08-16: Made startup initialization and every project-focus transition use an explicit single-marker update, with coverage for first launch and repeated switching.
