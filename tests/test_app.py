@@ -136,7 +136,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(app.query_one("#reasoning-select", Select).value, "medium")
             self.assertEqual(app.query_one("#mode-select", Select).value, "coding")
             self.assertIn("/workspace/project", str(app.query_one("#directory", Static).render()))
-            self.assertIsInstance(app.query_one("#task-select", Select), Select)
+            self.assertIsInstance(app.query_one("#task-list", DataTable), DataTable)
             self.assertIsInstance(app.query_one("#prompt-input", TextArea), DaedalusVimTextArea)
             self.assertEqual(app.query_one("#prompt-input", DaedalusVimTextArea).vim_mode, VimMode.INSERT)
             self.assertEqual(app.query("#vim-mode").nodes, [])
@@ -410,7 +410,9 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             coordinator.emit(record, "failed", "The task failed.", "error")
             app.query_one("#new-task-button", Button).press()
             await pilot.pause()
-            app.query_one("#task-select", Select).value = record.task_id
+            task_list = app.query_one("#task-list", DataTable)
+            task_list.move_cursor(row=0, column=0)
+            task_list.action_select_cursor()
             await pilot.pause()
 
             self.assertEqual(prompt.text, "A task that will fail")
@@ -987,14 +989,18 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual((second.model, second.reasoning), ("gpt-5.6-terra", "high"))
 
             coordinator.finish(first, "Implemented the first task.")
-            task_select = app.query_one("#task-select", Select)
-            task_select.value = first.task_id
+            task_list = app.query_one("#task-list", DataTable)
+            first_row = app._task_row_key(app._active_project_path, first.task_id)
+            task_list.move_cursor(row=list(app._task_rows).index(first_row), column=0)
+            task_list.action_select_cursor()
             await pilot.pause()
 
             first.error = "Cursor failed with exit code 1.\n\nDiagnostics:\nAuthentication failed."
             coordinator.emit(first, "failed", first.error, "error")
 
-            task_select.value = second.task_id
+            second_row = app._task_row_key(app._active_project_path, second.task_id)
+            task_list.move_cursor(row=list(app._task_rows).index(second_row), column=0)
+            task_list.action_select_cursor()
             await pilot.pause()
             self.assertIn("Task branch: agent/task-2", str(app.query_one("#task-context", Static).render()))
 
@@ -1016,7 +1022,8 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             self.assertIsNone(app._selected_task_id)
-            self.assertEqual(app.query_one("#task-select", Select).value, "")
+            row_key = app._task_row_key(app._active_project_path, second.task_id)
+            self.assertIn(row_key, app._updated_task_rows)
 
 
 if __name__ == "__main__":

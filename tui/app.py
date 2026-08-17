@@ -240,6 +240,10 @@ class DaedalusTuiApp(App[None]):
         self._remember_project(active_project)
         self.coordinator = self._coordinator_for(active_project)
         self._selected_task_id: str | None = None
+        # The task inbox spans all discovered projects. Row keys include the
+        # project path because task IDs are only unique within a coordinator.
+        self._task_rows: dict[str, tuple[Path, str]] = {}
+        self._updated_task_rows: set[str] = set()
         self._new_task_mode = True
         self._vim_pending_g = False
         self._plan_review_generation = 0
@@ -253,18 +257,18 @@ class DaedalusTuiApp(App[None]):
         yield Header()
         with Vertical(id="screen"):
             with Horizontal(id="workspace"):
-                with Vertical(id="project-sidebar"):
-                    yield Static("Projects", id="project-label")
-                    yield Select(
-                        [(project.display_name, str(project.path)) for project in self.projects],
-                        value=self._project_select_value(),
-                        id="project-select",
-                    )
+                with Vertical(id="task-sidebar"):
+                    yield Static("Task updates", id="task-label")
+                    yield DataTable(id="task-list", cursor_type="row")
                 with Vertical(id="project-main"):
                     yield Static("Local agent orchestration", id="title")
                     with Horizontal(id="task-bar"):
-                        yield Static("Tasks", id="task-label")
-                        yield Select([("No tasks", "")], value="", disabled=True, id="task-select")
+                        yield Static("Project", id="project-label")
+                        yield Select(
+                            [(project.display_name, str(project.path)) for project in self.projects],
+                            value=self._project_select_value(),
+                            id="project-select",
+                        )
                         yield Button("New Task", id="new-task-button", variant="primary")
                     with Horizontal(id="settings"):
                         yield Select(
@@ -327,6 +331,7 @@ class DaedalusTuiApp(App[None]):
         self._fault_log_file = install_fault_handler(self.debug_log_path)
         self._install_exit_diagnostics()
         self._accept_task_events = True
+        self._refresh_task_list()
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
         prompt.enter_insert_mode()
         prompt.focus()
@@ -490,18 +495,6 @@ class DaedalusTuiApp(App[None]):
             if event.value not in (Select.BLANK, ""):
                 self._switch_project(Path(str(event.value)))
             return
-        if event.select.id == "task-select":
-            if event.value in (Select.BLANK, "", getattr(Select, "NULL", None)):
-                return
-            # set_options/value can leave an already-posted Changed message in
-            # Textual's queue. Ignore it if the selector has since been
-            # refreshed to a different value by the app.
-            if event.value != event.select.value:
-                return
-            self._selected_task_id = str(event.value)
-            self._new_task_mode = False
-            self._render_selected_task_safely("task selection")
-            return
         if event.select.id and event.select.id.startswith("plan-question-"):
             self._update_plan_action_buttons()
             return
@@ -537,6 +530,24 @@ class DaedalusTuiApp(App[None]):
             prompt_widget.focus()
             return
 
+        project_value = self.query_one("#project-select", Select).value
+        if project_value in (Select.BLANK, "", getattr(Select, "NULL", None)):
+            self._set_error("Select a project before sending.")
+            self._set_status("Error")
+            return
+        selected_project = Path(str(project_value)).expanduser().resolve()
+        if selected_project not in {project.path.resolve() for project in self.projects}:
+            self._set_error("The selected project is no longer available.")
+            self._set_status("Error")
+            return
+        if selected_project != self._active_project_path:
+            draft = prompt_widget.text
+            self._switch_project(selected_project)
+            # A project switch renders the idle view and clears its prompt;
+            # restore the draft so a selection made immediately before Send
+            # cannot discard the user's new-task text.
+            self._set_prompt_text(draft, editable=True)
+
         provider = str(self.query_one("#provider-select", Select).value)
         model = str(self.query_one("#model-select", Select).value)
         reasoning_value = self.query_one("#reasoning-select", Select).value
@@ -550,8 +561,18 @@ class DaedalusTuiApp(App[None]):
             return
         self._selected_task_id = record.task_id
         self._new_task_mode = False
-        self._refresh_task_selector()
+        self._clear_task_update(self._task_row_key(self._active_project_path, record.task_id))
+        self._refresh_task_list()
         self._render_selected_task_safely("prompt submission")
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Focus a task from the cross-project update inbox."""
+        row_key = str(event.row_key.value)
+        task_target = self._task_rows.get(row_key)
+        if task_target is None:
+            return
+        project_path, task_id = task_target
+        self._focus_task(project_path, task_id)
 
     def _on_task_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         LOGGER.debug(
@@ -579,10 +600,21 @@ class DaedalusTuiApp(App[None]):
 
     def _apply_task_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         try:
+            project_path = self._project_for_record(record)
+            if project_path is None:
+                return
+            row_key = self._task_row_key(project_path, record.task_id)
+            is_selected = (
+                project_path == self._active_project_path
+                and self._selected_task_id == record.task_id
+            )
+            if not is_selected:
+                self._updated_task_rows.add(row_key)
+            else:
+                self._updated_task_rows.discard(row_key)
             self._refresh_project_selector()
-            if self.coordinator.get(record.task_id) is record:
-                self._refresh_task_selector()
-            if self.coordinator.get(record.task_id) is record and self._selected_task_id == record.task_id:
+            self._refresh_task_list()
+            if is_selected:
                 self._render_selected_task_safely(f"task event phase={phase}")
         except Exception as error:
             log_exception(f"Could not render task event task={record.task_id} phase={phase}", error)
@@ -652,8 +684,11 @@ class DaedalusTuiApp(App[None]):
         self.coordinator = self._coordinator_for(project_path)
         self._selected_task_id = None
         self._new_task_mode = False
+        self._updated_task_rows = {
+            row_key for row_key in self._updated_task_rows if row_key in self._task_rows
+        }
         self.query_one("#directory", Static).update(self._directory_text())
-        self._refresh_task_selector()
+        self._refresh_task_list()
         self._render_selected_task_safely("project switch")
         self._set_status("Project switched")
 
@@ -661,7 +696,12 @@ class DaedalusTuiApp(App[None]):
         project_select = self.query_one("#project-select", Select)
         options = []
         for project in self.projects:
-            task_count = len(self._coordinator_for(project.path).tasks()) if project.path in self._coordinators else 0
+            project_path = project.path.resolve()
+            task_count = (
+                len(self._coordinators[project_path].tasks())
+                if project_path in self._coordinators
+                else 0
+            )
             suffix = f" · {task_count} tasks" if task_count else ""
             options.append((f"{project.display_name}{suffix}", str(project.path)))
         project_select.set_options(options)
@@ -676,21 +716,80 @@ class DaedalusTuiApp(App[None]):
     def _directory_text(self) -> str:
         return f"Launch root: {self.launch_root}    Active project: {self.directory}"
 
-    def _refresh_task_selector(self) -> None:
-        task_select = self.query_one("#task-select", Select)
-        records = self.coordinator.tasks()
-        options = [("Select a task", "")] if records else []
-        for record in records:
+    def _refresh_task_list(self) -> None:
+        """Render every known task, promoting rows with unseen updates."""
+        task_list = self.query_one("#task-list", DataTable)
+        task_list.clear(columns=True)
+        task_list.add_columns("", "Project", "Task", "Status")
+        self._task_rows.clear()
+
+        project_names = {
+            project.path.resolve(): project.display_name
+            for project in self.projects
+        }
+        rows: list[tuple[Path, TaskRecord]] = []
+        for project_path in project_names:
+            coordinator = self._coordinators.get(project_path)
+            if coordinator is None:
+                continue
+            rows.extend((project_path, record) for record in coordinator.tasks())
+        rows.sort(
+            key=lambda item: (
+                self._task_row_key(item[0], item[1].task_id) not in self._updated_task_rows,
+                -item[1].submission_sequence,
+            )
+        )
+
+        current_row_keys = {
+            self._task_row_key(project_path, record.task_id)
+            for project_path, record in rows
+        }
+        self._updated_task_rows.intersection_update(current_row_keys)
+        for project_path, record in rows:
+            row_key = self._task_row_key(project_path, record.task_id)
+            self._task_rows[row_key] = (project_path, record.task_id)
+            project_name = project_names.get(project_path, project_path.name)
             summary = " ".join(record.prompt.split())
-            if len(summary) > 42:
-                summary = summary[:39] + "..."
-            options.append((f"{record.task_id} · {record.status} · {summary}", record.task_id))
-        task_select.set_options(options or [("No tasks", "")])
-        task_select.disabled = not bool(options)
+            if len(summary) > 38:
+                summary = summary[:35] + "..."
+            marker = "!" if row_key in self._updated_task_rows else ""
+            task_list.add_row(marker, project_name, summary, record.status, key=row_key)
+
         if self._selected_task_id:
-            task_select.value = self._selected_task_id
-        else:
-            task_select.value = ""
+            selected_key = self._task_row_key(self._active_project_path, self._selected_task_id)
+            if selected_key in self._task_rows:
+                task_list.move_cursor(row=list(self._task_rows).index(selected_key), column=0)
+
+    @staticmethod
+    def _task_row_key(project_path: Path, task_id: str) -> str:
+        return f"{project_path.resolve()}::{task_id}"
+
+    def _project_for_record(self, record: TaskRecord) -> Path | None:
+        for project_path, coordinator in self._coordinators.items():
+            if coordinator.get(record.task_id) is record:
+                return project_path
+        return None
+
+    def _clear_task_update(self, row_key: str) -> None:
+        self._updated_task_rows.discard(row_key)
+
+    def _focus_task(self, project_path: Path, task_id: str) -> None:
+        """Switch the project context and focus a row selected in the inbox."""
+        project_path = project_path.resolve()
+        record_coordinator = self._coordinators.get(project_path)
+        if record_coordinator is None or record_coordinator.get(task_id) is None:
+            return
+        self._active_project_path = project_path
+        self.directory = project_path
+        self._remember_project(project_path)
+        self.coordinator = record_coordinator
+        self._selected_task_id = task_id
+        self._new_task_mode = False
+        self._clear_task_update(self._task_row_key(project_path, task_id))
+        self.query_one("#project-select", Select).value = self._project_select_value()
+        self.query_one("#directory", Static).update(self._directory_text())
+        self._refresh_task_list()
+        self._render_selected_task_safely("task selection")
 
     def _render_selected_task_safely(self, source: str) -> None:
         """Keep one bad dynamic widget update from closing the entire TUI."""
@@ -900,7 +999,7 @@ class DaedalusTuiApp(App[None]):
             return
         self._selected_task_id = coding_record.task_id
         self._new_task_mode = False
-        self._refresh_task_selector()
+        self._refresh_task_list()
         self._render_selected_task_safely("plan implementation")
         self._set_status("Implementation queued")
 
@@ -908,7 +1007,7 @@ class DaedalusTuiApp(App[None]):
         """Clear the selected task and unlock a fresh prompt editor."""
         self._selected_task_id = None
         self._new_task_mode = True
-        self._refresh_task_selector()
+        self._refresh_task_list()
         self._render_selected_task_safely("new task")
         self._set_status("New task")
 
