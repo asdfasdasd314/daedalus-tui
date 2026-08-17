@@ -149,6 +149,11 @@ class AgentRunner:
             process = subprocess.Popen(
                 command,
                 cwd=request.directory,
+                # The agent is non-interactive: its prompt is supplied on the
+                # command line. Do not let a child CLI share the Textual
+                # terminal, where a terminal-mode change or input read can
+                # make the parent UI appear to vanish.
+                stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,

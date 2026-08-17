@@ -808,6 +808,16 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNone(app._exception)
 
+    def test_process_exit_fallback_stops_coordinator_when_unmount_is_skipped(self):
+        app, coordinator = self.make_app()
+
+        self.assertTrue(app._shutdown_coordinators("test process exit"))
+        self.assertFalse(app._accept_task_events)
+        self.assertIsNone(coordinator.callback)
+        # The guard is idempotent because both Textual and Python atexit may
+        # observe the same shutdown.
+        self.assertTrue(app._shutdown_coordinators("repeat process exit"))
+
     async def test_task_render_failure_is_logged_without_exiting_the_app(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:

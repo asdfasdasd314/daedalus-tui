@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import asyncio
 from pathlib import Path
 import threading
@@ -243,6 +244,10 @@ class DaedalusTuiApp(App[None]):
         self._vim_pending_g = False
         self._plan_review_generation = 0
         self._accept_task_events = False
+        self._shutdown_lock = threading.Lock()
+        self._shutdown_started = False
+        self._atexit_registered = False
+        self._previous_asyncio_exception_handler = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -320,6 +325,7 @@ class DaedalusTuiApp(App[None]):
     def on_mount(self) -> None:
         self.debug_log_path = configure_debug_logging(self.debug_log_path)
         self._fault_log_file = install_fault_handler(self.debug_log_path)
+        self._install_exit_diagnostics()
         self._accept_task_events = True
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
         prompt.enter_insert_mode()
@@ -351,24 +357,78 @@ class DaedalusTuiApp(App[None]):
             event.stop()
 
     def on_unmount(self) -> None:
-        # Detach callbacks before asking workers to stop. Agent reader threads
-        # may deliver one final event after the Textual app closes.
-        LOGGER.info("Textual app unmounting; requesting coordinator shutdown.")
+        shutdown_complete = self._shutdown_coordinators("Textual app unmount")
+        if shutdown_complete:
+            close_fault_handler(self._fault_log_file)
+        self._remove_exit_diagnostics()
+
+    def exit(self, *args, **kwargs) -> None:
+        """Stop agents before an explicit Textual exit begins."""
+        self._shutdown_coordinators("explicit Textual exit")
+        super().exit(*args, **kwargs)
+
+    def _handle_exception(self, error: Exception) -> None:
+        """Persist Textual failures that would otherwise only flash on screen."""
+        log_exception("Unhandled Textual application exception", error)
+        self._shutdown_coordinators("unhandled Textual application exception")
+        super()._handle_exception(error)
+
+    def _install_exit_diagnostics(self) -> None:
+        """Cover terminal and event-loop exits that bypass Textual unmount."""
+        if not self._atexit_registered:
+            atexit.register(self._shutdown_at_process_exit)
+            self._atexit_registered = True
+        loop = asyncio.get_running_loop()
+        self._previous_asyncio_exception_handler = loop.get_exception_handler()
+        loop.set_exception_handler(self._log_asyncio_exception)
+        LOGGER.info("Installed process-exit and asyncio diagnostics for Textual lifecycle.")
+
+    def _remove_exit_diagnostics(self) -> None:
+        if self._atexit_registered:
+            atexit.unregister(self._shutdown_at_process_exit)
+            self._atexit_registered = False
+        try:
+            asyncio.get_running_loop().set_exception_handler(self._previous_asyncio_exception_handler)
+        except RuntimeError:
+            pass
+        self._previous_asyncio_exception_handler = None
+
+    def _log_asyncio_exception(self, loop: asyncio.AbstractEventLoop, context: dict) -> None:
+        error = context.get("exception")
+        if isinstance(error, BaseException):
+            log_exception("Unhandled asyncio exception in the Textual loop", error)
+        else:
+            LOGGER.error("Unhandled asyncio exception in the Textual loop: %s", context.get("message", context))
+        if self._previous_asyncio_exception_handler is not None:
+            self._previous_asyncio_exception_handler(loop, context)
+        else:
+            loop.default_exception_handler(context)
+
+    def _shutdown_at_process_exit(self) -> None:
+        """Run before ThreadPoolExecutor's own atexit join can hang Python."""
+        LOGGER.error("Python is exiting while the Textual unmount hook was not observed.")
+        self._shutdown_coordinators("Python process exit")
+
+    def _shutdown_coordinators(self, reason: str) -> bool:
+        """Idempotently detach task callbacks and request child-process shutdown."""
+        with self._shutdown_lock:
+            if self._shutdown_started:
+                return True
+            self._shutdown_started = True
+        LOGGER.info("%s; requesting coordinator shutdown.", reason)
         self._accept_task_events = False
         shutdown_complete = True
         for coordinator in self._coordinators.values():
             if hasattr(coordinator, "set_event_callback"):
                 coordinator.set_event_callback(None)
-            shutdown_complete = coordinator.shutdown() is not False and shutdown_complete
-        if shutdown_complete:
-            close_fault_handler(self._fault_log_file)
-        else:
+            try:
+                shutdown_complete = coordinator.shutdown() is not False and shutdown_complete
+            except Exception as error:
+                shutdown_complete = False
+                log_exception("Coordinator shutdown failed", error)
+        if not shutdown_complete:
             LOGGER.error("Leaving fault handler active because a task worker is still running.")
-
-    def _handle_exception(self, error: Exception) -> None:
-        """Persist Textual failures that would otherwise only flash on screen."""
-        log_exception("Unhandled Textual application exception", error)
-        super()._handle_exception(error)
+        return shutdown_complete
 
     def action_submit_prompt(self) -> None:
         self._submit_prompt()

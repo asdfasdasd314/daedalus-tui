@@ -54,8 +54,10 @@ Plan tasks with submitted answers additionally retain generated review requests
 in an optional `prompt_history` list on the same worktree record.
 Runtime diagnostics are written to `.daedalus-debug.log` next to that memory
 file (rotated at 2 MB). It records UI exceptions, task/agent lifecycle events,
-and shutdown state. If the process is stuck, run `kill -USR1 <pid>` to append
-all Python thread stacks to the same log before terminating it.
+and shutdown state. During Python exit it cancels active agent process groups
+before the executor can block on their worker threads. If the process is
+stuck, run `kill -USR1 <pid>` to append all Python thread stacks to the same
+log before terminating it; this command writes only to the log by design.
 The first launch initializes it to the default project, every sidebar focus
 change updates it, and the next startup restores it when that project still
 exists. The file is intentionally ignored by Git.

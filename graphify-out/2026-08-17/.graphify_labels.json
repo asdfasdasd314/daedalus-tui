@@ -23,5 +23,7 @@
   "21": "TokenUsageStore",
   "22": "build_task_prompt",
   "23": "update_repository",
-  "24": "Daedalus TUI Coding Statistics"
+  "24": "Daedalus TUI Coding Statistics",
+  "25": "._usage_entries",
+  "26": ".provider_split"
 }

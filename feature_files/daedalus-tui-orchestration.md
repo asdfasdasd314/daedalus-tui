@@ -40,3 +40,4 @@ HACKING
 - 2026-08-17: Added bounded agent execution timeouts and retryable failed tasks so network outages do not leave executor threads hanging or discard the plan context.
 - 2026-08-17: Made shutdown detach callbacks, wait for cancellable executor work, and bound subprocess pipe-reader joins so closed TUI sessions do not linger in Python thread shutdown.
 - 2026-08-17: Terminated complete agent process groups on cancellation, bounded the app shutdown grace period, and added persistent debug logging plus `SIGUSR1` all-thread dumps for stuck workers.
+- 2026-08-17: Isolated non-interactive agent stdin from the Textual terminal and added an idempotent atexit shutdown guard plus asyncio failure logging for UI exits that bypass normal unmount.

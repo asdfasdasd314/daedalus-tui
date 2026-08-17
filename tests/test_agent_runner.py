@@ -94,6 +94,7 @@ class AgentRunnerTests(unittest.TestCase):
         self.assertEqual(result.stderr, "normal diagnostic\n")
         self.assertEqual(result.tokens_consumed, 165)
         self.assertEqual(popen.call_args.kwargs["cwd"], Path("/workspace/project"))
+        self.assertIs(popen.call_args.kwargs["stdin"], subprocess.DEVNULL)
         self.assertTrue(popen.call_args.kwargs["start_new_session"])
 
     @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/codex")
