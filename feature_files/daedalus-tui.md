@@ -55,3 +55,4 @@ HACKING
 - 2026-08-17: Kept Plan tasks selectable through a planning/questioning loop with follow-up controls, structured plan/questions review, and an explicit transition into coding.
 - 2026-08-17: Made asynchronous plan-question rendering generation-safe and non-fatal so streamed completion events cannot close the TUI before the review controls appear.
 - 2026-08-17: Added visible retry controls for failed agent requests and preserved the last request prompt for connectivity recovery.
+- 2026-08-17: Deferred dynamic plan Select initialization until after Textual's nested SelectCurrent label is mounted, preventing a lifecycle race from terminating the TUI.

@@ -1,5 +1,5 @@
 {
-  "0": "update_repository",
+  "0": "PlanQuestion",
   "1": "DaedalusVimTextArea",
   "2": "AgentRunner",
   "3": "DaedalusTuiApp",
@@ -21,7 +21,6 @@
   "19": "integrating.md",
   "20": ".__init__",
   "21": "TokenUsageStore",
-  "22": "PlanQuestion",
-  "23": "update_repository",
+  "22": "build_task_prompt",
   "24": "Daedalus TUI Coding Statistics"
 }

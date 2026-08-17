@@ -73,6 +73,20 @@ SHORTCUT_SECTIONS = (
 )
 
 
+class PlanAnswerSelect(Select):
+    """Initialize dynamic plan selectors after their nested children mount."""
+
+    def _on_mount(self, _event: events.Mount) -> None:
+        # Textual 8.2.x can dispatch a dynamically mounted Select's mount
+        # handler before SelectCurrent has mounted its internal ``#label``.
+        self.call_after_refresh(self._initialize_after_mount)
+
+    def _initialize_after_mount(self) -> None:
+        if self.is_attached and not self._closing:
+            self._setup_options_renderables()
+            self._init_selected_option(self._value)
+
+
 class KeyboardShortcutsScreen(ModalScreen[None]):
     """Modal reference for the app and prompt editor keyboard shortcuts."""
 
@@ -711,7 +725,7 @@ class DaedalusTuiApp(App[None]):
                 widgets.extend(
                     (
                         Static(question.text, classes="plan-question"),
-                        Select(
+                        PlanAnswerSelect(
                             [(option.label, option.option_id) for option in question.options],
                             value=answers.get(question.question_id, Select.NULL),
                             allow_blank=True,

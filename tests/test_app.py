@@ -644,6 +644,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(app.query_one("#plan-display", Static).render().plain, record.plan_text)
             self.assertEqual(app.query_one("#output", Log).styles.display, "none")
             answer = app.query_one("#plan-question-0", Select)
+            self.assertTrue(answer.query_one("#label"))
             self.assertTrue(app.query_one("#answer-plan-button", Button).disabled)
             self.assertTrue(app.query_one("#implement-button", Button).disabled)
 
@@ -659,6 +660,35 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             coordinator.emit(record, "completed", "", "status")
             await pilot.pause()
             self.assertFalse(app.query_one("#implement-button", Button).disabled)
+
+    async def test_plan_review_can_mount_a_preselected_answer(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Choose a velocity model")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = "Use the selected velocity model."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "Which model?",
+                    (
+                        PlanOption("a", "GUIDED body-frame velocity (Recommended)"),
+                        PlanOption("b", "World-frame velocity"),
+                    ),
+                ),
+            )
+            record.plan_answers = {"q1": "a"}
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+
+            answer = app.query_one("#plan-question-0", Select)
+            self.assertEqual(answer.value, "a")
+            self.assertTrue(answer.query_one("#label"))
+            self.assertIsNone(app._exception)
 
     async def test_plan_review_survives_streamed_completion_event(self):
         app, coordinator = self.make_app()
