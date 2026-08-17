@@ -544,7 +544,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(prompt.has_class("operator-pending"))
             self.assertEqual(prompt.yank_register, "copy this line\n")
 
-    async def test_insert_cursor_sits_left_of_text_at_a_middle_position(self):
+    async def test_insert_cursor_keeps_the_character_at_a_middle_position_visible(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:
             prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
@@ -553,14 +553,21 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             prompt.insert("beforeafter")
             self.assertTrue(prompt.has_focus)
             self.assertEqual(prompt.cursor_shape, "bar")
+            self.assertFalse(prompt.highlight_cursor_line)
             prompt.cursor_location = (0, len("before"))
 
             rendered = prompt.render_line(0)
 
             self.assertEqual(prompt.text, "beforeafter")
             self.assertEqual(rendered.cell_length, TextArea.render_line(prompt, 0).cell_length)
-            self.assertEqual(rendered.text[len("before")], "▏")
+            self.assertEqual(rendered.text, TextArea.render_line(prompt, 0).text)
+            self.assertEqual(rendered.text[len("before")], "a")
             self.assertEqual(rendered.text[len("before") + 1], "f")
+
+            cursor_style = prompt._theme.cursor_style
+            self.assertTrue(cursor_style.transparent_background)
+            self.assertIsNone(cursor_style.bgcolor)
+            self.assertTrue(cursor_style.underline)
 
     async def test_prompt_dollar_moves_to_line_end_in_command_mode(self):
         app, _ = self.make_app()

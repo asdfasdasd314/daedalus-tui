@@ -1,11 +1,13 @@
 {
   "0": "PlanQuestion",
+  "1": "DaedalusVimTextArea",
   "2": "AgentRunner",
   "3": "DaedalusTuiApp",
   "4": "app.py",
   "5": "TokenUsageStore",
   "6": "GitWorktreeManager",
   "7": "Daedalus TUI Local Token Usage Memory",
+  "8": "update_repository",
   "9": "daedalus-tui",
   "10": "__init__.py",
   "11": "Key",
@@ -20,8 +22,13 @@
   "20": ".__init__",
   "21": "TokenUsageStore",
   "22": "build_task_prompt",
+  "23": "update_repository",
   "24": "Daedalus TUI Coding Statistics",
   "25": "._usage_entries",
   "26": ".provider_split",
-  "27": "update_repository"
+  "27": "update_repository",
+  "28": "KeyboardShortcutsScreen",
+  "29": "test_app.py",
+  "30": "discover_projects",
+  "31": ".__init__"
 }
