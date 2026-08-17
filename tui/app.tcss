@@ -204,6 +204,11 @@ Screen {
     margin-right: 1;
 }
 
+#retry-button {
+    width: 11;
+    margin-right: 1;
+}
+
 #status {
     color: $text-muted;
 }

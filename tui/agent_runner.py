@@ -40,6 +40,7 @@ class AgentRequest:
     writable_directories: tuple[Path, ...] = field(default_factory=tuple)
     environment_files: tuple[Path, ...] = field(default_factory=tuple)
     control: "AgentControl | None" = None
+    timeout_seconds: float | None = None
 
 
 @dataclass
@@ -77,6 +78,7 @@ class AgentResult:
     stopped_reason: str | None = None
     tokens_consumed: int | None = None
     output_streamed: bool = False
+    timed_out: bool = False
 
     @property
     def succeeded(self) -> bool:
@@ -161,13 +163,28 @@ class AgentRunner:
             self._stream_stdout(process.stdout, request.provider, output, messages, on_output),
             self._stream(process.stderr, "stderr", output),
         ]
-        stopped_reason = self._wait_for_process(process, request.control)
+        stopped_reason, timed_out = self._wait_for_process(process, request.control, request.timeout_seconds)
         returncode = process.returncode
         for thread in threads:
             thread.join()
 
         stdout = "".join(output["stdout"])
         stderr = "".join(output["stderr"])
+        if timed_out:
+            timeout = request.timeout_seconds
+            timeout_text = f" after {timeout:g} seconds" if timeout is not None else ""
+            return AgentResult(
+                provider=request.provider,
+                returncode=returncode,
+                output=stdout,
+                error=(
+                    f"{name} timed out{timeout_text} while waiting for a response. "
+                    "The agent may be offline or unable to reach its service. "
+                    "Check your internet connection and retry."
+                ),
+                stderr=stderr,
+                timed_out=True,
+            )
         if returncode == 0:
             normalized = self._normalize_output(request.provider, stdout, stderr)
             tokens_consumed = self._extract_token_usage(request.provider, stdout)
@@ -227,24 +244,36 @@ class AgentRunner:
         )
 
     @staticmethod
-    def _wait_for_process(process, control: AgentControl | None) -> str | None:
-        if control is None:
+    def _wait_for_process(
+        process,
+        control: AgentControl | None,
+        timeout_seconds: float | None = None,
+    ) -> tuple[str | None, bool]:
+        if control is None and timeout_seconds is None:
             process.wait()
-            return None
+            return None, False
+        deadline = time.monotonic() + timeout_seconds if timeout_seconds is not None else None
         while True:
             returncode = process.poll()
             if returncode is not None:
-                return None
-            reason = control.stop_reason
+                return None, False
+            reason = control.stop_reason if control is not None else None
             if reason:
-                process.terminate()
-                try:
-                    process.wait(timeout=2)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait()
-                return reason
+                AgentRunner._terminate_process(process)
+                return reason, False
+            if deadline is not None and time.monotonic() >= deadline:
+                AgentRunner._terminate_process(process)
+                return None, True
             time.sleep(0.05)
+
+    @staticmethod
+    def _terminate_process(process) -> None:
+        process.terminate()
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
 
     @staticmethod
     def _stream_stdout(

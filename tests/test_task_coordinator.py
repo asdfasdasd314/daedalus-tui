@@ -228,6 +228,36 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertEqual(failed_task["tokens"], 0)
             self.assertEqual(failed_task["project"], str(Path(directory).resolve()))
 
+    def test_failed_agent_can_be_retried_with_the_same_request(self):
+        class RetryOrchestrator:
+            calls = []
+            attempts = 0
+
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def run(self, prompt, _provider, _model, _reasoning, task_id=None, **_kwargs):
+                type(self).calls.append(prompt)
+                type(self).attempts += 1
+                if type(self).attempts == 1:
+                    return OrchestrationResult(False, task_id, error="Agent timed out; retry later.")
+                return OrchestrationResult(True, task_id, awaiting_plan=True)
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", RetryOrchestrator):
+                record = coordinator.submit("retryable plan", "codex", "luna", "medium", mode="plan")
+                record.future.result(timeout=5)
+                self.assertEqual(record.status, "failed")
+                self.assertIn("timed out", record.error)
+
+                self.assertTrue(coordinator.retry(record.task_id))
+                record.future.result(timeout=5)
+
+            self.assertEqual(record.status, "questioning")
+            self.assertEqual(RetryOrchestrator.calls, ["retryable plan", "retryable plan"])
+            coordinator.shutdown()
+
     def test_persists_null_model_and_reasoning_for_cursor_task(self):
         class CursorOrchestrator:
             def __init__(self, *_args, **_kwargs):

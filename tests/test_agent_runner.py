@@ -196,6 +196,32 @@ class AgentRunnerTests(unittest.TestCase):
         self.assertTrue(process.terminated)
         self.assertIsNone(result.error)
 
+    @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/codex")
+    @patch("tui.agent_runner.subprocess.Popen")
+    def test_timeout_returns_retryable_connectivity_error(self, popen, _which):
+        process = InterruptibleProcess()
+        popen.return_value = process
+        request = self.request()
+        request = AgentRequest(
+            request.prompt,
+            request.directory,
+            request.provider,
+            request.model,
+            request.reasoning,
+            request.writable_directories,
+            request.environment_files,
+            None,
+            0.01,
+        )
+
+        result = AgentRunner().run(request, lambda _event: None)
+
+        self.assertFalse(result.succeeded)
+        self.assertTrue(result.timed_out)
+        self.assertIn("timed out", result.error)
+        self.assertIn("internet connection", result.error)
+        self.assertTrue(process.terminated)
+
     def test_reads_cursor_env_file_without_requiring_python_dotenv(self):
         with unittest.mock.patch("tui.environment.Path.is_file", return_value=True), unittest.mock.patch(
             "tui.environment.Path.read_text", return_value="export CURSOR_API_KEY='secret-value'\n"

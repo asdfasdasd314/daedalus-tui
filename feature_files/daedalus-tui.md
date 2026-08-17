@@ -12,6 +12,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project navigation**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the sidebar switches between per-project task coordinators without mixing transcripts or worktrees.
+- **Retryable failures**: Failed agent tasks expose their diagnostics and a Retry action so transient connectivity or service failures can be recovered in place.
 
 ## Relevant Files
 - `tui/app.py`: Textual layout, selectors, task list, transcript replay, and task controls.
@@ -53,3 +54,4 @@ HACKING
 - 2026-08-17: Used a left-aligned thin block for the insert caret so it sits on the left edge of the character cell at the insertion point.
 - 2026-08-17: Kept Plan tasks selectable through a planning/questioning loop with follow-up controls, structured plan/questions review, and an explicit transition into coding.
 - 2026-08-17: Made asynchronous plan-question rendering generation-safe and non-fatal so streamed completion events cannot close the TUI before the review controls appear.
+- 2026-08-17: Added visible retry controls for failed agent requests and preserved the last request prompt for connectivity recovery.

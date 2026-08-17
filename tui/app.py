@@ -291,6 +291,7 @@ class DaedalusTuiApp(App[None]):
                             yield Button("Pause", id="pause-button", disabled=True)
                             yield Button("Resume", id="resume-button", disabled=True)
                             yield Button("Cancel", id="cancel-button", disabled=True, variant="error")
+                            yield Button("Retry", id="retry-button", disabled=True)
                             yield Static("Idle", id="status")
         yield Footer()
 
@@ -352,6 +353,9 @@ class DaedalusTuiApp(App[None]):
     def action_cancel_task(self) -> None:
         self._cancel_task()
 
+    def action_retry_task(self) -> None:
+        self._retry_task()
+
     def action_show_shortcuts(self) -> None:
         self.push_screen(KeyboardShortcutsScreen())
 
@@ -373,6 +377,8 @@ class DaedalusTuiApp(App[None]):
             self._resume_task()
         elif event.button.id == "cancel-button":
             self._cancel_task()
+        elif event.button.id == "retry-button":
+            self._retry_task()
         elif event.button.id == "answer-plan-button":
             self._answer_plan()
         elif event.button.id == "implement-button":
@@ -572,6 +578,7 @@ class DaedalusTuiApp(App[None]):
             self.query_one("#pause-button", Button).disabled = True
             self.query_one("#resume-button", Button).disabled = True
             self.query_one("#cancel-button", Button).disabled = True
+            self.query_one("#retry-button", Button).disabled = True
             self.query_one("#continue-plan-button", Button).disabled = True
             self.query_one("#start-coding-button", Button).disabled = True
             self.query_one("#resume-notes-panel", Vertical).styles.display = "none"
@@ -616,6 +623,7 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#pause-button", Button).disabled = not active
         self.query_one("#resume-button", Button).disabled = record.status != "paused"
         self.query_one("#cancel-button", Button).disabled = not active and record.status != "questioning"
+        self.query_one("#retry-button", Button).disabled = record.status != "failed"
         self.query_one("#continue-plan-button", Button).disabled = record.status != "questioning"
         self.query_one("#start-coding-button", Button).disabled = record.status != "questioning"
         self.query_one("#resume-notes-panel", Vertical).styles.display = (
@@ -896,6 +904,14 @@ class DaedalusTuiApp(App[None]):
         record = self.coordinator.get(self._selected_task_id or "")
         if record is not None and self.coordinator.cancel(record.task_id):
             self._set_status("Cancelling")
+
+    def _retry_task(self) -> None:
+        record = self.coordinator.get(self._selected_task_id or "")
+        retry = getattr(self.coordinator, "retry", None)
+        if record is None or retry is None or not retry(record.task_id):
+            self._set_status("Retry unavailable")
+            return
+        self._set_status("Retrying")
 
     def _set_status(self, status: str) -> None:
         self.query_one("#status", Static).update(status)

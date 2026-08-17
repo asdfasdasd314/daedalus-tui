@@ -31,6 +31,7 @@ class FakeCoordinator:
         self.records = []
         self.resume_notes = []
         self.plan_actions = []
+        self.retry_actions = []
 
     def set_event_callback(self, callback):
         self.callback = callback
@@ -90,6 +91,10 @@ class FakeCoordinator:
     def cancel(self, _task_id):
         return True
 
+    def retry(self, task_id):
+        self.retry_actions.append(task_id)
+        return True
+
 
 def settings():
     return TuiSettings(
@@ -141,6 +146,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#pause-button", Button), Button)
             self.assertIsInstance(app.query_one("#resume-button", Button), Button)
             self.assertIsInstance(app.query_one("#cancel-button", Button), Button)
+            self.assertIsInstance(app.query_one("#retry-button", Button), Button)
             self.assertIsInstance(app.query_one("#continue-plan-button", Button), Button)
             self.assertIsInstance(app.query_one("#start-coding-button", Button), Button)
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
@@ -410,6 +416,25 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(prompt.text, "A task that will fail")
             self.assertTrue(prompt.read_only)
             self.assertTrue(app.query_one("#send-button", Button).disabled)
+
+    async def test_failed_task_exposes_retry_action(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#prompt-input", TextArea).insert("Retry this task")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "failed"
+            record.phase = "Failed"
+            record.error = "Agent timed out; check your internet connection and retry."
+            coordinator.emit(record, "failed", record.error, "error")
+            await pilot.pause()
+
+            retry_button = app.query_one("#retry-button", Button)
+            self.assertFalse(retry_button.disabled)
+            self.assertIn("internet connection", app.query_one("#task-error", TextArea).text)
+            retry_button.press()
+            await pilot.pause()
+            self.assertEqual(coordinator.retry_actions, [record.task_id])
 
     async def test_prompt_supports_modal_vim_modes_and_multiline_insert(self):
         app, _ = self.make_app()

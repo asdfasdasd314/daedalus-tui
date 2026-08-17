@@ -71,6 +71,7 @@ class TaskRecord:
     plan_confirmed: bool = False
     plan_error: str | None = None
     plan_followup_prompt: str | None = field(default=None, repr=False, compare=False)
+    retry_prompt: str | None = field(default=None, repr=False, compare=False)
 
 
 class IntegrationCoordinator:
@@ -296,6 +297,22 @@ class TaskCoordinator:
         self._notify(record, "queued", "Task queued to start coding from its plan.", "status")
         return True
 
+    def retry(self, task_id: str) -> bool:
+        """Retry a failed agent request after connectivity or service recovery."""
+        with self._lock:
+            record = self._tasks.get(task_id)
+            if record is None or record.status != "failed" or self._closed:
+                return False
+            record.control = AgentControl()
+            record.status = "queued"
+            record.phase = "Queued (retrying)"
+            record.error = None
+            record.finished_at = None
+            record.future = self.executor.submit(self._run, record)
+        self._persist_task(record)
+        self._notify(record, "queued", "Task queued for retry.", "status")
+        return True
+
     def cancel(self, task_id: str) -> bool:
         record = self.get(task_id)
         if record is None or record.status in {"completed", "failed", "blocked", "cancelled"}:
@@ -365,7 +382,8 @@ class TaskCoordinator:
             # Cursor streams deltas by extending the last stored message. Give a
             # follow-up response its own transcript slot before starting it.
             record.messages.append("")
-        prompt = record.plan_followup_prompt or record.prompt
+        prompt = record.plan_followup_prompt or record.retry_prompt or record.prompt
+        record.retry_prompt = prompt
         record.plan_followup_prompt = None
         orchestrator = LocalOrchestrator(
             self.repository,

@@ -88,6 +88,9 @@ def load_orchestration_settings(parameter_path: Path | None = None) -> Orchestra
     max_concurrent_tasks = int(values.get("max_concurrent_tasks", 4))
     if max_concurrent_tasks < 1:
         raise ValueError(f"{path} max_concurrent_tasks must be positive.")
+    agent_timeout_seconds = float(values.get("agent_timeout_seconds", 300))
+    if agent_timeout_seconds <= 0:
+        raise ValueError(f"{path} agent_timeout_seconds must be positive.")
     return OrchestrationSettings(
         primary_branch=str(values.get("primary_branch", "main")),
         worktree_root=str(values.get("worktree_root", ".daedalus-worktrees")),
@@ -95,6 +98,7 @@ def load_orchestration_settings(parameter_path: Path | None = None) -> Orchestra
         task_verification_attempt_limit=int(values.get("task_verification_attempt_limit", 3)),
         resolver_attempt_limit=int(values.get("resolver_attempt_limit", 3)),
         max_concurrent_tasks=max_concurrent_tasks,
+        agent_timeout_seconds=agent_timeout_seconds,
         graphify_update_enabled=bool(values.get("graphify_update_enabled", True)),
         graphify_executable=str(values.get("graphify_executable", "graphify")),
     )

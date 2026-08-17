@@ -9,6 +9,7 @@ The standalone TUI orchestration layer creates isolated Git worktrees, runs a se
 - **Resolver fallback**: Merge conflicts and post-merge verification failures launch the selected provider as a resolver with the latest failure details.
 - **Safe promotion**: The primary branch must remain clean, checked out, and unchanged before fast-forward promotion; failed worktrees remain available for inspection.
 - **Concurrent integration**: Up to four task agents and their verification runs execute concurrently, then ready tasks pass through a first-ready serialized integration gate before promotion.
+- **Connectivity recovery**: Agent subprocesses have a bounded timeout, report actionable offline/service diagnostics, and failed requests can be retried without losing their task context.
 - **Agent Git boundary**: Task, repair, and resolver agents edit files only; the orchestration layer owns staging, commits, merges, and cleanup.
 - **Graph refresh boundary**: Graphify runs only after successful primary promotion, and a failed refresh is cleaned up and reported without starting a resolver.
 - **Local-only boundary**: No persistence, daemon communications, Supabase deployment, migration handling, or remote Git push is included.
@@ -35,3 +36,4 @@ HACKING
 - 2026-08-17: Staged resolver worktree changes before checking for unmerged paths so file-only conflict resolutions are recognized by the orchestration layer.
 - 2026-08-14: Moved graph refreshes into a best-effort post-promotion hook and discarded accidental task-worktree graph output before orchestration commits.
 - 2026-08-14: Connected orchestration to recursively discovered project roots while preserving independent task state when the sidebar changes projects.
+- 2026-08-17: Added bounded agent execution timeouts and retryable failed tasks so network outages do not leave executor threads hanging or discard the plan context.

@@ -26,6 +26,7 @@ class OrchestrationSettings:
     task_verification_attempt_limit: int = 3
     resolver_attempt_limit: int = 3
     max_concurrent_tasks: int = 4
+    agent_timeout_seconds: float = 300.0
     graphify_update_enabled: bool = True
     graphify_executable: str = "graphify"
 
@@ -225,6 +226,7 @@ class LocalOrchestrator:
             writable_directories=(context.path,),
             environment_files=(self.repository / ".env",),
             control=control,
+            timeout_seconds=self.settings.agent_timeout_seconds,
         )
         result = self.runner.run(
             request,
