@@ -74,6 +74,7 @@ class TaskRecord:
     prompt_history: list[str] = field(default_factory=list, repr=False, compare=False)
     plan_followup_prompt: str | None = field(default=None, repr=False, compare=False)
     retry_prompt: str | None = field(default=None, repr=False, compare=False)
+    retry_output_context: str | None = field(default=None, repr=False, compare=False)
 
 
 class IntegrationCoordinator:
@@ -343,6 +344,12 @@ class TaskCoordinator:
             record = self._tasks.get(task_id)
             if record is None or record.status != "failed" or self._closed:
                 return False
+            visible_output = "\n\n".join(message.strip() for message in record.messages if message.strip())
+            record.retry_output_context = (
+                "Previous visible AI output from the failed attempt:\n" + visible_output
+                if visible_output
+                else None
+            )
             record.control = AgentControl()
             record.status = "queued"
             record.phase = "Queued (retrying)"
@@ -426,6 +433,10 @@ class TaskCoordinator:
         prompt = record.plan_followup_prompt or record.retry_prompt or record.prompt
         record.retry_prompt = prompt
         record.plan_followup_prompt = None
+        resume_notes = tuple(record.resume_notes)
+        if record.retry_output_context:
+            resume_notes += (record.retry_output_context,)
+        record.retry_output_context = None
         orchestrator = LocalOrchestrator(
             self.repository,
             self.runner,
@@ -444,7 +455,7 @@ class TaskCoordinator:
                 mode=record.mode,
                 control=record.control,
                 existing_context=record.context,
-                resume_notes=tuple(record.resume_notes),
+                resume_notes=resume_notes,
             )
         except Exception as error:  # Keep one unexpected task failure isolated from the pool.
             log_exception(f"Task worker crashed task={record.task_id}", error)

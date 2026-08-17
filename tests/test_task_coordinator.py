@@ -258,13 +258,14 @@ class TaskCoordinatorTests(unittest.TestCase):
             calls = []
             attempts = 0
 
-            def __init__(self, *_args, **_kwargs):
-                pass
+            def __init__(self, _repository, _runner, _settings, on_event, integration_gate=None):
+                self.on_event = on_event
 
-            def run(self, prompt, _provider, _model, _reasoning, task_id=None, **_kwargs):
-                type(self).calls.append(prompt)
+            def run(self, prompt, _provider, _model, _reasoning, task_id=None, resume_notes=(), **_kwargs):
+                type(self).calls.append((prompt, resume_notes))
                 type(self).attempts += 1
                 if type(self).attempts == 1:
+                    self.on_event("agent", "I was inspecting the existing implementation.", "message")
                     return OrchestrationResult(False, task_id, error="Agent timed out; retry later.")
                 return OrchestrationResult(True, task_id, awaiting_plan=True)
 
@@ -280,7 +281,51 @@ class TaskCoordinatorTests(unittest.TestCase):
                 record.future.result(timeout=5)
 
             self.assertEqual(record.status, "questioning")
-            self.assertEqual(RetryOrchestrator.calls, ["retryable plan", "retryable plan"])
+            self.assertEqual(RetryOrchestrator.calls[0], ("retryable plan", ()))
+            self.assertEqual(RetryOrchestrator.calls[1][0], "retryable plan")
+            self.assertEqual(
+                RetryOrchestrator.calls[1][1],
+                ("Previous visible AI output from the failed attempt:\n"
+                 "I was inspecting the existing implementation.",),
+            )
+            coordinator.shutdown()
+
+    def test_repeated_retries_replace_previous_output_context_instead_of_duplicating_it(self):
+        class RetryOrchestrator:
+            attempts = 0
+            resume_notes = []
+
+            def __init__(self, _repository, _runner, _settings, on_event, integration_gate=None):
+                self.on_event = on_event
+
+            def run(self, _prompt, _provider, _model, _reasoning, task_id=None, resume_notes=(), **_kwargs):
+                type(self).resume_notes.append(resume_notes)
+                type(self).attempts += 1
+                self.on_event("agent", f"Attempt {type(self).attempts} output.", "message")
+                if type(self).attempts < 3:
+                    return OrchestrationResult(False, task_id, error="Agent failed; retry later.")
+                return OrchestrationResult(True, task_id)
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", RetryOrchestrator):
+                record = coordinator.submit("retry this", "codex", "luna", "medium")
+                record.future.result(timeout=5)
+                self.assertTrue(coordinator.retry(record.task_id))
+                record.future.result(timeout=5)
+                self.assertTrue(coordinator.retry(record.task_id))
+                record.future.result(timeout=5)
+
+            self.assertEqual(RetryOrchestrator.resume_notes[0], ())
+            self.assertEqual(
+                RetryOrchestrator.resume_notes[1],
+                ("Previous visible AI output from the failed attempt:\nAttempt 1 output.",),
+            )
+            self.assertEqual(
+                RetryOrchestrator.resume_notes[2],
+                ("Previous visible AI output from the failed attempt:\n"
+                 "Attempt 1 output.\n\nAttempt 2 output.",),
+            )
             coordinator.shutdown()
 
     def test_persists_null_model_and_reasoning_for_cursor_task(self):

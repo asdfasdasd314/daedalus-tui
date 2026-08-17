@@ -56,6 +56,7 @@ HACKING
 - 2026-08-17: Made asynchronous plan-question rendering generation-safe and non-fatal so streamed completion events cannot close the TUI before the review controls appear.
 - 2026-08-17: Suppressed Textual's inherited Select mount handler for dynamic plan answers, preventing a race where SelectCurrent lacked its internal `#label` node during initialization.
 - 2026-08-17: Added visible retry controls for failed agent requests and preserved the last request prompt for connectivity recovery.
+- 2026-08-17: Included the visible AI transcript from failed attempts in retry context while relying on the existing worktree diff for file-change state.
 - 2026-08-17: Deferred dynamic plan Select initialization until after Textual's nested SelectCurrent label is mounted, preventing a lifecycle race from terminating the TUI.
 - 2026-08-17: Detached task callbacks before coordinator shutdown, waited for executor workers to finish, and ignored late events after Textual closes.
 - 2026-08-17: Replaced the insert caret's rendered cell instead of adding one, so middle-of-line text no longer shifts while the prompt document stays unchanged.
