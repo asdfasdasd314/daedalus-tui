@@ -59,6 +59,11 @@ class GitWorktreeManager:
         self.run_git(["restore", "--source=HEAD", "--staged", "--worktree", "--", graphify_path], directory)
         self.run_git(["clean", "-fd", "--", graphify_path], directory)
 
+    def reset_task_to_base(self, context: WorktreeContext) -> None:
+        """Keep a read-only planning pass from becoming an implementation change."""
+        self.run_git(["reset", "--hard", context.base_commit], context.path)
+        self.run_git(["clean", "-fd"], context.path)
+
     def commit_graphify_changes(self, message: str) -> bool:
         """Commit only the generated graph after a successful primary update."""
         if not self.git_output(["status", "--porcelain", "--", "graphify-out"]):

@@ -277,6 +277,8 @@ class DaedalusTuiApp(App[None]):
                             )
                         with Horizontal(id="actions"):
                             yield Button("Send", id="send-button", variant="primary")
+                            yield Button("Continue Plan", id="continue-plan-button", disabled=True)
+                            yield Button("Start Coding", id="start-coding-button", disabled=True, variant="primary")
                             yield Button("Pause", id="pause-button", disabled=True)
                             yield Button("Resume", id="resume-button", disabled=True)
                             yield Button("Cancel", id="cancel-button", disabled=True, variant="error")
@@ -332,6 +334,12 @@ class DaedalusTuiApp(App[None]):
     def action_resume_task(self) -> None:
         self._resume_task()
 
+    def action_continue_plan(self) -> None:
+        self._continue_plan()
+
+    def action_start_coding(self) -> None:
+        self._start_coding()
+
     def action_cancel_task(self) -> None:
         self._cancel_task()
 
@@ -346,6 +354,10 @@ class DaedalusTuiApp(App[None]):
             self._submit_prompt()
         elif event.button.id == "new-task-button":
             self._start_new_task()
+        elif event.button.id == "continue-plan-button":
+            self._continue_plan()
+        elif event.button.id == "start-coding-button":
+            self._start_coding()
         elif event.button.id == "pause-button":
             self._pause_task()
         elif event.button.id == "resume-button":
@@ -541,6 +553,8 @@ class DaedalusTuiApp(App[None]):
             self.query_one("#pause-button", Button).disabled = True
             self.query_one("#resume-button", Button).disabled = True
             self.query_one("#cancel-button", Button).disabled = True
+            self.query_one("#continue-plan-button", Button).disabled = True
+            self.query_one("#start-coding-button", Button).disabled = True
             self.query_one("#resume-notes-panel", Vertical).styles.display = "none"
             return
         # Use Textual's resolved Rich color rather than the raw CSS variable:
@@ -564,12 +578,25 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#phase", Static).update(f"Phase: {record.phase}")
         self._set_error(record.error or "")
         self._set_status(record.status.capitalize())
-        active = record.status in {"queued", "running", "verifying", "ready", "integrating", "resolving"}
+        active = record.status in {
+            "queued",
+            "planning",
+            "running",
+            "verifying",
+            "ready",
+            "integrating",
+            "resolving",
+        }
         self.query_one("#pause-button", Button).disabled = not active
         self.query_one("#resume-button", Button).disabled = record.status != "paused"
-        self.query_one("#cancel-button", Button).disabled = not active
+        self.query_one("#cancel-button", Button).disabled = not active and record.status != "questioning"
+        self.query_one("#continue-plan-button", Button).disabled = record.status != "questioning"
+        self.query_one("#start-coding-button", Button).disabled = record.status != "questioning"
         self.query_one("#resume-notes-panel", Vertical).styles.display = (
-            "block" if record.status == "paused" else "none"
+            "block" if record.status in {"paused", "questioning"} else "none"
+        )
+        self.query_one("#resume-notes-label", Static).update(
+            "Plan follow-up or question" if record.status == "questioning" else "Optional notes for resuming this task"
         )
 
     def _start_new_task(self) -> None:
@@ -692,6 +719,22 @@ class DaedalusTuiApp(App[None]):
         if record is not None and self.coordinator.resume(record.task_id, notes):
             notes_widget.clear()
             self._set_status("Resuming")
+
+    def _continue_plan(self) -> None:
+        record = self.coordinator.get(self._selected_task_id or "")
+        notes_widget = self.query_one("#resume-notes", TextArea)
+        notes = notes_widget.text.strip()
+        if record is not None and self.coordinator.continue_plan(record.task_id, notes):
+            notes_widget.clear()
+            self._set_status("Continuing plan")
+
+    def _start_coding(self) -> None:
+        record = self.coordinator.get(self._selected_task_id or "")
+        notes_widget = self.query_one("#resume-notes", TextArea)
+        notes = notes_widget.text.strip()
+        if record is not None and self.coordinator.start_coding(record.task_id, notes):
+            notes_widget.clear()
+            self._set_status("Starting coding")
 
     def _cancel_task(self) -> None:
         record = self.coordinator.get(self._selected_task_id or "")

@@ -28,6 +28,7 @@ class FakeCoordinator:
         self.callback = None
         self.records = []
         self.resume_notes = []
+        self.plan_actions = []
 
     def set_event_callback(self, callback):
         self.callback = callback
@@ -74,6 +75,14 @@ class FakeCoordinator:
 
     def resume(self, _task_id, notes=""):
         self.resume_notes.append(notes)
+        return True
+
+    def continue_plan(self, task_id, notes=""):
+        self.plan_actions.append(("continue", task_id, notes))
+        return True
+
+    def start_coding(self, task_id, notes=""):
+        self.plan_actions.append(("coding", task_id, notes))
         return True
 
     def cancel(self, _task_id):
@@ -130,6 +139,8 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#pause-button", Button), Button)
             self.assertIsInstance(app.query_one("#resume-button", Button), Button)
             self.assertIsInstance(app.query_one("#cancel-button", Button), Button)
+            self.assertIsInstance(app.query_one("#continue-plan-button", Button), Button)
+            self.assertIsInstance(app.query_one("#start-coding-button", Button), Button)
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
             await pilot.pause()
 
@@ -547,6 +558,41 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(coordinator.records[0].mode, "plan")
             self.assertFalse(app.query_one("#pause-button", Button).disabled)
             self.assertFalse(app.query_one("#cancel-button", Button).disabled)
+
+    async def test_questioning_plan_is_selectable_and_can_continue_or_start_coding(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Make a plan")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "questioning"
+            record.phase = "Questioning"
+            record.messages.append("Plan output and open questions")
+            coordinator.emit(record, "questioning", "Plan ready.", "status")
+            await pilot.pause()
+
+            self.assertEqual(str(app.query_one("#phase", Static).render()), "Phase: Questioning")
+            self.assertFalse(app.query_one("#continue-plan-button", Button).disabled)
+            self.assertFalse(app.query_one("#start-coding-button", Button).disabled)
+            self.assertTrue(app.query_one("#pause-button", Button).disabled)
+            self.assertFalse(app.query_one("#cancel-button", Button).disabled)
+
+            app.query_one("#resume-notes", TextArea).insert("Please clarify the data flow.")
+            app.action_continue_plan()
+            self.assertEqual(
+                coordinator.plan_actions[-1],
+                ("continue", record.task_id, "Please clarify the data flow."),
+            )
+
+            record.status = "questioning"
+            coordinator.emit(record, "questioning", "Plan ready again.", "status")
+            app.query_one("#resume-notes", TextArea).insert("Use the smallest compatible change.")
+            app._start_coding()
+            self.assertEqual(
+                coordinator.plan_actions[-1],
+                ("coding", record.task_id, "Use the smallest compatible change."),
+            )
 
     async def test_paused_task_exposes_optional_resume_notes(self):
         app, coordinator = self.make_app()

@@ -80,6 +80,49 @@ class TaskCoordinatorTests(unittest.TestCase):
             )
             coordinator.shutdown()
 
+    def test_plan_task_stays_questioning_until_started_as_coding(self):
+        class PlanningOrchestrator:
+            calls = []
+
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def run(self, prompt, _provider, _model, _reasoning, task_id=None, mode="coding", **kwargs):
+                type(self).calls.append((mode, kwargs.get("existing_context"), kwargs.get("resume_notes", ())))
+                context = kwargs.get("existing_context") or WorktreeContext(
+                    Path(directory), task_id, "base", f"agent/task-{task_id}", Path(directory) / "worktree"
+                )
+                return OrchestrationResult(
+                    True,
+                    task_id,
+                    context.branch_name,
+                    context.path,
+                    context=context,
+                    awaiting_plan=mode == "plan",
+                )
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", PlanningOrchestrator):
+                record = coordinator.submit("plan this", "codex", "luna", "medium", mode="plan")
+                record.future.result(timeout=5)
+
+                self.assertEqual(record.status, "questioning")
+                self.assertEqual(record.phase, "Questioning")
+                self.assertTrue(coordinator.continue_plan(record.task_id, "What about the API boundary?"))
+                record.future.result(timeout=5)
+                self.assertEqual(record.status, "questioning")
+
+                self.assertTrue(coordinator.start_coding(record.task_id, "Proceed with the minimal design."))
+                record.future.result(timeout=5)
+
+            self.assertEqual(record.mode, "coding")
+            self.assertEqual(record.status, "completed")
+            self.assertEqual([call[0] for call in PlanningOrchestrator.calls], ["plan", "plan", "coding"])
+            self.assertIs(PlanningOrchestrator.calls[1][1], record.context)
+            self.assertIn("What about the API boundary?", PlanningOrchestrator.calls[1][2])
+            coordinator.shutdown()
+
     def test_first_ready_integration_is_serialized(self):
         coordinator = IntegrationCoordinator()
         started = threading.Event()

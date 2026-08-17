@@ -11,7 +11,7 @@ from tui.verification import VerificationResult
 
 
 class OrchestratorTests(unittest.TestCase):
-    def test_completed_plan_reports_tokens(self):
+    def test_plan_waits_for_questions_and_preserves_worktree(self):
         with tempfile.TemporaryDirectory() as directory:
             repository = Path(directory)
             runner = Mock()
@@ -30,7 +30,11 @@ class OrchestratorTests(unittest.TestCase):
                 result = orchestrator.run("Make a plan", "codex", "luna", "high", mode="plan")
 
         self.assertTrue(result.succeeded)
+        self.assertTrue(result.awaiting_plan)
         self.assertEqual(result.tokens_consumed, 12)
+        manager.remove_successful.assert_not_called()
+        manager.discard_graphify_changes.assert_called_once_with(context.path)
+        manager.reset_task_to_base.assert_called_once_with(context)
 
     def test_failed_plan_does_not_report_agent_tokens(self):
         with tempfile.TemporaryDirectory() as directory:

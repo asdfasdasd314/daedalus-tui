@@ -19,6 +19,8 @@ from .orchestrator import LocalOrchestrator, OrchestrationResult, OrchestrationS
 TaskEventCallback = Callable[["TaskRecord", str, str, str], None]
 TASK_STATUSES = (
     "queued",
+    "planning",
+    "questioning",
     "running",
     "verifying",
     "ready",
@@ -143,13 +145,23 @@ class TaskCoordinator:
                 return
             self._closed = True
             for record in self._tasks.values():
-                if record.status in {"queued", "running", "verifying", "ready", "integrating", "resolving"}:
+                if record.status in {
+                    "queued",
+                    "planning",
+                    "running",
+                    "verifying",
+                    "ready",
+                    "integrating",
+                    "resolving",
+                }:
                     record.control.request_cancel()
         self.executor.shutdown(wait=False, cancel_futures=True)
 
     def pause(self, task_id: str) -> bool:
         record = self.get(task_id)
         if record is None or record.status in {"completed", "failed", "blocked", "paused", "cancelled"}:
+            return False
+        if record.status == "questioning":
             return False
         if record.status == "queued" and record.future is not None and record.future.cancel():
             record.status = "paused"
@@ -180,6 +192,47 @@ class TaskCoordinator:
         self._notify(record, "queued", "Task queued to resume in its existing worktree.", "status")
         return True
 
+    def continue_plan(self, task_id: str, notes: str = "") -> bool:
+        """Run another planning pass while keeping the task in questioning."""
+        with self._lock:
+            record = self._tasks.get(task_id)
+            if record is None or record.status != "questioning" or self._closed:
+                return False
+            planning_output = "\n\n".join(message for message in record.messages if message.strip()).strip()
+            if planning_output:
+                record.resume_notes.append("Review this previous planning output:\n" + planning_output)
+            if notes.strip():
+                record.resume_notes.append(notes.strip())
+            record.status = "queued"
+            record.phase = "Queued (continuing plan)"
+            record.error = None
+            record.future = self.executor.submit(self._run, record)
+        self._persist_task(record)
+        self._notify(record, "queued", "Task queued for another planning pass.", "status")
+        return True
+
+    def start_coding(self, task_id: str, notes: str = "") -> bool:
+        """Promote a reviewed plan into the normal coding and verification route."""
+        with self._lock:
+            record = self._tasks.get(task_id)
+            if record is None or record.status != "questioning" or self._closed:
+                return False
+            planning_output = "\n\n".join(message for message in record.messages if message.strip()).strip()
+            if planning_output:
+                record.resume_notes.append(
+                    "Carry this planning context into implementation:\n" + planning_output
+                )
+            if notes.strip():
+                record.resume_notes.append(notes.strip())
+            record.mode = "coding"
+            record.status = "queued"
+            record.phase = "Queued (starting coding)"
+            record.error = None
+            record.future = self.executor.submit(self._run, record)
+        self._persist_task(record)
+        self._notify(record, "queued", "Task queued to start coding from its plan.", "status")
+        return True
+
     def cancel(self, task_id: str) -> bool:
         record = self.get(task_id)
         if record is None or record.status in {"completed", "failed", "blocked", "cancelled"}:
@@ -202,6 +255,28 @@ class TaskCoordinator:
             record.status = "cancelled"
             record.phase = "Cancelled"
             record.error = "Task cancelled and its worktree was removed."
+            record.finished_at = time.time()
+            self._persist_task(record)
+            self._notify(record, "cancelled", record.error, "error")
+            return True
+        if record.status == "questioning":
+            if record.context is not None:
+                try:
+                    GitWorktreeManager(
+                        self.repository,
+                        self.settings.primary_branch,
+                        self.settings.worktree_root,
+                    ).remove_cancelled(record.context)
+                except GitWorktreeError as error:
+                    record.status = "failed"
+                    record.phase = "Failed"
+                    record.error = f"Cancelled plan cleanup failed: {error}"
+                    self._persist_task(record)
+                    self._notify(record, "failed", record.error, "error")
+                    return False
+            record.status = "cancelled"
+            record.phase = "Cancelled"
+            record.error = "Plan cancelled and its worktree was removed."
             record.finished_at = time.time()
             self._persist_task(record)
             self._notify(record, "cancelled", record.error, "error")
@@ -256,6 +331,13 @@ class TaskCoordinator:
         record.context = result.context or record.context
         if result.succeeded:
             record.tokens_consumed += result.tokens_consumed
+        if result.awaiting_plan:
+            record.status = "questioning"
+            record.phase = "Questioning"
+            record.error = None
+            record.finished_at = None
+            self._persist_task(record)
+            return
         if result.paused:
             record.status = "paused"
             record.phase = "Paused"
@@ -284,6 +366,8 @@ class TaskCoordinator:
         record.phase = phase.replace("_", " ").capitalize()
         status = {
             "worktree": "running",
+            "planning": "planning",
+            "questioning": "questioning",
             "agent": "running",
             "verification": "verifying",
             "repairing": "verifying",

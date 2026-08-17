@@ -13,7 +13,8 @@ daemon, a remote service, or a database server.
   name to an ISO-8601 UTC submission `timestamp`, prompt, provider, model,
   reasoning, mode, current state, assistant outputs, non-negative token usage,
   resolved project path, and error. The entry is upserted as the task
-  progresses, including for failed, paused, and cancelled tasks.
+  progresses, including for planning, questioning, failed, paused, and
+  cancelled tasks.
 - **Upsert behavior**: A missing memory file starts as an empty list; each
   task creates or updates one worktree-keyed entry while preserving other task
   entries.
@@ -64,3 +65,4 @@ HACKING
 - 2026-08-17: Added worktree-keyed task history snapshots so prompt metadata, lifecycle state, outputs, and failure diagnostics survive task completion or failure.
 - 2026-08-17: Replaced standalone token-usage entries with timestamped task records while preserving the last-opened-project marker.
 - 2026-08-17: Folded the legacy token count and resolved project path into each central task record and removed the standalone store alias.
+- 2026-08-17: Persisted Plan tasks while they await questions or approval so their planning state and transcript remain selectable.

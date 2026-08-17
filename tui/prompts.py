@@ -17,6 +17,7 @@ def build_task_prompt(
     elif mode == "plan":
         instructions = (
             "Inspect the repository and produce a clear implementation plan. "
+            "Explicitly list unanswered questions, assumptions, and decisions for the user to review. "
             "Do not modify files or create generated artifacts."
         )
     elif mode == "coding":

@@ -8,6 +8,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Provider controls**: Codex exposes Luna, Terra, and Sol with light, medium, high, and extra-high reasoning; Cursor CLI is a provider-only choice with model and reasoning disabled.
 - **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, a database, or a remote push.
 - **Concurrent task list**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript.
+- **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project navigation**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the sidebar switches between per-project task coordinators without mixing transcripts or worktrees.
@@ -50,3 +51,4 @@ HACKING
 - 2026-08-17: Kept the insert caret between characters so rendering a middle-of-line prompt does not hide the text to its right.
 - 2026-08-17: Fixed insert caret rendering by splitting the full Textual strip at the cursor position and drawing a visible one-cell vertical bar.
 - 2026-08-17: Used a left-aligned thin block for the insert caret so it sits on the left edge of the character cell at the insertion point.
+- 2026-08-17: Kept Plan tasks in a selectable planning/questioning loop with follow-up controls and an explicit transition into coding.

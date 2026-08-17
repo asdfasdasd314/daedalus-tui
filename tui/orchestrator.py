@@ -41,6 +41,7 @@ class OrchestrationResult:
     paused: bool = False
     cancelled: bool = False
     tokens_consumed: int = 0
+    awaiting_plan: bool = False
 
 
 class AgentStopped(RuntimeError):
@@ -96,7 +97,12 @@ class LocalOrchestrator:
             self._raise_if_stopped(control)
 
             selection = (provider, model, reasoning)
-            self.emit("agent", f"Running {provider} in the isolated worktree.")
+            self.emit(
+                "planning" if mode == "plan" else "agent",
+                f"Planning with {provider} in the isolated worktree."
+                if mode == "plan"
+                else f"Running {provider} in the isolated worktree.",
+            )
             result = self.run_agent(
                 manager,
                 context,
@@ -108,12 +114,26 @@ class LocalOrchestrator:
                     resumed=existing_context is not None,
                 ),
                 control,
+                event_phase="planning" if mode == "plan" else "agent",
             )
             if not result.succeeded:
                 raise RuntimeError(result.error or "Agent execution failed.")
 
             if mode in {"ask", "plan"}:
                 manager.discard_graphify_changes(context.path)
+            if mode == "plan":
+                manager.reset_task_to_base(context)
+                self.emit("questioning", "Plan ready. Review it, answer questions, or start coding.")
+                return OrchestrationResult(
+                    True,
+                    task_id,
+                    context.branch_name,
+                    context.path,
+                    context=context,
+                    awaiting_plan=True,
+                    tokens_consumed=self._completed_tokens(),
+                )
+            if mode == "ask":
                 manager.remove_successful(context)
                 self.emit("completed", f"Completed {mode} task.")
                 return OrchestrationResult(
@@ -193,6 +213,7 @@ class LocalOrchestrator:
         selection: tuple[str, str, str],
         prompt: str,
         control: AgentControl | None = None,
+        event_phase: str = "agent",
     ) -> AgentResult:
         provider, model, reasoning = selection
         request = AgentRequest(
@@ -207,12 +228,12 @@ class LocalOrchestrator:
         )
         result = self.runner.run(
             request,
-            lambda event: self.emit("agent", event.text, event.kind),
+            lambda event: self.emit(event_phase, event.text, event.kind),
         )
         if result.tokens_consumed is not None:
             self._tokens_consumed += result.tokens_consumed
         if provider == "cursor" and result.succeeded and result.output and not result.output_streamed:
-            self.emit("agent", result.output, "message")
+            self.emit(event_phase, result.output, "message")
         if result.stopped_reason:
             raise AgentStopped(result.stopped_reason)
         return result

@@ -148,6 +148,11 @@ Screen {
     margin-right: 2;
 }
 
+#continue-plan-button, #start-coding-button {
+    width: 16;
+    margin-right: 1;
+}
+
 #pause-button, #resume-button, #cancel-button {
     width: 11;
     margin-right: 1;

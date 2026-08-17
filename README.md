@@ -74,10 +74,13 @@ The supported command subset is intentionally incremental so additional Vim
 commands can be added as they become useful. Mouse clicks and standard
 Textual key navigation remain available.
 
-Use the mode selector for Coding, Ask, or Plan. Ask and Plan runs are
-read-only and do not promote file changes. Pause preserves the task worktree
-and allows resume later; Cancel stops the agent and removes that task's
-worktree and branch.
+Use the mode selector for Coding, Ask, or Plan. Ask runs are read-only and
+finish after the answer. Plan runs are read-only during an initial
+`planning → questioning` route: the task stays in the task list with its plan
+transcript and worktree available for selection, another plan pass, or a
+`Start Coding` transition into the normal running, verification, and
+integration route. Pause preserves the task worktree and allows resume later;
+Cancel stops the agent and removes that task's worktree and branch.
 
 When resuming, the optional notes field is sent to the agent only when it has
 content. The resume prompt tells the agent to preserve existing work, inspect
