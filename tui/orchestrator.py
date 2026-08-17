@@ -8,6 +8,7 @@ import uuid
 from typing import Callable
 
 from .agent_runner import AgentControl, AgentRequest, AgentResult, AgentRunner
+from .debug_log import LOGGER, log_exception
 from .graphify import update_repository
 from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
 from .prompts import build_repair_prompt, build_resolver_prompt, build_task_prompt
@@ -29,6 +30,8 @@ class OrchestrationSettings:
     agent_timeout_seconds: float = 300.0
     graphify_update_enabled: bool = True
     graphify_executable: str = "graphify"
+    shutdown_grace_seconds: float = 8.0
+    debug_log_filename: str = ".daedalus-debug.log"
 
 
 @dataclass(frozen=True)
@@ -81,6 +84,7 @@ class LocalOrchestrator:
         resume_notes: tuple[str, ...] = (),
     ) -> OrchestrationResult:
         task_id = task_id or uuid.uuid4().hex[:12]
+        LOGGER.info("Orchestration started task=%s mode=%s provider=%s", task_id, mode, provider)
         context: WorktreeContext | None = existing_context
         manager = GitWorktreeManager(
             self.repository,
@@ -172,6 +176,7 @@ class LocalOrchestrator:
                 tokens_consumed=self._completed_tokens(),
             )
         except AgentStopped as stopped:
+            LOGGER.info("Orchestration stopped task=%s reason=%s", task_id, stopped.reason)
             if stopped.reason == "cancelled" and context is not None:
                 manager.remove_cancelled(context)
                 self.emit("cancelled", "Task cancelled and its worktree was removed.")
@@ -195,6 +200,7 @@ class LocalOrchestrator:
                 tokens_consumed=self._completed_tokens(False),
             )
         except (GitWorktreeError, RuntimeError, ValueError) as error:
+            log_exception(f"Orchestration failed task={task_id}", error)
             message = str(error)
             self.emit("failed", message, "error")
             return OrchestrationResult(
@@ -381,6 +387,7 @@ class LocalOrchestrator:
         self.emit("graphify", "Graph refresh committed." if committed else "Graph refresh completed with no changes.")
 
     def emit(self, phase: str, message: str, kind: str = "status") -> None:
+        LOGGER.debug("Orchestration event phase=%s kind=%s message_length=%d", phase, kind, len(message))
         self.on_event(phase, message, kind)
 
     def _completed_tokens(self, completed: bool = True) -> int:

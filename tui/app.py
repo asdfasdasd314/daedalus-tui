@@ -20,6 +20,7 @@ from .config import (
     load_orchestration_settings,
     load_tui_settings,
 )
+from .debug_log import LOGGER, close_fault_handler, configure_debug_logging, install_fault_handler, log_exception
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .projects import DaedalusProject, discover_projects
 from .task_coordinator import TaskCoordinator, TaskRecord
@@ -214,6 +215,8 @@ class DaedalusTuiApp(App[None]):
         self.settings = settings or load_tui_settings()
         self.statistics_settings = statistics_settings or load_coding_statistics_settings()
         self.orchestration_settings = load_orchestration_settings()
+        self.debug_log_path = self.launch_root / self.orchestration_settings.debug_log_filename
+        self._fault_log_file = None
         self.runner = runner or AgentRunner()
         discovered = list(discover_projects(self.launch_root))
         if not discovered:
@@ -315,6 +318,8 @@ class DaedalusTuiApp(App[None]):
         yield Footer()
 
     def on_mount(self) -> None:
+        self.debug_log_path = configure_debug_logging(self.debug_log_path)
+        self._fault_log_file = install_fault_handler(self.debug_log_path)
         self._accept_task_events = True
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
         prompt.enter_insert_mode()
@@ -346,13 +351,24 @@ class DaedalusTuiApp(App[None]):
             event.stop()
 
     def on_unmount(self) -> None:
-        # Detach callbacks before waiting for worker shutdown. Agent reader
-        # threads may deliver one final event after the Textual app closes.
+        # Detach callbacks before asking workers to stop. Agent reader threads
+        # may deliver one final event after the Textual app closes.
+        LOGGER.info("Textual app unmounting; requesting coordinator shutdown.")
         self._accept_task_events = False
+        shutdown_complete = True
         for coordinator in self._coordinators.values():
             if hasattr(coordinator, "set_event_callback"):
                 coordinator.set_event_callback(None)
-            coordinator.shutdown()
+            shutdown_complete = coordinator.shutdown() is not False and shutdown_complete
+        if shutdown_complete:
+            close_fault_handler(self._fault_log_file)
+        else:
+            LOGGER.error("Leaving fault handler active because a task worker is still running.")
+
+    def _handle_exception(self, error: Exception) -> None:
+        """Persist Textual failures that would otherwise only flash on screen."""
+        log_exception("Unhandled Textual application exception", error)
+        super()._handle_exception(error)
 
     def action_submit_prompt(self) -> None:
         self._submit_prompt()
@@ -424,7 +440,7 @@ class DaedalusTuiApp(App[None]):
                 return
             self._selected_task_id = str(event.value)
             self._new_task_mode = False
-            self._render_selected_task()
+            self._render_selected_task_safely("task selection")
             return
         if event.select.id and event.select.id.startswith("plan-question-"):
             self._update_plan_action_buttons()
@@ -475,10 +491,18 @@ class DaedalusTuiApp(App[None]):
         self._selected_task_id = record.task_id
         self._new_task_mode = False
         self._refresh_task_selector()
-        self._render_selected_task()
+        self._render_selected_task_safely("prompt submission")
 
     def _on_task_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
+        LOGGER.debug(
+            "Task event task=%s phase=%s kind=%s message_length=%d",
+            record.task_id,
+            phase,
+            kind,
+            len(message),
+        )
         if not self._accept_task_events:
+            LOGGER.debug("Dropped late task event because the app is closing.")
             return
         if threading.current_thread() is threading.main_thread():
             self._apply_task_event(record, phase, message, kind)
@@ -489,14 +513,26 @@ class DaedalusTuiApp(App[None]):
                 # A worker can race with Textual's final shutdown transition.
                 # Do not let a late event print an exception after the UI closes.
                 if "App is not running" not in str(error):
+                    log_exception("Could not forward task event into Textual", error)
                     raise
+                LOGGER.info("Dropped task event after Textual stopped task=%s", record.task_id)
 
     def _apply_task_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
-        self._refresh_project_selector()
-        if self.coordinator.get(record.task_id) is record:
-            self._refresh_task_selector()
-        if self.coordinator.get(record.task_id) is record and self._selected_task_id == record.task_id:
-            self._render_selected_task()
+        try:
+            self._refresh_project_selector()
+            if self.coordinator.get(record.task_id) is record:
+                self._refresh_task_selector()
+            if self.coordinator.get(record.task_id) is record and self._selected_task_id == record.task_id:
+                self._render_selected_task_safely(f"task event phase={phase}")
+        except Exception as error:
+            log_exception(f"Could not render task event task={record.task_id} phase={phase}", error)
+            if not self._accept_task_events:
+                return
+            try:
+                self._set_error(f"Task update could not be rendered: {error}")
+                self._set_status("Error")
+            except Exception as display_error:
+                log_exception("Could not show task rendering error", display_error)
 
     def _coordinator_for(self, project_path: Path) -> TaskCoordinator:
         project_path = project_path.resolve()
@@ -558,7 +594,7 @@ class DaedalusTuiApp(App[None]):
         self._new_task_mode = False
         self.query_one("#directory", Static).update(self._directory_text())
         self._refresh_task_selector()
-        self._render_selected_task()
+        self._render_selected_task_safely("project switch")
         self._set_status("Project switched")
 
     def _refresh_project_selector(self) -> None:
@@ -595,6 +631,18 @@ class DaedalusTuiApp(App[None]):
             task_select.value = self._selected_task_id
         else:
             task_select.value = ""
+
+    def _render_selected_task_safely(self, source: str) -> None:
+        """Keep one bad dynamic widget update from closing the entire TUI."""
+        try:
+            self._render_selected_task()
+        except Exception as error:
+            log_exception(f"Could not render selected task during {source}", error)
+            try:
+                self._set_error(f"Task view could not be rendered: {error}")
+                self._set_status("Error")
+            except Exception as display_error:
+                log_exception("Could not show selected-task rendering error", display_error)
 
     def _render_selected_task(self) -> None:
         record = self.coordinator.get(self._selected_task_id or "")
@@ -793,7 +841,7 @@ class DaedalusTuiApp(App[None]):
         self._selected_task_id = coding_record.task_id
         self._new_task_mode = False
         self._refresh_task_selector()
-        self._render_selected_task()
+        self._render_selected_task_safely("plan implementation")
         self._set_status("Implementation queued")
 
     def _start_new_task(self) -> None:
@@ -801,7 +849,7 @@ class DaedalusTuiApp(App[None]):
         self._selected_task_id = None
         self._new_task_mode = True
         self._refresh_task_selector()
-        self._render_selected_task()
+        self._render_selected_task_safely("new task")
         self._set_status("New task")
 
     def _set_prompt_text(self, text: str, *, editable: bool) -> None:

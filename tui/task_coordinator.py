@@ -11,6 +11,7 @@ import uuid
 from typing import Callable
 
 from .agent_runner import AgentControl, AgentRunner
+from .debug_log import LOGGER, log_exception
 from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .orchestrator import LocalOrchestrator, OrchestrationResult, OrchestrationSettings
@@ -83,15 +84,31 @@ class IntegrationCoordinator:
         self._ready: list[tuple[int, int, Callable[[], None]]] = []
         self._ready_counter = 0
         self._active = False
+        self._closed = False
+
+    def shutdown(self) -> None:
+        with self._condition:
+            self._closed = True
+            self._condition.notify_all()
 
     def run_when_ready(self, sequence: int, operation: Callable[[], None]) -> None:
         with self._condition:
+            if self._closed:
+                raise RuntimeError("Integration coordinator is shut down.")
             self._ready_counter += 1
             entry = (self._ready_counter, sequence, operation)
             self._ready.append(entry)
             self._ready.sort(key=lambda item: (item[0], item[1]))
             while self._active or self._ready[0] is not entry:
-                self._condition.wait()
+                self._condition.wait(timeout=0.1)
+                if self._closed:
+                    self._ready.remove(entry)
+                    self._condition.notify_all()
+                    raise RuntimeError("Integration coordinator is shut down.")
+            if self._closed:
+                self._ready.remove(entry)
+                self._condition.notify_all()
+                raise RuntimeError("Integration coordinator is shut down.")
             self._ready.pop(0)
             self._active = True
 
@@ -206,11 +223,12 @@ class TaskCoordinator:
         with self._lock:
             return self._tasks.get(task_id)
 
-    def shutdown(self) -> None:
+    def shutdown(self) -> bool:
         with self._lock:
             if self._closed:
-                return
+                return True
             self._closed = True
+            self.integration.shutdown()
             for record in self._tasks.values():
                 if record.status in {
                     "queued",
@@ -222,10 +240,26 @@ class TaskCoordinator:
                     "resolving",
                 }:
                     record.control.request_cancel()
-        # The app detaches callbacks before calling this method. Wait here so
-        # Python's atexit handler does not hang joining executor threads after
-        # the Textual UI has already disappeared.
-        self.executor.shutdown(wait=True, cancel_futures=True)
+                    LOGGER.info("Shutdown requested task=%s status=%s", record.task_id, record.status)
+        # Do not hold Textual's unmount path indefinitely. Active agent process
+        # groups receive cancellation above and the executor will finish as they
+        # return; any survivor is recorded for inspection in the debug log.
+        self.executor.shutdown(wait=False, cancel_futures=True)
+        deadline = time.monotonic() + self.settings.shutdown_grace_seconds
+        pending: list[TaskRecord] = []
+        while time.monotonic() < deadline:
+            pending = [
+                record
+                for record in self._tasks.values()
+                if record.future is not None and not record.future.done()
+            ]
+            if not pending:
+                LOGGER.info("Coordinator shutdown completed repository=%s", self.repository)
+                return True
+            time.sleep(0.05)
+        pending_ids = ", ".join(record.task_id for record in pending)
+        LOGGER.error("Coordinator shutdown grace period expired pending_tasks=%s", pending_ids or "unknown")
+        return False
 
     def pause(self, task_id: str) -> bool:
         record = self.get(task_id)
@@ -381,6 +415,7 @@ class TaskCoordinator:
         return True
 
     def _run(self, record: TaskRecord) -> None:
+        LOGGER.info("Task worker started task=%s mode=%s", record.task_id, record.mode)
         record.started_at = time.time()
         self._persist_task(record)
         message_start = len(record.messages)
@@ -412,6 +447,7 @@ class TaskCoordinator:
                 resume_notes=tuple(record.resume_notes),
             )
         except Exception as error:  # Keep one unexpected task failure isolated from the pool.
+            log_exception(f"Task worker crashed task={record.task_id}", error)
             record.finished_at = time.time()
             record.status = "failed"
             record.phase = "Failed"
@@ -453,6 +489,7 @@ class TaskCoordinator:
                 "Plan ready for review." if record.status != "completed" else "Plan confirmed.",
                 "status",
             )
+            LOGGER.info("Task worker finished task=%s status=%s", record.task_id, record.status)
             return
         if result.paused:
             record.status = "paused"
@@ -460,6 +497,7 @@ class TaskCoordinator:
             record.error = None
             self._persist_task(record)
             self._notify(record, "paused", "Task paused; progress preserved.", "status")
+            LOGGER.info("Task worker finished task=%s status=%s", record.task_id, record.status)
             return
         if result.cancelled:
             record.status = "cancelled"
@@ -467,6 +505,7 @@ class TaskCoordinator:
             record.error = result.error or "Task cancelled."
             self._persist_task(record)
             self._notify(record, "cancelled", record.error, "error")
+            LOGGER.info("Task worker finished task=%s status=%s", record.task_id, record.status)
             return
         if result.succeeded:
             if record.mode == "plan":
@@ -489,6 +528,7 @@ class TaskCoordinator:
             "",
             "status",
         )
+        LOGGER.info("Task worker finished task=%s status=%s", record.task_id, record.status)
 
     def _update_plan_state(self, record: TaskRecord, new_messages: list[str]) -> None:
         response = "\n\n".join(new_messages).strip()

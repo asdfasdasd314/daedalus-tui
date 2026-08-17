@@ -808,6 +808,20 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNone(app._exception)
 
+    async def test_task_render_failure_is_logged_without_exiting_the_app(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#prompt-input", TextArea).insert("Keep rendering")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            await pilot.pause()
+            with patch.object(app, "_render_selected_task", side_effect=RuntimeError("render failure")):
+                app._apply_task_event(record, "agent", "output", "message")
+
+            self.assertIsNone(app._exception)
+            self.assertEqual(str(app.query_one("#status", Static).render()), "Error")
+            self.assertIn("render failure", app.query_one("#task-error", TextArea).text)
+
     async def test_paused_task_exposes_optional_resume_notes(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:

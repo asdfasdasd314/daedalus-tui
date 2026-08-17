@@ -1,7 +1,9 @@
 import json
+import signal
+import subprocess
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from tui.agent_runner import AgentControl, AgentLogEvent, AgentRequest, AgentRunner
 from tui.environment import read_env_file
@@ -92,6 +94,34 @@ class AgentRunnerTests(unittest.TestCase):
         self.assertEqual(result.stderr, "normal diagnostic\n")
         self.assertEqual(result.tokens_consumed, 165)
         self.assertEqual(popen.call_args.kwargs["cwd"], Path("/workspace/project"))
+        self.assertTrue(popen.call_args.kwargs["start_new_session"])
+
+    @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/codex")
+    @patch("tui.agent_runner.subprocess.Popen")
+    def test_output_callback_failure_does_not_strand_agent_reader(self, popen, _which):
+        event = {"type": "item.completed", "item": {"type": "agent_message", "text": "done"}}
+        popen.return_value = FakeProcess([json.dumps(event) + "\n"], [])
+
+        result = AgentRunner().run(self.request(), Mock(side_effect=RuntimeError("UI closed")))
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual(result.output, "done")
+
+    @patch("tui.agent_runner.os.killpg")
+    @patch("tui.agent_runner.os.getpgid", return_value=123)
+    def test_termination_kills_the_complete_agent_process_group(self, _getpgid, killpg):
+        process = Mock(pid=123)
+        process.wait.side_effect = [subprocess.TimeoutExpired(["agent"], 2), 0]
+
+        AgentRunner._terminate_process(process)
+
+        self.assertEqual(
+            killpg.call_args_list,
+            [
+                unittest.mock.call(123, signal.SIGTERM),
+                unittest.mock.call(123, signal.SIGKILL),
+            ],
+        )
 
     @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/codex")
     @patch("tui.agent_runner.subprocess.Popen")

@@ -4,6 +4,8 @@ task_verification_attempt_limit = 3
 resolver_attempt_limit = 3
 max_concurrent_tasks = 4
 agent_timeout_seconds = 300
+shutdown_grace_seconds = 8
+debug_log_filename = ".daedalus-debug.log"
 graphify_update_enabled = true
 graphify_executable = "graphify"
 

@@ -151,6 +151,31 @@ class TaskCoordinatorTests(unittest.TestCase):
         thread_one.join(timeout=2)
         self.assertEqual(order, [2, 1])
 
+    def test_shutdown_cancels_an_active_worker_without_waiting_indefinitely(self):
+        class CancellableOrchestrator:
+            started = threading.Event()
+
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def run(self, _prompt, _provider, _model, _reasoning, task_id=None, control=None, **_kwargs):
+                type(self).started.set()
+                control.cancel_requested.wait(timeout=1)
+                return OrchestrationResult(False, task_id, cancelled=True)
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(
+                Path(directory),
+                object(),
+                OrchestrationSettings(max_concurrent_tasks=1, shutdown_grace_seconds=0.5),
+            )
+            with patch("tui.task_coordinator.LocalOrchestrator", CancellableOrchestrator):
+                record = coordinator.submit("stop", "codex", "luna", "medium")
+                self.assertTrue(CancellableOrchestrator.started.wait(timeout=1))
+                self.assertTrue(coordinator.shutdown())
+
+            self.assertTrue(record.future.done())
+
     def test_failed_task_does_not_block_later_task(self):
         class FailingOrchestrator(FakeOrchestrator):
             def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=()):

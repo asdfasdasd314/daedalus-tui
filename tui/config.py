@@ -91,6 +91,9 @@ def load_orchestration_settings(parameter_path: Path | None = None) -> Orchestra
     agent_timeout_seconds = float(values.get("agent_timeout_seconds", 300))
     if agent_timeout_seconds <= 0:
         raise ValueError(f"{path} agent_timeout_seconds must be positive.")
+    shutdown_grace_seconds = float(values.get("shutdown_grace_seconds", 8))
+    if shutdown_grace_seconds <= 0:
+        raise ValueError(f"{path} shutdown_grace_seconds must be positive.")
     return OrchestrationSettings(
         primary_branch=str(values.get("primary_branch", "main")),
         worktree_root=str(values.get("worktree_root", ".daedalus-worktrees")),
@@ -101,6 +104,8 @@ def load_orchestration_settings(parameter_path: Path | None = None) -> Orchestra
         agent_timeout_seconds=agent_timeout_seconds,
         graphify_update_enabled=bool(values.get("graphify_update_enabled", True)),
         graphify_executable=str(values.get("graphify_executable", "graphify")),
+        shutdown_grace_seconds=shutdown_grace_seconds,
+        debug_log_filename=str(values.get("debug_log_filename", ".daedalus-debug.log")),
     )
 
 

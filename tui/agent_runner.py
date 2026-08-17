@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import json
+import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 from threading import Event, Thread
 import time
 from typing import Callable, Literal
 
+from .debug_log import LOGGER, log_exception
 from .environment import cursor_environment
 
 
@@ -122,6 +125,7 @@ class AgentRunner:
         executable = "codex" if request.provider == "codex" else "agent"
         name = "Codex CLI" if request.provider == "codex" else "Cursor CLI"
         if shutil.which(executable) is None:
+            LOGGER.error("Agent executable unavailable provider=%s executable=%s", request.provider, executable)
             return AgentResult(
                 provider=request.provider,
                 returncode=None,
@@ -134,28 +138,41 @@ class AgentRunner:
             else None
         )
         try:
+            command = self.command_for(request)
+            LOGGER.info(
+                "Launching agent provider=%s directory=%s timeout=%s prompt_length=%d",
+                request.provider,
+                request.directory,
+                request.timeout_seconds,
+                len(request.prompt),
+            )
             process = subprocess.Popen(
-                self.command_for(request),
+                command,
                 cwd=request.directory,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
                 shell=False,
+                start_new_session=True,
                 **({"env": environment} if environment is not None else {}),
             )
         except FileNotFoundError:
+            LOGGER.exception("Agent executable disappeared before launch provider=%s", request.provider)
             return AgentResult(
                 provider=request.provider,
                 returncode=None,
                 error=f"{name} is unavailable. Install it so `{executable}` is on PATH.",
             )
         except OSError as error:
+            log_exception(f"Could not launch {name}", error)
             return AgentResult(
                 provider=request.provider,
                 returncode=None,
                 error=f"{name} could not be started: {error}",
             )
+
+        LOGGER.info("Agent process started provider=%s pid=%s", request.provider, getattr(process, "pid", None))
 
         output: dict[str, list[str]] = {"stdout": [], "stderr": []}
         messages: list[str] = []
@@ -170,10 +187,13 @@ class AgentRunner:
             # after the direct child has been terminated. Reader threads are
             # daemonized, so never let that pipe prevent task shutdown.
             thread.join(timeout=2)
+            if thread.is_alive():
+                LOGGER.warning("Agent pipe reader did not finish provider=%s thread=%s", request.provider, thread.name)
 
         stdout = "".join(output["stdout"])
         stderr = "".join(output["stderr"])
         if timed_out:
+            LOGGER.warning("Agent timed out provider=%s pid=%s", request.provider, getattr(process, "pid", None))
             timeout = request.timeout_seconds
             timeout_text = f" after {timeout:g} seconds" if timeout is not None else ""
             return AgentResult(
@@ -189,6 +209,7 @@ class AgentRunner:
                 timed_out=True,
             )
         if returncode == 0:
+            LOGGER.info("Agent process completed provider=%s pid=%s", request.provider, getattr(process, "pid", None))
             normalized = self._normalize_output(request.provider, stdout, stderr)
             tokens_consumed = self._extract_token_usage(request.provider, stdout)
             if normalized[1] is not None:
@@ -224,6 +245,7 @@ class AgentRunner:
             )
 
         if stopped_reason:
+            LOGGER.info("Agent process stopped provider=%s reason=%s", request.provider, stopped_reason)
             return AgentResult(
                 request.provider,
                 returncode,
@@ -234,6 +256,7 @@ class AgentRunner:
             )
 
         diagnostics = self._failure_diagnostics(request.provider, stdout, stderr)
+        LOGGER.error("Agent process failed provider=%s returncode=%s", request.provider, returncode)
         if request.provider == "cursor" and not environment.get("CURSOR_API_KEY", "").strip():
             diagnostics += "\n\nCursor authentication: run `agent login` or set CURSOR_API_KEY in .env."
         return AgentResult(
@@ -262,21 +285,40 @@ class AgentRunner:
                 return None, False
             reason = control.stop_reason if control is not None else None
             if reason:
+                LOGGER.info("Stopping agent process reason=%s pid=%s", reason, getattr(process, "pid", None))
                 AgentRunner._terminate_process(process)
                 return reason, False
             if deadline is not None and time.monotonic() >= deadline:
+                LOGGER.warning("Agent process deadline reached pid=%s", getattr(process, "pid", None))
                 AgentRunner._terminate_process(process)
                 return None, True
             time.sleep(0.05)
 
     @staticmethod
     def _terminate_process(process) -> None:
-        process.terminate()
+        pid = getattr(process, "pid", None)
+        try:
+            if isinstance(pid, int) and os.name == "posix":
+                os.killpg(os.getpgid(pid), signal.SIGTERM)
+            else:
+                process.terminate()
+        except (AttributeError, OSError, ProcessLookupError):
+            process.terminate()
         try:
             process.wait(timeout=2)
         except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
+            LOGGER.warning("Agent process ignored termination pid=%s; killing process group", pid)
+            try:
+                if isinstance(pid, int) and os.name == "posix":
+                    os.killpg(os.getpgid(pid), signal.SIGKILL)
+                else:
+                    process.kill()
+            except (AttributeError, OSError, ProcessLookupError):
+                process.kill()
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                LOGGER.error("Agent process remained alive after SIGKILL pid=%s", pid)
 
     @staticmethod
     def _stream_stdout(
@@ -297,17 +339,25 @@ class AgentRunner:
                     message = AgentRunner.parse_codex_event(chunk)
                     if message:
                         messages.append(message)
-                        callback(AgentLogEvent("message", message))
+                        AgentRunner._forward_event(callback, AgentLogEvent("message", message))
                 elif provider == "cursor":
                     message = AgentRunner.parse_cursor_event(chunk)
                     if message:
                         messages.append(message)
-                        callback(AgentLogEvent("message", message))
+                        AgentRunner._forward_event(callback, AgentLogEvent("message", message))
             stream.close()
 
         thread = Thread(target=forward, daemon=True)
         thread.start()
         return thread
+
+    @staticmethod
+    def _forward_event(callback: OutputCallback, event: AgentLogEvent) -> None:
+        try:
+            callback(event)
+        except Exception as error:
+            # UI delivery must never strand the subprocess reader or executor.
+            log_exception("Agent output callback failed", error)
 
     @staticmethod
     def _stream(stream, channel: str, output: dict[str, list[str]]) -> Thread:

@@ -10,13 +10,13 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "tests/test_agent_runner.py": {
-    "mtime": 1787001140.3456075,
-    "ast_hash": "fe0d0ec3b4bcd4e5febbbc2d0412a8de",
+    "mtime": 1787005202.359237,
+    "ast_hash": "001c2412d9f54fb95cf5c3fa3a84df38",
     "semantic_hash": ""
   },
   "tests/test_app.py": {
-    "mtime": 1787004251.879993,
-    "ast_hash": "b8e9fcf01fdbacefcac1d4d5db494eb6",
+    "mtime": 1787005230.646068,
+    "ast_hash": "4ded1a91f21dff5d800c4cc7238c72d1",
     "semantic_hash": ""
   },
   "tests/test_config.py": {
@@ -50,8 +50,8 @@
     "semantic_hash": ""
   },
   "tests/test_task_coordinator.py": {
-    "mtime": 1787003338.0069141,
-    "ast_hash": "5ef14160f1ebe55f285f84ea69ffb483",
+    "mtime": 1787005216.1462588,
+    "ast_hash": "af69d459a9ddb7c2ecfbaf19321b2132",
     "semantic_hash": ""
   },
   "tests/test_verification.py": {
@@ -70,13 +70,13 @@
     "semantic_hash": "84120c28c89cfb4312dbc2f971c5d325"
   },
   "tui/agent_runner.py": {
-    "mtime": 1787003422.691511,
-    "ast_hash": "94657f4dd858c9b64bfddf2f987a49d7",
+    "mtime": 1787005040.9394639,
+    "ast_hash": "ff51d4143ef7c8f708bd579759634945",
     "semantic_hash": ""
   },
   "tui/app.py": {
-    "mtime": 1787004251.8261797,
-    "ast_hash": "99dc0210e38b76208b1aad480eacd8cd",
+    "mtime": 1787005264.0299964,
+    "ast_hash": "3724f6179b43d5cc691f49764b5a53e9",
     "semantic_hash": ""
   },
   "tui/clipboard.py": {
@@ -85,8 +85,8 @@
     "semantic_hash": "cf5f808e3a03a0cd04a9f08912c9cacd"
   },
   "tui/config.py": {
-    "mtime": 1787001058.4005752,
-    "ast_hash": "a11fe784316786de9a7b1f8aa3419312",
+    "mtime": 1787005074.9955757,
+    "ast_hash": "7c250d187f1cbd0ab1b19c4e9be7916d",
     "semantic_hash": ""
   },
   "tui/environment.py": {
@@ -105,8 +105,8 @@
     "semantic_hash": "e5c00634ce8bd1e0a3f5dc86854c8119"
   },
   "tui/orchestrator.py": {
-    "mtime": 1787001051.8519948,
-    "ast_hash": "edbe5d470b32e3ec26592e90146e6535",
+    "mtime": 1787005074.9458303,
+    "ast_hash": "aafe3c4e3a7ef8a0965758a5a28baef6",
     "semantic_hash": ""
   },
   "tui/projects.py": {
@@ -120,8 +120,8 @@
     "semantic_hash": ""
   },
   "tui/task_coordinator.py": {
-    "mtime": 1787003324.584376,
-    "ast_hash": "c54f545573eb280a0633a92d810cc4fb",
+    "mtime": 1787005318.9084363,
+    "ast_hash": "ef64fef831ac6e108008a5be8c326e81",
     "semantic_hash": ""
   },
   "tui/verification.py": {
@@ -135,13 +135,13 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1787003373.752501,
-    "ast_hash": "40da2b48c50bae9716e91bd8c2a17e49",
+    "mtime": 1787005278.1421733,
+    "ast_hash": "4ac893af96ac8b5ac7f1181728970844",
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-orchestration.md": {
-    "mtime": 1787003422.7384548,
-    "ast_hash": "4b65b5990cce01c3faba48c4d20b0191",
+    "mtime": 1787005278.191854,
+    "ast_hash": "c629b11a2f69233b146938e492d3ba91",
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui.md": {
@@ -227,6 +227,11 @@
   "tui/plan.py": {
     "mtime": 1786998927.506463,
     "ast_hash": "2d3224777cae9a1128f02e09e9624202",
+    "semantic_hash": ""
+  },
+  "tui/debug_log.py": {
+    "mtime": 1787005125.7682564,
+    "ast_hash": "688f355e4783a80c74be5e942c213ebd",
     "semantic_hash": ""
   }
 }
