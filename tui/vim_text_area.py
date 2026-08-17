@@ -194,17 +194,18 @@ class DaedalusVimTextArea(VimTextArea):
         """Paint a thin left-aligned caret at the insertion point."""
         if strip.cell_length <= 0:
             return strip
-        x = max(0, min(x, strip.cell_length))
-        if x == 0:
-            parts = (Strip([], 0), strip)
-        elif x == strip.cell_length:
-            parts = (strip, Strip([], 0))
-        else:
-            parts = strip.divide([x, strip.cell_length])
+        # Replace the cell at the insertion point instead of joining an
+        # additional caret cell. This keeps text to the right from shifting
+        # while the underlying TextArea document remains unchanged.
+        x = max(0, min(x, strip.cell_length - 1))
+        parts = strip.divide([x, x + 1, strip.cell_length])
+        if len(parts) < 2:
+            return strip
         cursor_style = self.get_component_rich_style("text-area--cursor")
         bar_style = Style(color="white", bgcolor=cursor_style.bgcolor)
         bar = Strip([Segment(_INSERT_CURSOR_BAR, bar_style)], 1)
-        return Strip.join([parts[0], bar, parts[1]])
+        trailing = parts[2:] if len(parts) > 2 else []
+        return Strip.join([parts[0], bar, *trailing])
 
     def _enter_visual_line_mode(self) -> None:
         """Select the current line and enter Vim visual-line mode."""

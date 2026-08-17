@@ -555,10 +555,10 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
             rendered = prompt.render_line(0)
 
-            self.assertIn("before", rendered.text)
-            self.assertIn("▏", rendered.text)
-            self.assertIn("after", rendered.text)
-            self.assertLess(rendered.text.index("▏"), rendered.text.index("a"))
+            self.assertEqual(prompt.text, "beforeafter")
+            self.assertEqual(rendered.cell_length, TextArea.render_line(prompt, 0).cell_length)
+            self.assertEqual(rendered.text[len("before")], "▏")
+            self.assertEqual(rendered.text[len("before") + 1], "f")
 
     async def test_prompt_dollar_moves_to_line_end_in_command_mode(self):
         app, _ = self.make_app()
