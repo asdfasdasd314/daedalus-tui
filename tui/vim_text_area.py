@@ -14,7 +14,9 @@ from .clipboard import paste_from_system_clipboard
 
 # Textual names `$` `dollar_sign`; vimkeys-input looks for `dollar`.
 _LINE_END_KEYS = {"dollar", "dollar_sign", "$"}
-_INSERT_CURSOR_BAR = "|"
+# Use a left-aligned one-eighth block so the caret sits on the left edge of
+# the character cell at the insertion point instead of in its visual center.
+_INSERT_CURSOR_BAR = "▏"
 
 
 class DaedalusVimTextArea(VimTextArea):
@@ -189,7 +191,7 @@ class DaedalusVimTextArea(VimTextArea):
         return self._overlay_insert_bar(strip, bar_x)
 
     def _overlay_insert_bar(self, strip: Strip, x: int) -> Strip:
-        """Paint a thin vertical caret between characters at the insertion point."""
+        """Paint a thin left-aligned caret at the insertion point."""
         if strip.cell_length <= 0:
             return strip
         x = max(0, min(x, strip.cell_length))

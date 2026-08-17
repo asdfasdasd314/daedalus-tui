@@ -480,7 +480,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(prompt.has_class("operator-pending"))
             self.assertEqual(prompt.yank_register, "copy this line\n")
 
-    async def test_insert_cursor_preserves_text_after_a_middle_position(self):
+    async def test_insert_cursor_sits_left_of_text_at_a_middle_position(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:
             prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
@@ -494,8 +494,9 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             rendered = prompt.render_line(0)
 
             self.assertIn("before", rendered.text)
-            self.assertIn("|", rendered.text)
+            self.assertIn("▏", rendered.text)
             self.assertIn("after", rendered.text)
+            self.assertLess(rendered.text.index("▏"), rendered.text.index("a"))
 
     async def test_prompt_dollar_moves_to_line_end_in_command_mode(self):
         app, _ = self.make_app()
