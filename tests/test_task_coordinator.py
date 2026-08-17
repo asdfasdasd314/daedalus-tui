@@ -163,6 +163,46 @@ class TaskCoordinatorTests(unittest.TestCase):
                 .isoformat()
                 .replace("+00:00", "Z"),
             )
+            self.assertEqual(
+                {key: entries[0][key] for key in ("provider", "model", "reasoning")},
+                {"provider": "codex", "model": "luna", "reasoning": "medium"},
+            )
+
+    def test_persists_null_model_and_reasoning_for_cursor_usage(self):
+        class CursorOrchestrator:
+            def __init__(self, *_args, **_kwargs):
+                pass
+
+            def run(self, prompt, _provider, _model, _reasoning, task_id=None, **_kwargs):
+                return OrchestrationResult(True, task_id, tokens_consumed=17)
+
+        with tempfile.TemporaryDirectory() as directory:
+            memory_path = Path(directory) / ".daedalus-memory.json"
+            coordinator = TaskCoordinator(
+                Path(directory),
+                object(),
+                OrchestrationSettings(max_concurrent_tasks=1),
+                memory_path=memory_path,
+            )
+            with patch("tui.task_coordinator.LocalOrchestrator", CursorOrchestrator):
+                record = coordinator.submit("cursor task", "cursor", "cursor", "")
+                record.future.result(timeout=5)
+            coordinator.shutdown()
+
+            self.assertEqual(
+                json.loads(memory_path.read_text(encoding="utf-8")),
+                [
+                    {
+                        "timestamp": datetime.fromtimestamp(record.submitted_at, timezone.utc)
+                        .isoformat()
+                        .replace("+00:00", "Z"),
+                        "tokens": 17,
+                        "provider": "cursor",
+                        "model": None,
+                        "reasoning": None,
+                    }
+                ],
+            )
 
     def test_pause_preserves_context_and_resume_reuses_same_worktree(self):
         class PausableOrchestrator:

@@ -26,12 +26,22 @@ class TokenUsageStore:
         with self._locks_guard:
             self._lock = self._locks.setdefault(lock_key, Lock())
 
-    def record(self, submitted_at: float, tokens: int) -> None:
+    def record(
+        self,
+        submitted_at: float,
+        tokens: int,
+        provider: str | None = None,
+        model: str | None = None,
+        reasoning: str | None = None,
+    ) -> None:
         entry = {
             "timestamp": datetime.fromtimestamp(submitted_at, timezone.utc)
             .isoformat()
             .replace("+00:00", "Z"),
             "tokens": max(0, int(tokens)),
+            "provider": provider,
+            "model": model,
+            "reasoning": reasoning,
         }
         with self._lock:
             entries = self._read_entries()
@@ -77,7 +87,19 @@ class TokenUsageStore:
             raise ValueError(f"Memory file {self.path} is not valid JSON.") from error
         if not isinstance(value, list):
             raise ValueError(f"Memory file {self.path} must contain a JSON list.")
-        return [entry for entry in value if isinstance(entry, dict)]
+        return [self._normalize_entry(entry) for entry in value if isinstance(entry, dict)]
+
+    @staticmethod
+    def _normalize_entry(entry: dict[str, object]) -> dict[str, object]:
+        """Give legacy telemetry entries the current nullable metadata shape."""
+        if "timestamp" not in entry or "tokens" not in entry:
+            return entry
+        return {
+            **entry,
+            "provider": entry.get("provider"),
+            "model": entry.get("model"),
+            "reasoning": entry.get("reasoning"),
+        }
 
     def _write_entries(self, entries: list[dict[str, object]]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)

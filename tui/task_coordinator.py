@@ -261,7 +261,13 @@ class TaskCoordinator:
             record.phase = "Completed"
             record.tokens_consumed = result.tokens_consumed
             try:
-                self.memory.record(record.submitted_at, record.tokens_consumed)
+                self.memory.record(
+                    record.submitted_at,
+                    record.tokens_consumed,
+                    provider=record.provider,
+                    model=None if record.provider == "cursor" else record.model or None,
+                    reasoning=None if record.provider == "cursor" else record.reasoning or None,
+                )
             except (OSError, ValueError):
                 # Telemetry must never turn an otherwise completed task into a failure.
                 pass

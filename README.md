@@ -46,10 +46,14 @@ attempts.
 
 Completed tasks also append their reported token usage to the project-local
 `.daedalus-memory.json` file. Each usage entry contains the prompt submission
-time and the total input/output tokens reported by the provider. When the TUI
-is launched over multiple projects, the launch root's memory file also keeps a
-single `last_opened_project` entry, which is updated when the sidebar changes
-projects and restored on the next startup when that project still exists.
+time, the total input/output tokens reported by the provider, and the selected
+provider, model, and reasoning setting. Model and reasoning are `null` for
+providers without those controls, such as Cursor. Older entries are given
+explicit `null` metadata fields the next time the memory file is saved. When
+the TUI is launched over multiple projects, the launch root's memory file also
+keeps a single `last_opened_project` entry, which is updated when the sidebar
+changes projects and restored on the next startup when that project still
+exists.
 Failed, paused, and cancelled tasks are not recorded; the file is intentionally
 ignored by Git.
 

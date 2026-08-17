@@ -7,19 +7,61 @@ from tui.memory import TokenUsageStore
 
 
 class TokenUsageStoreTests(unittest.TestCase):
-    def test_records_timestamp_and_token_count_as_a_json_list(self):
+    def test_records_usage_metadata_with_nullable_provider_fields(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / ".daedalus-memory.json"
             store = TokenUsageStore(path)
 
-            store.record(0, 165)
-            store.record(1, 321)
+            store.record(0, 165, "codex", "gpt-5.6-luna", "high")
+            store.record(1, 321, "cursor")
 
             self.assertEqual(
                 json.loads(path.read_text(encoding="utf-8")),
                 [
-                    {"timestamp": "1970-01-01T00:00:00Z", "tokens": 165},
-                    {"timestamp": "1970-01-01T00:00:01Z", "tokens": 321},
+                    {
+                        "timestamp": "1970-01-01T00:00:00Z",
+                        "tokens": 165,
+                        "provider": "codex",
+                        "model": "gpt-5.6-luna",
+                        "reasoning": "high",
+                    },
+                    {
+                        "timestamp": "1970-01-01T00:00:01Z",
+                        "tokens": 321,
+                        "provider": "cursor",
+                        "model": None,
+                        "reasoning": None,
+                    },
+                ],
+            )
+
+    def test_normalizes_legacy_usage_entries_when_appending(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / ".daedalus-memory.json"
+            path.write_text(
+                json.dumps([{"timestamp": "1970-01-01T00:00:00Z", "tokens": 165}]),
+                encoding="utf-8",
+            )
+
+            TokenUsageStore(path).record(1, 321, "codex", "gpt-5.6-terra", "medium")
+
+            self.assertEqual(
+                json.loads(path.read_text(encoding="utf-8")),
+                [
+                    {
+                        "timestamp": "1970-01-01T00:00:00Z",
+                        "tokens": 165,
+                        "provider": None,
+                        "model": None,
+                        "reasoning": None,
+                    },
+                    {
+                        "timestamp": "1970-01-01T00:00:01Z",
+                        "tokens": 321,
+                        "provider": "codex",
+                        "model": "gpt-5.6-terra",
+                        "reasoning": "medium",
+                    },
                 ],
             )
 
@@ -48,7 +90,13 @@ class TokenUsageStoreTests(unittest.TestCase):
             self.assertEqual(
                 json.loads(path.read_text(encoding="utf-8")),
                 [
-                    {"timestamp": "1970-01-01T00:00:00Z", "tokens": 165},
+                    {
+                        "timestamp": "1970-01-01T00:00:00Z",
+                        "tokens": 165,
+                        "provider": None,
+                        "model": None,
+                        "reasoning": None,
+                    },
                     {"last_opened_project": str(second_project.resolve())},
                 ],
             )
