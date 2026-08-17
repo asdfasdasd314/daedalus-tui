@@ -13,9 +13,63 @@ from .clipboard import paste_from_system_clipboard
 class DaedalusVimTextArea(VimTextArea):
     """VimTextArea with multiline prompt behavior and system clipboard sync."""
 
+    DEFAULT_CSS = """
+    DaedalusVimTextArea.insert-mode .text-area--cursor {
+        color: $input-cursor-foreground;
+        background: transparent;
+        text-style: underline;
+    }
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        # Keep the cursor visible continuously; blinking is distracting while
+        # composing a prompt.
+        self.cursor_blink = False
+
     def enter_insert_mode(self) -> None:
         """Return to Insert mode after programmatic prompt operations."""
         self._enter_insert_mode()
+
+    def nav_word_end(self) -> None:
+        """Move to the end of the current word, or the next word when needed."""
+        lines = [str(self.get_line(row)) for row in range(self.document.line_count)]
+        characters: list[tuple[str, tuple[int, int]]] = []
+        for row, line in enumerate(lines):
+            characters.extend((character, (row, column)) for column, character in enumerate(line))
+            if row < len(lines) - 1:
+                characters.append(("\n", (row, len(line))))
+
+        row, column = self.cursor_location
+        index = sum(len(line) + 1 for line in lines[:row]) + column
+        if index >= len(characters):
+            return
+
+        def kind(character: str) -> str | None:
+            if character.isspace():
+                return None
+            return "word" if character.isalnum() or character == "_" else "punctuation"
+
+        current_kind = kind(characters[index][0])
+        if current_kind is not None:
+            end = index
+            while end + 1 < len(characters) and kind(characters[end + 1][0]) == current_kind:
+                end += 1
+            if end > index:
+                self.cursor_location = characters[end][1]
+                return
+            index = end + 1
+
+        while index < len(characters) and kind(characters[index][0]) is None:
+            index += 1
+        if index >= len(characters):
+            return
+
+        target_kind = kind(characters[index][0])
+        end = index
+        while end + 1 < len(characters) and kind(characters[end + 1][0]) == target_kind:
+            end += 1
+        self.cursor_location = characters[end][1]
 
     def _handle_insert_mode(self, event: events.Key) -> None:
         """Keep Enter as a newline; Ctrl+Enter remains the app submit key."""
@@ -34,6 +88,9 @@ class DaedalusVimTextArea(VimTextArea):
         previous_register = self.yank_register
         if event.key == "escape":
             super().on_key(event)
+            # Vim mode transitions do not clear TextArea's native selection.
+            # Collapse it so Escape reliably stops all highlighting.
+            self.selection = Selection.cursor(self.cursor_location)
         elif self.vim_mode == VimMode.VISUAL_LINE:
             self._handle_visual_line_mode(event)
         else:

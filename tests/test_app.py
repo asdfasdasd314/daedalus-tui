@@ -387,6 +387,34 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             prompt.insert("second line")
             self.assertEqual(prompt.text, "first line\nsecond line")
 
+    async def test_prompt_e_advances_to_the_end_of_each_word(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("first second")
+            prompt.cursor_location = (0, 0)
+
+            await pilot.press("escape")
+            await pilot.press("e")
+            self.assertEqual(prompt.cursor_location, (0, 4))
+            await pilot.press("e")
+            self.assertEqual(prompt.cursor_location, (0, 11))
+
+    async def test_escape_clears_visual_line_highlighting_and_cursor_does_not_blink(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("first line\nsecond line")
+            prompt.cursor_location = (1, 3)
+
+            await pilot.press("escape")
+            await pilot.press("V")
+            self.assertFalse(prompt.selection.is_empty)
+            await pilot.press("escape")
+
+            self.assertTrue(prompt.selection.is_empty)
+            self.assertFalse(prompt.cursor_blink)
+
     async def test_shift_v_selects_complete_lines(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:
@@ -422,6 +450,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.press("y")
             await pilot.press("y")
 
+            self.assertEqual(prompt.yank_register, "copy this line\n")
             clipboard.assert_called_once_with("copy this line\n")
 
     async def test_plan_mode_is_snapshotted_and_task_controls_are_available(self):
