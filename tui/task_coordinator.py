@@ -328,7 +328,8 @@ class TaskCoordinator:
             # Plan worktrees are deliberately discarded by the orchestrator;
             # the next answer round should inspect a fresh read-only worktree.
             record.context = None
-        record.tokens_consumed += result.tokens_consumed
+        if result.succeeded:
+            record.tokens_consumed += result.tokens_consumed
         if result.paused:
             record.status = "paused"
             record.phase = "Paused"

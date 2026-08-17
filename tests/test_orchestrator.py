@@ -11,6 +11,48 @@ from tui.verification import VerificationResult
 
 
 class OrchestratorTests(unittest.TestCase):
+    def test_completed_plan_reports_tokens(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "plan", tokens_consumed=12)
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            manager.create.return_value = context
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(),
+                lambda _phase, _message, _channel: None,
+            )
+
+            with patch("tui.orchestrator.GitWorktreeManager", return_value=manager):
+                result = orchestrator.run("Make a plan", "codex", "luna", "high", mode="plan")
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual(result.tokens_consumed, 12)
+
+    def test_failed_plan_does_not_report_agent_tokens(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 1, "", "plan failed", tokens_consumed=12)
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            manager.create.return_value = context
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(),
+                lambda _phase, _message, _channel: None,
+            )
+
+            with patch("tui.orchestrator.GitWorktreeManager", return_value=manager):
+                result = orchestrator.run("Make a plan", "codex", "luna", "high", mode="plan")
+
+        self.assertFalse(result.succeeded)
+        self.assertEqual(result.tokens_consumed, 0)
+
     def test_graphify_failure_is_reported_without_failing_promotion(self):
         with tempfile.TemporaryDirectory() as directory:
             repository = Path(directory)

@@ -19,7 +19,7 @@ class TokenUsageEntry:
     provider: str
     tokens: int
     prompt: str = ""
-    state: str = ""
+    state: str = "completed"
 
     def __post_init__(self) -> None:
         timestamp = self.timestamp
@@ -74,7 +74,13 @@ def calculate_token_usage(
     current = now or datetime.now(UTC)
     if current.tzinfo is None:
         current = current.replace(tzinfo=UTC)
-    normalized = tuple(sorted(entries, key=lambda entry: entry.timestamp, reverse=True))
+    normalized = tuple(
+        sorted(
+            (entry for entry in entries if entry.state == "completed"),
+            key=lambda entry: entry.timestamp,
+            reverse=True,
+        )
+    )
     current_local = current.astimezone()
     today = current_local.date()
     recent_start = current - timedelta(hours=recent_window_hours)
@@ -119,6 +125,8 @@ def usage_entries_from_memory(store) -> tuple[TokenUsageEntry, ...]:
     """Convert persisted task snapshots into usage records."""
     entries: list[TokenUsageEntry] = []
     for task_id, task in store.get_tasks().items():
+        if task.get("state") != "completed":
+            continue
         timestamp = _parse_timestamp(task.get("timestamp"))
         if timestamp is None:
             continue
@@ -162,8 +170,10 @@ def _parse_timestamp(value: object) -> datetime | None:
     return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
 
 
-def task_usage_entry(record) -> TokenUsageEntry:
+def task_usage_entry(record) -> TokenUsageEntry | None:
     """Convert a live task record without coupling this module to its class."""
+    if record.status != "completed":
+        return None
     return TokenUsageEntry(
         record.memory_task_id or f"task-{record.task_id}",
         datetime.fromtimestamp(record.submitted_at, UTC),
