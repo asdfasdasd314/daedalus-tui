@@ -53,3 +53,4 @@ HACKING
 ## State Log
 - 2026-08-16: Documented the existing local JSON token-usage store, its completion-only recording boundary, and its atomic write and validation behavior.
 - 2026-08-16: Added an updatable launch-root project marker so startup restores the last available project and falls back to the first discovered project.
+- 2026-08-16: Normalized discovered project paths at app startup so memory restoration and fallback remain canonical across symlinked temporary paths.

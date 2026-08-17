@@ -110,13 +110,13 @@ class DaedalusTuiApp(App[None]):
             # Keep the app usable when launched in a new or test directory;
             # orchestration will provide the actionable Git error if needed.
             discovered = [DaedalusProject(self.launch_root, self.launch_root)]
-        discovered_paths = {project.path for project in discovered}
+        discovered_paths = {project.path.resolve() for project in discovered}
         remembered_project = self._remembered_project()
         if remembered_project in discovered_paths:
             active_project = remembered_project
         else:
-            active_project = discovered[0].path
-        if coordinator is not None and active_project not in {project.path for project in discovered}:
+            active_project = discovered[0].path.resolve()
+        if coordinator is not None and active_project not in discovered_paths:
             discovered.insert(0, DaedalusProject(active_project, self.launch_root))
         self.projects = tuple(discovered)
         self._coordinators: dict[Path, TaskCoordinator] = {}
@@ -137,7 +137,7 @@ class DaedalusTuiApp(App[None]):
                     yield Static("Projects", id="project-label")
                     yield Select(
                         [(project.display_name, str(project.path)) for project in self.projects],
-                        value=str(self._active_project_path),
+                        value=self._project_select_value(),
                         id="project-select",
                     )
                 with Vertical(id="project-main"):
@@ -360,9 +360,10 @@ class DaedalusTuiApp(App[None]):
             pass
 
     def _switch_project(self, project_path: Path) -> None:
+        project_path = project_path.expanduser().resolve()
         if project_path == self._active_project_path:
             return
-        if project_path not in {project.path for project in self.projects}:
+        if project_path not in {project.path.resolve() for project in self.projects}:
             return
         self._remember_project(project_path)
         self._active_project_path = project_path
@@ -383,7 +384,13 @@ class DaedalusTuiApp(App[None]):
             suffix = f" · {task_count} tasks" if task_count else ""
             options.append((f"{project.display_name}{suffix}", str(project.path)))
         project_select.set_options(options)
-        project_select.value = str(self._active_project_path)
+        project_select.value = self._project_select_value()
+
+    def _project_select_value(self) -> str:
+        for project in self.projects:
+            if project.path.resolve() == self._active_project_path:
+                return str(project.path)
+        return str(self._active_project_path)
 
     def _directory_text(self) -> str:
         return f"Launch root: {self.launch_root}    Active project: {self.directory}"
