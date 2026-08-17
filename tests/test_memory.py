@@ -24,6 +24,7 @@ class TokenUsageStoreTests(unittest.TestCase):
                         "provider": "codex",
                         "model": "gpt-5.6-luna",
                         "reasoning": "high",
+                        "project": None,
                     },
                     {
                         "timestamp": "1970-01-01T00:00:01Z",
@@ -31,6 +32,7 @@ class TokenUsageStoreTests(unittest.TestCase):
                         "provider": "cursor",
                         "model": None,
                         "reasoning": None,
+                        "project": None,
                     },
                 ],
             )
@@ -54,6 +56,7 @@ class TokenUsageStoreTests(unittest.TestCase):
                         "provider": None,
                         "model": None,
                         "reasoning": None,
+                        "project": None,
                     },
                     {
                         "timestamp": "1970-01-01T00:00:01Z",
@@ -61,7 +64,29 @@ class TokenUsageStoreTests(unittest.TestCase):
                         "provider": "codex",
                         "model": "gpt-5.6-terra",
                         "reasoning": "medium",
+                        "project": None,
                     },
+                ],
+            )
+
+    def test_records_the_project_that_received_the_prompt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / ".daedalus-memory.json"
+            project = Path(directory) / "project"
+
+            TokenUsageStore(path).record(0, 165, "codex", "gpt-5.6-luna", "high", project)
+
+            self.assertEqual(
+                json.loads(path.read_text(encoding="utf-8")),
+                [
+                    {
+                        "timestamp": "1970-01-01T00:00:00Z",
+                        "tokens": 165,
+                        "provider": "codex",
+                        "model": "gpt-5.6-luna",
+                        "reasoning": "high",
+                        "project": str(project.resolve()),
+                    }
                 ],
             )
 
@@ -96,6 +121,7 @@ class TokenUsageStoreTests(unittest.TestCase):
                         "provider": None,
                         "model": None,
                         "reasoning": None,
+                        "project": None,
                     },
                     {"last_opened_project": str(second_project.resolve())},
                 ],

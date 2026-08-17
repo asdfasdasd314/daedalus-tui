@@ -33,6 +33,7 @@ class TokenUsageStore:
         provider: str | None = None,
         model: str | None = None,
         reasoning: str | None = None,
+        project: Path | None = None,
     ) -> None:
         entry = {
             "timestamp": datetime.fromtimestamp(submitted_at, timezone.utc)
@@ -42,6 +43,7 @@ class TokenUsageStore:
             "provider": provider,
             "model": model,
             "reasoning": reasoning,
+            "project": str(project.expanduser().resolve()) if project is not None else None,
         }
         with self._lock:
             entries = self._read_entries()
@@ -103,6 +105,7 @@ class TokenUsageStore:
             "provider": entry.get("provider"),
             "model": entry.get("model"),
             "reasoning": entry.get("reasoning"),
+            "project": entry.get("project"),
         }
 
     def _write_entries(self, entries: list[dict[str, object]]) -> None:

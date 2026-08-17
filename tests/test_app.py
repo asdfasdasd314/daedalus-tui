@@ -133,6 +133,32 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
             await pilot.pause()
 
+    @patch("tui.app.TaskCoordinator")
+    @patch("tui.app.discover_projects")
+    async def test_all_project_coordinators_share_the_launch_root_memory_file(self, discover, coordinator_class):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "first"
+            second = root / "second"
+            discover.return_value = (
+                DaedalusProject(first, root),
+                DaedalusProject(second, root),
+            )
+            coordinator_class.return_value = FakeCoordinator()
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+            )
+            app._coordinator_for(second)
+
+            self.assertEqual(coordinator_class.call_count, 2)
+            self.assertEqual(
+                [call.kwargs["memory_path"] for call in coordinator_class.call_args_list],
+                [root.resolve() / ".daedalus-memory.json"] * 2,
+            )
+
     @patch("tui.app.discover_projects")
     async def test_restores_and_updates_last_opened_project(self, discover):
         with tempfile.TemporaryDirectory() as directory:

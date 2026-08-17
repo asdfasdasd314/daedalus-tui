@@ -167,6 +167,7 @@ class TaskCoordinatorTests(unittest.TestCase):
                 {key: entries[0][key] for key in ("provider", "model", "reasoning")},
                 {"provider": "codex", "model": "luna", "reasoning": "medium"},
             )
+            self.assertEqual(entries[0]["project"], str(Path(directory).resolve()))
 
     def test_persists_null_model_and_reasoning_for_cursor_usage(self):
         class CursorOrchestrator:
@@ -200,6 +201,7 @@ class TaskCoordinatorTests(unittest.TestCase):
                         "provider": "cursor",
                         "model": None,
                         "reasoning": None,
+                        "project": str(Path(directory).resolve()),
                     }
                 ],
             )

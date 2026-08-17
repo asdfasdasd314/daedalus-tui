@@ -346,6 +346,7 @@ class DaedalusTuiApp(App[None]):
             self.runner,
             self.orchestration_settings,
             self._on_task_event,
+            memory_path=self.launch_root / DEFAULT_MEMORY_FILE,
         )
         self._external_coordinator = None
         if hasattr(coordinator, "set_event_callback"):

@@ -267,6 +267,7 @@ class TaskCoordinator:
                     provider=record.provider,
                     model=None if record.provider == "cursor" else record.model or None,
                     reasoning=None if record.provider == "cursor" else record.reasoning or None,
+                    project=self.repository,
                 )
             except (OSError, ValueError):
                 # Telemetry must never turn an otherwise completed task into a failure.

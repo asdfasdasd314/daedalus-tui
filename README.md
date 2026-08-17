@@ -44,16 +44,16 @@ commits `graphify-out` when the target repository has graphify configured;
 graph refresh failures are reported as warnings and never trigger resolver
 attempts.
 
-Completed tasks also append their reported token usage to the project-local
-`.daedalus-memory.json` file. Each usage entry contains the prompt submission
-time, the total input/output tokens reported by the provider, and the selected
-provider, model, and reasoning setting. Model and reasoning are `null` for
-providers without those controls, such as Cursor. Older entries are given
-explicit `null` metadata fields the next time the memory file is saved. When
-the TUI is launched over multiple projects, the launch root's memory file also
-keeps a single `last_opened_project` entry. The first launch initializes it to
-the default project, every sidebar focus change updates it, and the next
-startup restores it when that project still exists.
+Completed tasks also append their reported token usage to the single
+launch-root `.daedalus-memory.json` file. Each usage entry contains the prompt
+submission time, the total input/output tokens reported by the provider, the
+selected provider, model, and reasoning setting, and the resolved project path
+that received the prompt. Model and reasoning are `null` for providers without
+those controls, such as Cursor. Older entries are given explicit `null`
+metadata fields the next time the memory file is saved. The launch root's
+memory file also keeps a single `last_opened_project` entry. The first launch
+initializes it to the default project, every sidebar focus change updates it,
+and the next startup restores it when that project still exists.
 Failed, paused, and cancelled tasks are not recorded; the file is intentionally
 ignored by Git.
 

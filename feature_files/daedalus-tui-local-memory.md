@@ -1,18 +1,19 @@
 # Daedalus TUI Local Persistent Memory
 
 ## Summary
-The TUI persists completed-task token usage and the last opened project in a
-local JSON file so usage history and project navigation survive application
-restarts without depending on the Daedalus daemon, a remote service, or a
-database server.
+The TUI persists completed-task token usage and the last opened project in one
+launch-root local JSON file so usage history and project navigation survive
+application restarts without depending on the Daedalus daemon, a remote
+service, or a database server.
 
 ## Key Points
-- **Local persistence**: Each project stores usage in `.daedalus-memory.json`
-  at its repository root. The file is intentionally ignored by Git.
+- **Local persistence**: The launch root stores all usage in one
+  `.daedalus-memory.json` file. The file is intentionally ignored by Git.
 - **Current record shape**: Each usage entry is a JSON object with an ISO-8601
   UTC `timestamp` for prompt submission, a non-negative integer `tokens` value,
-  and nullable `provider`, `model`, and `reasoning` metadata. Providers without
-  model or reasoning controls, such as Cursor, store `null` for those fields.
+  nullable `provider`, `model`, and `reasoning` metadata, and the resolved
+  `project` path that received the prompt. Providers without model or
+  reasoning controls, such as Cursor, store `null` for those fields.
 - **Append behavior**: A missing memory file starts as an empty list; each
   successful task appends one record while preserving existing entries.
 - **Project restoration**: The launch root's memory file keeps one
@@ -41,8 +42,8 @@ database server.
   last-project entry, validation, locking, and atomic file replacement.
 - `tui/app.py`: Restores the remembered project at startup and updates it on
   project selection.
-- `tui/task_coordinator.py`: Records usage after successful orchestration and
-  injects the project-local memory path.
+- `tui/task_coordinator.py`: Records usage after successful orchestration,
+  including the destination project path.
 - `tui/agent_runner.py`: Extracts provider-reported token usage consumed by
   the memory store.
 - `tests/test_memory.py`: Covers JSON record creation, project-marker updates,
@@ -51,7 +52,7 @@ database server.
   the last opened project.
 - `tests/test_task_coordinator.py`: Covers recording only successful task
   results.
-- `README.md`: Documents the project-local file and its lifecycle.
+- `README.md`: Documents the launch-root file and its lifecycle.
 
 ## Dev Mode
 HACKING
@@ -63,3 +64,4 @@ HACKING
 - 2026-08-16: Seeded the ignored launch-root memory file with the canonical path of the active daedalus-tui worktree.
 - 2026-08-16: Added provider, model, and reasoning metadata to token-usage entries, with nullable fields for legacy records and providers without those controls.
 - 2026-08-16: Made startup initialization and every project-focus transition use an explicit single-marker update, with coverage for first launch and repeated switching.
+- 2026-08-17: Centralized all prompt telemetry in the launch-root memory file and recorded the resolved project destination for each completed prompt.
