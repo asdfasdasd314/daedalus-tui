@@ -7,11 +7,11 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Independent project boundary**: The exported `tui` project owns its UI, provider execution, configuration, tests, and local orchestration modules without importing `local-daemon`.
 - **Provider controls**: Codex exposes Luna, Terra, and Sol with light, medium, high, and extra-high reasoning; Cursor CLI is a provider-only choice with model and reasoning disabled.
 - **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, a database, or a remote push.
-- **Concurrent task list**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript.
+- **Concurrent task inbox**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript; the left-side inbox promotes tasks with unseen updates.
 - **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
-- **Project navigation**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the sidebar switches between per-project task coordinators without mixing transcripts or worktrees.
+- **Project selection**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the task toolbar selects the project for new submissions, and focusing an inbox row synchronizes the active project without mixing transcripts or worktrees.
 - **Retryable failures**: Failed agent tasks expose their diagnostics and a Retry action so transient connectivity or service failures can be recovered in place.
 
 ## Relevant Files
@@ -59,5 +59,7 @@ HACKING
 - 2026-08-17: Deferred dynamic plan Select initialization until after Textual's nested SelectCurrent label is mounted, preventing a lifecycle race from terminating the TUI.
 - 2026-08-17: Detached task callbacks before coordinator shutdown, waited for executor workers to finish, and ignored late events after Textual closes.
 - 2026-08-17: Replaced the insert caret's rendered cell instead of adding one, so middle-of-line text no longer shifts while the prompt document stays unchanged.
-- 2026-08-17: Let Textual underline the real insert cursor cell with a transparent background so the character beneath the caret remains visible.
+- 2026-08-17: Let Textual underline the real insert cursor cell with no background override so the character beneath the caret remains visible without a dark box.
 - 2026-08-17: Disabled Textual's dark active-line highlight for the Vim prompt because it remained underneath the transparent cursor cell.
+- 2026-08-17: Replaced project-focused sidebar navigation with a cross-project task update inbox, moved project selection into the task toolbar, and made task focus synchronize the active project context.
+- 2026-08-17: Validated the toolbar project at submission time so a newly selected project receives the draft even before its queued selector event is processed.

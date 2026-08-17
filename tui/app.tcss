@@ -17,11 +17,16 @@ Screen {
     height: 1fr;
 }
 
-#project-sidebar {
-    width: 28;
+#task-sidebar {
+    width: 44;
     min-width: 22;
+    height: 1fr;
     border: round $primary;
     padding: 1;
+}
+
+#task-list {
+    height: 1fr;
 }
 
 #project-main {
@@ -30,12 +35,28 @@ Screen {
 }
 
 #project-label {
+    width: 9;
+    color: $text-muted;
+}
+
+#project-select {
+    width: 1fr;
+    margin-right: 1;
+}
+
+#task-label {
     color: $text-accent;
     text-style: bold;
     height: 2;
 }
 
-#project-select {
+/* The project selector now sits in the task toolbar. */
+#task-bar #project-label {
+    height: auto;
+    margin-right: 1;
+}
+
+#task-bar #project-select {
     width: 1fr;
 }
 
@@ -54,16 +75,6 @@ Screen {
     align: left middle;
 }
 
-#task-label {
-    width: 8;
-    color: $text-muted;
-}
-
-#task-select {
-    width: 1fr;
-    margin-right: 1;
-}
-
 #new-task-button {
     width: 14;
 }
@@ -73,7 +84,7 @@ Screen {
     margin-right: 1;
 }
 
-#directory, #phase, #title, #task-label, #task-context, #status,
+#directory, #phase, #title, #task-context, #status,
 #resume-notes-label, #task-error {
     color: $text-muted;
     pointer: text;

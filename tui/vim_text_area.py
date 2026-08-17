@@ -185,7 +185,11 @@ class DaedalusVimTextArea(VimTextArea):
             # TextArea copies the component CSS into its theme before it
             # renders. Override that copied style here because the built-in
             # dark theme otherwise restores its opaque cursor background.
-            self._theme.cursor_style = Style(bgcolor="default", underline=True)
+            # Leaving bgcolor unset is important: Rich's "default" color
+            # resets the cell to the terminal default instead of inheriting
+            # the prompt's background, which creates a dark box over the
+            # character under the caret.
+            self._theme.cursor_style = Style(underline=True)
         return super().render_line(y)
 
     def _enter_visual_line_mode(self) -> None:
