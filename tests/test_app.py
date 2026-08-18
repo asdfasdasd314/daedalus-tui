@@ -104,6 +104,13 @@ class FakeCoordinator:
         self.emit(record, "queued", "Plan answers queued for agent confirmation.", "status")
         return True
 
+    def implement_plan(self, task_id):
+        record = self.get(task_id)
+        if record is None or record.plan_implemented:
+            return None
+        record.plan_implemented = True
+        return self.submit("Approved implementation", record.provider, record.model, record.reasoning)
+
 
 def settings():
     return TuiSettings(
@@ -678,6 +685,14 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             coordinator.emit(record, "completed", "", "status")
             await pilot.pause()
             self.assertFalse(app.query_one("#implement-button", Button).disabled)
+
+            app.query_one("#implement-button", Button).press()
+            await pilot.pause()
+            self.assertTrue(record.plan_implemented)
+            implement_button = app.query_one("#implement-button", Button)
+            self.assertTrue(implement_button.disabled)
+            self.assertTrue(implement_button.has_class("implemented"))
+            self.assertEqual(str(implement_button.label), "Implemented")
 
     async def test_plan_review_can_mount_a_preselected_answer(self):
         app, coordinator = self.make_app()

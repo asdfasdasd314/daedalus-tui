@@ -991,10 +991,14 @@ class DaedalusTuiApp(App[None]):
             and all_answered
             and not record.plan_confirmed
         )
-        self.query_one("#implement-button", Button).disabled = not (
+        implement_button = self.query_one("#implement-button", Button)
+        implemented = record.plan_implemented
+        implement_button.disabled = implemented or not (
             record.plan_confirmed
             and all(not question.required or question.question_id in record.plan_answers for question in record.plan_questions)
         )
+        implement_button.set_class(implemented, "implemented")
+        implement_button.label = "Implemented" if implemented else "Implement"
 
     @staticmethod
     def _has_plan_answer(value) -> bool:
@@ -1071,6 +1075,10 @@ class DaedalusTuiApp(App[None]):
         if coding_record is None:
             self._set_status("The agent must confirm no more questions")
             return
+        implement_button = self.query_one("#implement-button", Button)
+        implement_button.disabled = True
+        implement_button.add_class("implemented")
+        implement_button.label = "Implemented"
         self._selected_task_id = coding_record.task_id
         self._new_task_mode = False
         self._refresh_task_list()
