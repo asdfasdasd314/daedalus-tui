@@ -32,7 +32,7 @@ class OrchestrationSettings:
     task_verification_attempt_limit: int = 3
     resolver_attempt_limit: int = 3
     max_concurrent_tasks: int = 4
-    agent_timeout_seconds: float = 300.0
+    agent_timeout_seconds: float = 450.0
     graphify_update_enabled: bool = True
     graphify_executable: str = "graphify"
     shutdown_grace_seconds: float = 8.0

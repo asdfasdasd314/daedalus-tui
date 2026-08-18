@@ -23,7 +23,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(orchestration.primary_branch, "main")
         self.assertEqual(orchestration.resolver_attempt_limit, 3)
         self.assertEqual(orchestration.max_concurrent_tasks, 4)
-        self.assertEqual(orchestration.agent_timeout_seconds, 300)
+        self.assertEqual(orchestration.agent_timeout_seconds, 450)
         self.assertTrue(orchestration.graphify_update_enabled)
         self.assertEqual(orchestration.graphify_executable, "graphify")
 
