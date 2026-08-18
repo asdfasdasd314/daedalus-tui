@@ -32,6 +32,9 @@ class FakeProcess:
     def wait(self, timeout=None):
         return self.returncode
 
+    def poll(self):
+        return self.returncode
+
 
 class InterruptibleProcess(FakeProcess):
     def __init__(self):
@@ -96,6 +99,34 @@ class AgentRunnerTests(unittest.TestCase):
         self.assertEqual(popen.call_args.kwargs["cwd"], Path("/workspace/project"))
         self.assertIs(popen.call_args.kwargs["stdin"], subprocess.DEVNULL)
         self.assertTrue(popen.call_args.kwargs["start_new_session"])
+
+    @patch("tui.agent_runner._TimeoutTracker.reset")
+    @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/codex")
+    @patch("tui.agent_runner.subprocess.Popen")
+    def test_refreshes_timeout_for_every_stdout_update(self, popen, _which, reset):
+        events = [
+            {"type": "thread.started"},
+            {"type": "item.completed", "item": {"type": "file_change", "path": "feature.md"}},
+            {"type": "item.completed", "item": {"type": "agent_message", "text": "Updated the feature."}},
+        ]
+        popen.return_value = FakeProcess([*(json.dumps(event) + "\n" for event in events)])
+        request = self.request()
+        request = AgentRequest(
+            request.prompt,
+            request.directory,
+            request.provider,
+            request.model,
+            request.reasoning,
+            request.writable_directories,
+            request.environment_files,
+            request.control,
+            450,
+        )
+
+        result = AgentRunner().run(request, lambda _event: None)
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual(reset.call_count, len(events))
 
     @patch("tui.agent_runner.shutil.which", return_value="/usr/local/bin/codex")
     @patch("tui.agent_runner.subprocess.Popen")

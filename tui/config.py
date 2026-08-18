@@ -88,7 +88,7 @@ def load_orchestration_settings(parameter_path: Path | None = None) -> Orchestra
     max_concurrent_tasks = int(values.get("max_concurrent_tasks", 4))
     if max_concurrent_tasks < 1:
         raise ValueError(f"{path} max_concurrent_tasks must be positive.")
-    agent_timeout_seconds = float(values.get("agent_timeout_seconds", 300))
+    agent_timeout_seconds = float(values.get("agent_timeout_seconds", 450))
     if agent_timeout_seconds <= 0:
         raise ValueError(f"{path} agent_timeout_seconds must be positive.")
     shutdown_grace_seconds = float(values.get("shutdown_grace_seconds", 8))
