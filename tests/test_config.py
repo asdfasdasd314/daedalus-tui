@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tui.config import load_orchestration_settings, load_tui_settings
+from tui.config import load_coding_statistics_settings, load_orchestration_settings, load_tui_settings
 
 
 class ConfigTests(unittest.TestCase):
@@ -26,6 +26,16 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(orchestration.agent_timeout_seconds, 450)
         self.assertTrue(orchestration.graphify_update_enabled)
         self.assertEqual(orchestration.graphify_executable, "graphify")
+
+    def test_loads_coding_statistics_forecast_settings(self):
+        root = Path(__file__).resolve().parents[1]
+        statistics = load_coding_statistics_settings(
+            root / "parameter_files" / "daedalus-tui-coding-statistics.toml"
+        )
+
+        self.assertEqual(statistics.recent_window_hours, 1)
+        self.assertEqual(statistics.forecast_days, 7)
+        self.assertEqual(statistics.thirty_day_forecast_days, 30)
 
 
 if __name__ == "__main__":

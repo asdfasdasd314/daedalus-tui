@@ -41,6 +41,7 @@ class TuiSettings:
 class CodingStatisticsSettings:
     recent_window_hours: int = 1
     forecast_days: int = 7
+    thirty_day_forecast_days: int = 30
 
 
 def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
@@ -117,9 +118,12 @@ def load_coding_statistics_settings(parameter_path: Path | None = None) -> Codin
         values = tomllib.load(source)
     recent_window_hours = int(values.get("recent_window_hours", 1))
     forecast_days = int(values.get("forecast_days", 7))
-    if recent_window_hours < 1 or forecast_days < 1:
-        raise ValueError(f"{path} recent_window_hours and forecast_days must be positive.")
-    return CodingStatisticsSettings(recent_window_hours, forecast_days)
+    thirty_day_forecast_days = int(values.get("thirty_day_forecast_days", 30))
+    if recent_window_hours < 1 or forecast_days < 1 or thirty_day_forecast_days < 1:
+        raise ValueError(
+            f"{path} recent_window_hours, forecast_days, and thirty_day_forecast_days must be positive."
+        )
+    return CodingStatisticsSettings(recent_window_hours, forecast_days, thirty_day_forecast_days)
 
 
 def _options(items, kind: str) -> list[ModelOption]:

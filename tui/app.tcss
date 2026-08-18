@@ -251,6 +251,20 @@ CodingStatisticsScreen {
     height: 1;
 }
 
+#coding-statistics-controls {
+    height: 3;
+    align: left middle;
+}
+
+#statistics-unit-label {
+    width: 9;
+    color: $text-muted;
+}
+
+#statistics-unit-select {
+    width: 18;
+}
+
 #coding-statistics-summary {
     height: 5;
     margin-top: 1;

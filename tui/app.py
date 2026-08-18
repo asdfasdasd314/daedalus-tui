@@ -154,7 +154,7 @@ class KeyboardShortcutsScreen(ModalScreen[None]):
 
 
 class CodingStatisticsScreen(ModalScreen[None]):
-    """Show token usage history and derived coding statistics."""
+    """Show token or task usage history and derived coding statistics."""
 
     BINDINGS = [
         ("escape", "close_statistics", "Close"),
@@ -172,65 +172,117 @@ class CodingStatisticsScreen(ModalScreen[None]):
             entries,
             recent_window_hours=self.settings.recent_window_hours,
             forecast_days=self.settings.forecast_days,
+            thirty_day_forecast_days=self.settings.thirty_day_forecast_days,
         )
+        self.unit = "tokens"
 
     def compose(self) -> ComposeResult:
-        stats = self.stats
         with Vertical(id="coding-statistics-dialog"):
             yield Static("Coding statistics", id="coding-statistics-title")
+            with Horizontal(id="coding-statistics-controls"):
+                yield Static("Measure", id="statistics-unit-label")
+                yield Select(
+                    [("Tokens", "tokens"), ("Tasks", "tasks")],
+                    value="tokens",
+                    allow_blank=False,
+                    id="statistics-unit-select",
+                )
             yield Static("Token usage from recorded local tasks", id="coding-statistics-subtitle")
             with Horizontal(id="coding-statistics-summary"):
-                yield Static(f"Cumulative tokens\n{_format_tokens(stats.cumulative_tokens)}", classes="usage-metric")
-                yield Static(f"Today's tokens\n{_format_tokens(stats.daily_tokens)}", classes="usage-metric")
+                yield Static(id="cumulative-metric", classes="usage-metric")
+                yield Static(id="daily-metric", classes="usage-metric")
+                yield Static(id="thirty-day-metric", classes="usage-metric")
             with Horizontal(id="coding-statistics-body"):
                 with Vertical(id="usage-history-panel"):
                     yield Static("Task usage", classes="statistics-heading")
                     yield DataTable(id="usage-table", cursor_type="row")
                 with Vertical(id="usage-breakdown-panel"):
                     yield Static("Statistics", classes="statistics-heading")
-                    yield Static(
-                        f"Average tokens per prompt\n{stats.average_tokens_per_prompt:,.0f}",
-                        classes="statistics-value",
-                    )
-                    yield Static(
-                        f"Last hour token usage\n{_format_tokens(stats.last_hour_tokens)}",
-                        classes="statistics-value",
-                    )
-                    yield Static(
-                        f"{self.settings.forecast_days}-day expected token usage\n"
-                        f"{_format_tokens(stats.seven_day_expected_tokens)}",
-                        classes="statistics-value",
-                    )
-                    yield Static(self._provider_split_text(), id="provider-split", classes="statistics-value")
+                    yield Static(id="average-metric", classes="statistics-value")
+                    yield Static(id="recent-metric", classes="statistics-value")
+                    yield Static(id="seven-day-metric", classes="statistics-value")
+                    yield Static(id="thirty-day-statistic", classes="statistics-value")
+                    yield Static(id="provider-split", classes="statistics-value")
             yield Static("Press Esc or Ctrl+T to close", id="coding-statistics-footer")
 
     def on_mount(self) -> None:
+        self._refresh_statistics_view()
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        if event.select.id != "statistics-unit-select" or event.value in (Select.BLANK, ""):
+            return
+        self.unit = str(event.value)
+        self._refresh_statistics_view()
+
+    def _refresh_statistics_view(self) -> None:
+        unit = self.unit
+        is_tasks = unit == "tasks"
+        suffix = "tasks" if is_tasks else "tokens"
+        cumulative = self.stats.cumulative_tasks if is_tasks else self.stats.cumulative_tokens
+        daily = self.stats.daily_tasks if is_tasks else self.stats.daily_tokens
+        recent = self.stats.last_hour_tasks if is_tasks else self.stats.last_hour_tokens
+        seven_day = self.stats.seven_day_expected_tasks if is_tasks else self.stats.seven_day_expected_tokens
+        thirty_day = self.stats.thirty_day_expected_tasks if is_tasks else self.stats.thirty_day_expected_tokens
+        average = self.stats.average_tasks_per_prompt if is_tasks else self.stats.average_tokens_per_prompt
+        self.query_one("#coding-statistics-subtitle", Static).update(
+            f"{suffix.capitalize()} from recorded local tasks"
+        )
+        self.query_one("#cumulative-metric", Static).update(
+            f"Cumulative {suffix}\n{_format_count(cumulative)}"
+        )
+        self.query_one("#daily-metric", Static).update(
+            f"Today's {suffix}\n{_format_count(daily)}"
+        )
+        self.query_one("#thirty-day-metric", Static).update(
+            f"{self.settings.thirty_day_forecast_days}-day expected {suffix}\n{_format_count(thirty_day)}"
+        )
+        self.query_one("#average-metric", Static).update(
+            f"Average {suffix} per prompt\n{average:,.0f}"
+        )
+        self.query_one("#recent-metric", Static).update(
+            f"Last hour {suffix} usage\n{_format_count(recent)}"
+        )
+        self.query_one("#seven-day-metric", Static).update(
+            f"{self.settings.forecast_days}-day expected {suffix}\n{_format_count(seven_day)}"
+        )
+        self.query_one("#thirty-day-statistic", Static).update(
+            f"{self.settings.thirty_day_forecast_days}-day expected {suffix}\n{_format_count(thirty_day)}"
+        )
+        self.query_one("#provider-split", Static).update(self._provider_split_text())
+
         table = self.query_one("#usage-table", DataTable)
-        table.add_columns("Timestamp", "Provider", "Tokens")
+        table.clear(columns=True)
+        table.add_columns("Timestamp", "Provider", suffix.capitalize())
         if not self.stats.entries:
             table.add_row("—", "No recorded tasks", "0")
             return
         for entry in self.stats.entries:
             timestamp = entry.timestamp.astimezone().strftime("%Y-%m-%d %H:%M")
-            table.add_row(timestamp, entry.provider, _format_tokens(entry.tokens))
+            table.add_row(timestamp, entry.provider, "1" if is_tasks else _format_tokens(entry.tokens))
 
     def action_close_statistics(self) -> None:
         self.dismiss(None)
 
     def _provider_split_text(self) -> str:
         lines = ["Provider split"]
-        if not self.stats.provider_split():
-            lines.append("No token usage recorded")
+        split = self.stats.provider_split(self.unit)
+        suffix = "tasks" if self.unit == "tasks" else "tokens"
+        if not split:
+            lines.append(f"No {suffix} recorded")
         else:
             lines.extend(
-                f"{provider}: {percentage:.1f}% ({_format_tokens(tokens)})"
-                for provider, tokens, percentage in self.stats.provider_split()
+                f"{provider}: {percentage:.1f}% ({_format_count(count)} {suffix})"
+                for provider, count, percentage in split
             )
         return "\n".join(lines)
 
 
 def _format_tokens(tokens: int) -> str:
     return f"{tokens:,}"
+
+
+def _format_count(value: int) -> str:
+    return f"{value:,}"
 
 
 class DaedalusTuiApp(App[None]):

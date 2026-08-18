@@ -39,18 +39,29 @@ class TokenUsageStats:
     entries: tuple[TokenUsageEntry, ...]
     cumulative_tokens: int
     daily_tokens: int
+    cumulative_tasks: int
+    daily_tasks: int
     average_tokens_per_prompt: float
+    average_tasks_per_prompt: float
     last_hour_tokens: int
+    last_hour_tasks: int
     seven_day_expected_tokens: int
+    seven_day_expected_tasks: int
+    thirty_day_expected_tokens: int
+    thirty_day_expected_tasks: int
     provider_tokens: tuple[tuple[str, int], ...]
+    provider_tasks: tuple[tuple[str, int], ...]
     provider_percentages: tuple[tuple[str, float], ...]
 
-    def provider_split(self) -> tuple[tuple[str, int, float], ...]:
-        """Return provider, token count, and percentage triples for display."""
-        percentages = dict(self.provider_percentages)
+    def provider_split(self, unit: str = "tokens") -> tuple[tuple[str, int, float], ...]:
+        """Return provider, count, and percentage triples for the selected unit."""
+        if unit not in {"tokens", "tasks"}:
+            raise ValueError("unit must be 'tokens' or 'tasks'")
+        totals = self.provider_tokens if unit == "tokens" else self.provider_tasks
+        total = sum(count for _, count in totals)
         return tuple(
-            (provider, tokens, percentages.get(provider, 0.0))
-            for provider, tokens in self.provider_tokens
+            (provider, count, (count / total * 100) if total else 0.0)
+            for provider, count in totals
         )
 
 
@@ -60,8 +71,9 @@ def calculate_token_usage(
     now: datetime | None = None,
     recent_window_hours: int = 1,
     forecast_days: int = 7,
+    thirty_day_forecast_days: int = 30,
 ) -> TokenUsageStats:
-    """Calculate totals, windows, and provider percentages for task history.
+    """Calculate token and task totals, windows, and provider percentages.
 
     Daily usage uses the user's local calendar day. The forecast projects the
     average daily usage across the recorded history into ``forecast_days``.
@@ -70,6 +82,8 @@ def calculate_token_usage(
         raise ValueError("recent_window_hours must be positive")
     if forecast_days < 1:
         raise ValueError("forecast_days must be positive")
+    if thirty_day_forecast_days < 1:
+        raise ValueError("thirty_day_forecast_days must be positive")
 
     current = now or datetime.now(UTC)
     if current.tzinfo is None:
@@ -85,13 +99,21 @@ def calculate_token_usage(
     today = current_local.date()
     recent_start = current - timedelta(hours=recent_window_hours)
     cumulative = sum(entry.tokens for entry in normalized)
+    cumulative_tasks = len(normalized)
     daily = sum(
         entry.tokens
         for entry in normalized
         if entry.timestamp.astimezone(current_local.tzinfo).date() == today
     )
+    daily_tasks = sum(
+        1
+        for entry in normalized
+        if entry.timestamp.astimezone(current_local.tzinfo).date() == today
+    )
     recent = sum(entry.tokens for entry in normalized if recent_start <= entry.timestamp <= current)
+    recent_tasks = sum(1 for entry in normalized if recent_start <= entry.timestamp <= current)
     average = cumulative / len(normalized) if normalized else 0.0
+    average_tasks = 1.0 if normalized else 0.0
 
     if normalized:
         first_day = normalized[-1].timestamp.astimezone(current_local.tzinfo).date()
@@ -100,11 +122,18 @@ def calculate_token_usage(
     else:
         average_daily = 0.0
     expected = round(average_daily * forecast_days)
+    expected_thirty_day = round(average_daily * thirty_day_forecast_days)
+    average_daily_tasks = cumulative_tasks / history_days if normalized else 0.0
 
     provider_totals: dict[str, int] = {}
+    provider_task_totals: dict[str, int] = {}
     for entry in normalized:
         provider_totals[entry.provider] = provider_totals.get(entry.provider, 0) + entry.tokens
+        provider_task_totals[entry.provider] = provider_task_totals.get(entry.provider, 0) + 1
     provider_items = tuple(sorted(provider_totals.items(), key=lambda item: (-item[1], item[0])))
+    provider_task_items = tuple(
+        sorted(provider_task_totals.items(), key=lambda item: (-item[1], item[0]))
+    )
     provider_percentages = tuple(
         (provider, (tokens / cumulative * 100) if cumulative else 0.0)
         for provider, tokens in provider_items
@@ -113,10 +142,18 @@ def calculate_token_usage(
         entries=normalized,
         cumulative_tokens=cumulative,
         daily_tokens=daily,
+        cumulative_tasks=cumulative_tasks,
+        daily_tasks=daily_tasks,
         average_tokens_per_prompt=average,
+        average_tasks_per_prompt=average_tasks,
         last_hour_tokens=recent,
+        last_hour_tasks=recent_tasks,
         seven_day_expected_tokens=expected,
+        seven_day_expected_tasks=round(average_daily_tasks * forecast_days),
+        thirty_day_expected_tokens=expected_thirty_day,
+        thirty_day_expected_tasks=round(average_daily_tasks * thirty_day_forecast_days),
         provider_tokens=provider_items,
+        provider_tasks=provider_task_items,
         provider_percentages=provider_percentages,
     )
 

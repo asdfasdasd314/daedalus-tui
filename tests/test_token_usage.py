@@ -19,11 +19,23 @@ class TokenUsageTests(unittest.TestCase):
 
         self.assertEqual(stats.cumulative_tokens, 400)
         self.assertEqual(stats.daily_tokens, 100)
+        self.assertEqual(stats.cumulative_tasks, 2)
+        self.assertEqual(stats.daily_tasks, 1)
         self.assertEqual(stats.last_hour_tokens, 100)
+        self.assertEqual(stats.last_hour_tasks, 1)
         self.assertEqual(stats.average_tokens_per_prompt, 200)
+        self.assertEqual(stats.average_tasks_per_prompt, 1.0)
         self.assertEqual(stats.seven_day_expected_tokens, 1400)
+        self.assertEqual(stats.seven_day_expected_tasks, 7)
+        self.assertEqual(stats.thirty_day_expected_tokens, 6000)
+        self.assertEqual(stats.thirty_day_expected_tasks, 30)
         self.assertEqual(stats.provider_tokens, (("cursor", 300), ("codex", 100)))
+        self.assertEqual(stats.provider_tasks, (("codex", 1), ("cursor", 1)))
         self.assertEqual(dict(stats.provider_percentages), {"cursor": 75.0, "codex": 25.0})
+        self.assertEqual(
+            stats.provider_split("tasks"),
+            (("codex", 1, 50.0), ("cursor", 1, 50.0)),
+        )
 
     def test_reads_task_usage_from_persisted_memory(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -94,6 +106,8 @@ class TokenUsageTests(unittest.TestCase):
             calculate_token_usage((), recent_window_hours=0)
         with self.assertRaises(ValueError):
             calculate_token_usage((), forecast_days=0)
+        with self.assertRaises(ValueError):
+            calculate_token_usage((), thirty_day_forecast_days=0)
 
 
 if __name__ == "__main__":
