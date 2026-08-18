@@ -1,16 +1,16 @@
 # Graph Report - daedalus-tui  (2026-08-17)
 
 ## Corpus Check
-- 46 files · ~26,790 words
+- 46 files · ~26,844 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 660 nodes · 1708 edges · 28 communities (25 shown, 3 thin omitted)
-- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 210 edges (avg confidence: 0.55)
+- 660 nodes · 1710 edges · 28 communities (25 shown, 3 thin omitted)
+- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 211 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `5354a403`
+- Built from commit: `000ffc9b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -73,8 +73,8 @@
 ## Communities (28 total, 3 thin omitted)
 
 ### Community 0 - "PlanQuestion"
-Cohesion: 0.16
-Nodes (4): Changed, Path, Render every known task, promoting rows with unseen updates., Switch the project context and focus a row selected in the inbox.
+Cohesion: 0.17
+Nodes (6): Changed, RowSelected, Path, Focus a task from the cross-project update inbox., Render every known task, promoting rows with unseen updates., Switch the project context and focus a row selected in the inbox.
 
 ### Community 1 - "DaedalusVimTextArea"
 Cohesion: 0.06
@@ -85,8 +85,8 @@ Cohesion: 0.08
 Nodes (16): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+8 more)
 
 ### Community 3 - "DaedalusTuiApp"
-Cohesion: 0.11
-Nodes (6): Pressed, DaedalusTuiApp, Replace question controls after Textual has completed child removal., Clear the selected task and unlock a fresh prompt editor., Use Textual's OSC 52 path and a native clipboard fallback., __getattr__()
+Cohesion: 0.12
+Nodes (8): Pressed, DaedalusTuiApp, Key, Clear the selected task and unlock a fresh prompt editor., Return a TextArea selection or the active screen selection., Use Textual's OSC 52 path and a native clipboard fallback., Add Vim-like navigation without changing TextArea insert behavior., __getattr__()
 
 ### Community 4 - "app.py"
 Cohesion: 0.07
@@ -97,8 +97,8 @@ Cohesion: 0.29
 Nodes (6): Applying answers, Bridge Agent Profile, Build-loop tasking, cp_doc structure, Hard rules, Purpose
 
 ### Community 6 - "GitWorktreeManager"
-Cohesion: 0.11
-Nodes (12): Log, Strip, Style, Selectable transcript rendering with semantic assistant-message emphasis., A selectable log that can emphasize a task's final assistant message.      ``Log, Return the tone assigned to each rendered transcript line., Use the prompt's normal text color for the final transcript tone., Re-render lines after a surrounding widget's color state changes. (+4 more)
+Cohesion: 0.15
+Nodes (7): Log, A selectable log that can emphasize a task's final assistant message.      ``Log, Return the tone assigned to each rendered transcript line., Use the prompt's normal text color for the final transcript tone., Re-render lines after a surrounding widget's color state changes., Append one assistant message and assign its semantic tone., TranscriptLog
 
 ### Community 7 - "Daedalus TUI Local Token Usage Memory"
 Cohesion: 0.29
@@ -106,7 +106,7 @@ Nodes (6): Daedalus TUI Local Persistent Memory, Dev Mode, Key Points, Relevant 
 
 ### Community 8 - "update_repository"
 Cohesion: 0.05
-Nodes (36): ComposeResult, Mount, Select, FakeCoordinator, FakeRunner, settings(), ConfigTests, ProjectDiscoveryTests (+28 more)
+Nodes (37): ComposeResult, Mount, Select, FakeCoordinator, FakeRunner, settings(), ConfigTests, ProjectDiscoveryTests (+29 more)
 
 ### Community 11 - "Key"
 Cohesion: 0.06
@@ -149,8 +149,8 @@ Cohesion: 0.15
 Nodes (7): Exception, Stop agents before an explicit Textual exit begins., Persist Textual failures that would otherwise only flash on screen., Clean up if Textual's run loop returns without its unmount hook., Idempotently detach task callbacks and request child-process shutdown., _unregister_app_for_thread_exit(), close_fault_handler()
 
 ### Community 22 - "._set_status"
-Cohesion: 0.27
-Nodes (3): Key, Return a TextArea selection or the active screen selection., Add Vim-like navigation without changing TextArea insert behavior.
+Cohesion: 0.33
+Nodes (4): Strip, Style, Render a line with the final-message color before selection styling., Render the native cursor without a background in visible modes.
 
 ### Community 23 - "update_repository"
 Cohesion: 0.15
@@ -165,7 +165,7 @@ Cohesion: 0.12
 Nodes (10): GitWorktreeTests, GitWorktreeManager, CompletedProcess, Path, Compatibility alias for callers that used the original private helper., Stage the current worktree contents for orchestration checks or commit., Remove graphify output changes from an agent worktree.          Graphify refresh, Keep a read-only planning pass from becoming an implementation change. (+2 more)
 
 ### Community 30 - "._render_selected_task_safely"
-Cohesion: 0.25
+Cohesion: 0.21
 Nodes (5): AbstractEventLoop, BaseException, Keep one bad dynamic widget update from closing the entire TUI., log_exception(), main()
 
 ## Knowledge Gaps
@@ -176,11 +176,11 @@ Nodes (5): AbstractEventLoop, BaseException, Keep one bad dynamic widget update 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `PlanQuestion`, `DaedalusVimTextArea`, `AgentRunner`, `app.py`, `GitWorktreeManager`, `update_repository`, `Key`, `.__init__`, `._shutdown_coordinators`, `._set_status`, `update_repository`, `.provider_split`, `._render_selected_task_safely`?**
+- **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `PlanQuestion`, `DaedalusVimTextArea`, `AgentRunner`, `app.py`, `GitWorktreeManager`, `update_repository`, `Key`, `.__init__`, `._shutdown_coordinators`, `update_repository`, `.provider_split`, `._render_selected_task_safely`?**
   _High betweenness centrality (0.226) - this node is a cross-community bridge._
 - **Why does `AgentRunner` connect `AgentRunner` to `update_repository`, `DaedalusTuiApp`, `Key`, `.__init__`?**
   _High betweenness centrality (0.137) - this node is a cross-community bridge._
-- **Why does `DaedalusVimTextArea` connect `DaedalusVimTextArea` to `PlanQuestion`, `DaedalusTuiApp`, `GitWorktreeManager`, `update_repository`, `._set_status`, `update_repository`?**
+- **Why does `DaedalusVimTextArea` connect `DaedalusVimTextArea` to `DaedalusTuiApp`, `GitWorktreeManager`, `update_repository`, `._set_status`, `update_repository`?**
   _High betweenness centrality (0.104) - this node is a cross-community bridge._
 - **Are the 13 inferred relationships involving `DaedalusTuiApp` (e.g. with `FakeCoordinator` and `FakeRunner`) actually correct?**
   _`DaedalusTuiApp` has 13 INFERRED edges - model-reasoned connections that need verification._
