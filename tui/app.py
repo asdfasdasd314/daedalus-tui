@@ -334,7 +334,10 @@ class DaedalusTuiApp(App[None]):
                     yield Static(self._directory_text(), id="directory")
                     yield Static("Phase: Idle", id="phase")
                     yield Static("Task branch: —    Worktree: —", id="task-context")
-                    yield TextArea("", read_only=True, show_line_numbers=False, id="task-error")
+                    # Keep diagnostics on the same selectable Log surface as
+                    # the transcript so mouse selection, y, and Ctrl+C all
+                    # use Textual's screen-selection clipboard path.
+                    yield Log(id="task-error", auto_scroll=False)
                     # Log supports Textual click-drag selection; RichLog does not.
                     yield TranscriptLog(id="output", auto_scroll=True)
                     with Vertical(id="plan-review"):
@@ -1228,5 +1231,7 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#status", Static).update(status)
 
     def _set_error(self, error: str) -> None:
-        error_widget = self.query_one("#task-error", TextArea)
-        error_widget.load_text(error)
+        error_widget = self.query_one("#task-error", Log)
+        error_widget.clear()
+        if error:
+            error_widget.write(error)

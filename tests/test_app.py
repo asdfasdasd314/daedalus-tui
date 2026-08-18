@@ -9,7 +9,6 @@ from textual import events
 from textual.geometry import Offset
 from textual.selection import Selection as ScreenSelection
 from textual.widgets import Button, DataTable, Log, Select, Static, TextArea
-from textual.widgets.text_area import Selection
 from vimkeys_input import VimMode
 
 from tui.app import CodingStatisticsScreen, DaedalusTuiApp, KeyboardShortcutsScreen
@@ -376,7 +375,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             self.assertEqual(str(app.query_one("#status", Static).render()), "Error")
-            self.assertIn("cannot be empty", app.query_one("#task-error", TextArea).text)
+            self.assertIn("cannot be empty", "\n".join(app.query_one("#task-error", Log)._lines))
             self.assertFalse(app.query_one("#send-button", Button).disabled)
 
     async def test_submitted_prompt_is_visible_and_immutable(self):
@@ -443,7 +442,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
             retry_button = app.query_one("#retry-button", Button)
             self.assertFalse(retry_button.disabled)
-            self.assertIn("internet connection", app.query_one("#task-error", TextArea).text)
+            self.assertIn("internet connection", "\n".join(app.query_one("#task-error", Log)._lines))
             retry_button.press()
             await pilot.pause()
             self.assertEqual(coordinator.retry_actions, [record.task_id])
@@ -838,7 +837,10 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
             self.assertIsNone(app._exception)
             self.assertEqual(str(app.query_one("#status", Static).render()), "Error")
-            self.assertIn("synthetic plan widget failure", app.query_one("#task-error", TextArea).text)
+            self.assertIn(
+                "synthetic plan widget failure",
+                "\n".join(app.query_one("#task-error", Log)._lines),
+            )
 
     async def test_late_background_event_is_ignored_after_app_shutdown(self):
         app, coordinator = self.make_app()
@@ -883,7 +885,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
             self.assertIsNone(app._exception)
             self.assertEqual(str(app.query_one("#status", Static).render()), "Error")
-            self.assertIn("render failure", app.query_one("#task-error", TextArea).text)
+            self.assertIn("render failure", "\n".join(app.query_one("#task-error", Log)._lines))
 
     async def test_paused_task_exposes_optional_resume_notes(self):
         app, coordinator = self.make_app()
@@ -914,18 +916,26 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             native_clipboard.assert_called_once_with("only this selected section")
 
     @patch("tui.app.copy_to_system_clipboard")
-    async def test_copy_selection_reads_focused_text_area_selection(self, native_clipboard):
+    async def test_copy_selection_reads_selectable_error_log(self, native_clipboard):
         app, _ = self.make_app()
-        async with app.run_test():
-            error = app.query_one("#task-error", TextArea)
-            error.load_text("only this diagnostic section")
-            error.selection = Selection((0, 0), (0, 13))
+        async with app.run_test() as pilot:
+            error = app.query_one("#task-error", Log)
+            error.write("only this diagnostic section")
             error.focus()
+            await pilot.pause()
+            selected = error.get_selection(
+                ScreenSelection.from_offsets(Offset(0, 0), Offset(10, 0))
+            )
+            self.assertTrue(selected)
+            app.screen.get_selected_text = Mock(return_value=selected[0])
 
-            self.assertEqual(error.selected_text, "only this dia")
+            self.assertTrue(error.allow_select)
+            app._handle_vim_key("y")
+            native_clipboard.assert_called_once_with(selected[0])
+
+            native_clipboard.reset_mock()
             app.action_copy_selection()
-
-            native_clipboard.assert_called_once_with("only this dia")
+            native_clipboard.assert_called_once_with(selected[0])
 
     @patch("tui.app.paste_from_system_clipboard", return_value="pasted notes")
     async def test_vim_paste_inserts_system_clipboard_into_prompt(self, _clipboard):
