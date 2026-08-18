@@ -69,6 +69,7 @@ class TaskRecord:
     plan_text: str = ""
     plan_questions: tuple[PlanQuestion, ...] = ()
     plan_answers: dict[str, str] = field(default_factory=dict)
+    plan_answer_details: dict[str, str] = field(default_factory=dict)
     plan_confirmed: bool = False
     plan_error: str | None = None
     prompt_history: list[str] = field(default_factory=list, repr=False, compare=False)
@@ -188,6 +189,12 @@ class TaskCoordinator:
             if question_ids - valid_answers.keys():
                 return False
             record.plan_answers.update(valid_answers)
+            for question in record.plan_questions:
+                answer_id = valid_answers.get(question.question_id)
+                if answer_id is None:
+                    continue
+                option = next(option for option in question.options if option.option_id == answer_id)
+                record.plan_answer_details[question.question_id] = f"{question.text}: {option.label}"
             record.plan_followup_prompt = build_plan_followup_prompt(
                 record.prompt, record.plan_text, record.plan_questions, record.plan_answers
             )
@@ -209,13 +216,20 @@ class TaskCoordinator:
             return None
         if any(question.question_id not in record.plan_answers for question in record.plan_questions):
             return None
-        return self.submit(
-            build_implementation_prompt(record.prompt, record.plan_text, record.plan_answers),
+        coding_record = self.submit(
+            build_implementation_prompt(
+                record.prompt,
+                record.plan_text,
+                record.plan_answers,
+                record.plan_answer_details,
+            ),
             record.provider,
             record.model,
             record.reasoning,
             mode="coding",
         )
+        self._discard_plan_worktree(record)
+        return coding_record
 
     def tasks(self) -> tuple[TaskRecord, ...]:
         with self._lock:
@@ -523,8 +537,12 @@ class TaskCoordinator:
             if record.mode == "plan":
                 self._update_plan_state(record, record.messages[message_start:])
             if record.mode == "plan" and not record.plan_confirmed:
-                record.status = "awaiting_answers"
-                record.phase = "Questions"
+                if record.plan_questions:
+                    record.status = "awaiting_answers"
+                    record.phase = "Questions"
+                else:
+                    record.status = "questioning"
+                    record.phase = "Questioning"
             else:
                 record.status = "completed"
                 record.phase = "Completed"
@@ -535,22 +553,64 @@ class TaskCoordinator:
         self._persist_task(record)
         self._notify(
             record,
-            "questions" if result.succeeded and record.mode == "plan" and not record.plan_confirmed else
+            "questions" if result.succeeded and record.mode == "plan" and record.plan_questions and not record.plan_confirmed else
             ("completed" if result.succeeded else "failed"),
             "",
             "status",
         )
         LOGGER.info("Task worker finished task=%s status=%s", record.task_id, record.status)
 
-    def _update_plan_state(self, record: TaskRecord, new_messages: list[str]) -> None:
+    def _update_plan_state(self, record: TaskRecord, new_messages: list[str]) -> bool:
         response = "\n\n".join(new_messages).strip()
         parsed = parse_plan_response(response)
+        if not parsed.valid:
+            # A protocol error after the user answered questions must not erase
+            # the last usable plan or make the choices impossible to resubmit.
+            record.plan_confirmed = False
+            record.plan_error = parsed.error
+            record.error = parsed.error
+            LOGGER.warning(
+                "Rejected invalid plan payload task=%s response_length=%d error=%s",
+                record.task_id,
+                len(response),
+                parsed.error,
+            )
+            return False
         record.plan_text = parsed.plan
         record.plan_questions = parsed.questions
         record.plan_confirmed = parsed.valid and parsed.no_more_questions and not parsed.questions
-        record.plan_error = parsed.error
-        if parsed.error:
-            record.error = parsed.error
+        record.plan_error = None
+        record.error = None
+        # An agent may revise a question while retaining its id. Do not mount a
+        # Select with the now-invalid old value; retain decisions for questions
+        # that disappeared because they remain useful implementation context.
+        for question in parsed.questions:
+            answer_id = record.plan_answers.get(question.question_id)
+            if answer_id is not None and not any(option.option_id == answer_id for option in question.options):
+                record.plan_answers.pop(question.question_id, None)
+                record.plan_answer_details.pop(question.question_id, None)
+        return True
+
+    def _discard_plan_worktree(self, record: TaskRecord) -> None:
+        """Remove the clean, read-only planning worktree after coding is queued."""
+        if record.context is None:
+            return
+        try:
+            manager = GitWorktreeManager(
+                self.repository,
+                self.settings.primary_branch,
+                self.settings.worktree_root,
+            )
+            manager.remove_successful(record.context)
+        except GitWorktreeError as error:
+            # The coding task is already queued; a failed cleanup must not
+            # prevent it from running or hide the planning result.
+            LOGGER.warning("Could not remove plan worktree task=%s error=%s", record.task_id, error)
+            return
+        LOGGER.info("Removed clean plan worktree task=%s path=%s", record.task_id, record.context.path)
+        record.context = None
+        record.worktree_path = None
+        self._persist_task(record)
 
     def _handle_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         record.phase = phase.replace("_", " ").capitalize()
@@ -607,8 +667,9 @@ class TaskCoordinator:
                 project=self.repository,
                 prompt_history=tuple(record.prompt_history or (record.prompt,)),
             )
-        except (OSError, ValueError):
+        except (OSError, ValueError) as error:
             # Persistent task history must never change orchestration behavior.
+            LOGGER.warning("Could not persist task task=%s error=%s", record.task_id, error)
             return
         record.memory_task_id = task_id
 

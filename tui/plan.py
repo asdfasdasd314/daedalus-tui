@@ -72,6 +72,23 @@ def parse_plan_response(response: str) -> PlanResult:
             questions.append(_parse_question(raw_question))
     except ValueError as error:
         return PlanResult(plan.strip(), (), False, valid=False, error=str(error))
+    question_ids = [question.question_id for question in questions]
+    if len(question_ids) != len(set(question_ids)):
+        return PlanResult(
+            plan.strip(),
+            (),
+            False,
+            valid=False,
+            error="Plan questions must use unique ids.",
+        )
+    if no_more_questions and questions:
+        return PlanResult(
+            plan.strip(),
+            (),
+            False,
+            valid=False,
+            error="A confirmed plan cannot include unanswered questions.",
+        )
     return PlanResult(plan.strip(), tuple(questions), no_more_questions)
 
 
@@ -106,8 +123,14 @@ def build_implementation_prompt(
     original_prompt: str,
     plan: str,
     answers: dict[str, str],
+    answer_details: dict[str, str] | None = None,
 ) -> str:
-    answer_text = "\n".join(f"- {question_id}: {answer}" for question_id, answer in answers.items())
+    answer_details = answer_details or {}
+    answer_text = "\n".join(
+        f"- {question_id}: {answer}"
+        + (f" ({answer_details[question_id]})" if question_id in answer_details else "")
+        for question_id, answer in answers.items()
+    )
     return (
         f"Original user request:\n{original_prompt}\n\n"
         f"Approved implementation plan:\n{plan}\n\n"
@@ -158,6 +181,9 @@ def _parse_question(raw_question: Any) -> PlanQuestion:
         if not isinstance(option_id, str) or not option_id.strip() or not isinstance(label, str) or not label.strip():
             raise ValueError(f"Plan question {question_id!r} has an invalid option.")
         options.append(PlanOption(option_id.strip(), label.strip()))
+    option_ids = [option.option_id for option in options]
+    if len(option_ids) != len(set(option_ids)):
+        raise ValueError(f"Plan question {question_id!r} must use unique option ids.")
     required = raw_question.get("required", True)
     if not isinstance(required, bool):
         raise ValueError(f"Plan question {question_id!r} has an invalid required value.")

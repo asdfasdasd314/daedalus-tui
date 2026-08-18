@@ -35,6 +35,28 @@ class PlanTests(unittest.TestCase):
         self.assertFalse(result.no_more_questions)
         self.assertFalse(parse_plan_response("plain markdown plan").valid)
 
+    def test_parser_rejects_ambiguous_question_and_option_ids(self):
+        duplicate_questions = (
+            '{"plan":"Do it.","questions":[{"id":"q1","question":"First?","options":['
+            '{"id":"a","label":"A"},{"id":"b","label":"B"}]},{"id":"q1",'
+            '"question":"Second?","options":[{"id":"a","label":"A"},{"id":"b","label":"B"}]}],'
+            '"no_more_questions":false}'
+        )
+        duplicate_options = (
+            '{"plan":"Do it.","questions":[{"id":"q1","question":"Choose?","options":['
+            '{"id":"a","label":"First"},{"id":"a","label":"Second"}]}],'
+            '"no_more_questions":false}'
+        )
+        contradictory_confirmation = (
+            '{"plan":"Do it.","questions":[{"id":"q1","question":"Choose?","options":['
+            '{"id":"a","label":"First"},{"id":"b","label":"Second"}]}],'
+            '"no_more_questions":true}'
+        )
+
+        self.assertFalse(parse_plan_response(duplicate_questions).valid)
+        self.assertFalse(parse_plan_response(duplicate_options).valid)
+        self.assertFalse(parse_plan_response(contradictory_confirmation).valid)
+
     def test_followup_and_implementation_prompts_include_review_context(self):
         question = PlanQuestion("q1", "Which store?", (PlanOption("a", "SQLite"), PlanOption("b", "JSON")))
         followup = build_plan_followup_prompt("Build it", "Use a store.", (question,), {"q1": "b"})

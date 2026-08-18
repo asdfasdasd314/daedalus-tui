@@ -474,6 +474,96 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertEqual(coding_record.mode, "coding")
             self.assertIn("Add the JSON store", coding_record.prompt)
             self.assertIn("Original user request", coding_record.prompt)
+            self.assertIn("q1: b (Which store?: JSON)", coding_record.prompt)
+            coordinator.shutdown()
+
+    def test_invalid_confirmation_preserves_answers_for_a_safe_retry(self):
+        class PlanOrchestrator:
+            responses = [
+                '{"plan":"Add the selected store.","questions":[{"id":"q1",'
+                '"question":"Which store?","options":[{"id":"a","label":"SQLite"},'
+                '{"id":"b","label":"JSON"}]}],"no_more_questions":false}',
+                "The final plan is JSON somewhere else.",
+                '{"plan":"Add the JSON store.","questions":[],"no_more_questions":true}',
+            ]
+
+            def __init__(self, _repository, _runner, _settings, on_event, integration_gate=None):
+                self.on_event = on_event
+
+            def run(self, _prompt, _provider, _model, _reasoning, task_id=None, **_kwargs):
+                self.on_event("agent", type(self).responses.pop(0), "message")
+                return OrchestrationResult(True, task_id)
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", PlanOrchestrator):
+                record = coordinator.submit("Choose a store", "codex", "luna", "medium", mode="plan")
+                record.future.result(timeout=5)
+                self.assertTrue(coordinator.answer_plan(record.task_id, {"q1": "b"}))
+                record.future.result(timeout=5)
+
+                self.assertEqual(record.status, "awaiting_answers")
+                self.assertEqual(record.plan_text, "Add the selected store.")
+                self.assertEqual(record.plan_answers, {"q1": "b"})
+                self.assertIn("required format", record.error)
+
+                self.assertTrue(coordinator.answer_plan(record.task_id, {"q1": "b"}))
+                record.future.result(timeout=5)
+
+            self.assertTrue(record.plan_confirmed)
+            coordinator.shutdown()
+
+    def test_revised_question_drops_only_its_invalid_saved_answer(self):
+        class PlanOrchestrator:
+            responses = [
+                '{"plan":"Choose storage.","questions":[{"id":"q1","question":"Which store?",'
+                '"options":[{"id":"a","label":"SQLite"},{"id":"b","label":"JSON"}]}],'
+                '"no_more_questions":false}',
+                '{"plan":"Choose hosting.","questions":[{"id":"q1","question":"Which host?",'
+                '"options":[{"id":"cloud","label":"Cloud"},{"id":"local","label":"Local"}]}],'
+                '"no_more_questions":false}',
+            ]
+
+            def __init__(self, _repository, _runner, _settings, on_event, integration_gate=None):
+                self.on_event = on_event
+
+            def run(self, _prompt, _provider, _model, _reasoning, task_id=None, **_kwargs):
+                self.on_event("agent", type(self).responses.pop(0), "message")
+                return OrchestrationResult(True, task_id)
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", PlanOrchestrator):
+                record = coordinator.submit("Choose deployment", "codex", "luna", "medium", mode="plan")
+                record.future.result(timeout=5)
+                self.assertTrue(coordinator.answer_plan(record.task_id, {"q1": "b"}))
+                record.future.result(timeout=5)
+
+            self.assertEqual(record.status, "awaiting_answers")
+            self.assertEqual(record.plan_answers, {})
+            coordinator.shutdown()
+
+    def test_implementation_discards_the_clean_planning_worktree(self):
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            record = TaskRecord("plan-task", 1, "Plan it", "codex", "luna", "medium", mode="plan")
+            record.status = "completed"
+            record.plan_confirmed = True
+            record.context = WorktreeContext(
+                Path(directory), record.task_id, "base", "agent/task-plan-task", Path(directory) / "plan-worktree"
+            )
+            record.worktree_path = record.context.path
+            with coordinator._lock:
+                coordinator._tasks[record.task_id] = record
+            with patch("tui.task_coordinator.GitWorktreeManager") as manager_class:
+                coding_record = coordinator.implement_plan(record.task_id)
+
+            self.assertIsNotNone(coding_record)
+            manager_class.return_value.remove_successful.assert_called_once_with(
+                WorktreeContext(Path(directory), record.task_id, "base", "agent/task-plan-task", Path(directory) / "plan-worktree")
+            )
+            self.assertIsNone(record.context)
+            self.assertIsNone(record.worktree_path)
             coordinator.shutdown()
 
 
