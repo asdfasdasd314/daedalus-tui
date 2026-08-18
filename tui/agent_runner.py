@@ -9,7 +9,7 @@ from pathlib import Path
 import shutil
 import signal
 import subprocess
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 import time
 from typing import Callable, Literal
 
@@ -24,6 +24,23 @@ class AgentLogEvent:
 
 
 OutputCallback = Callable[[AgentLogEvent], None]
+
+
+class _TimeoutTracker:
+    """Track an inactivity deadline that agent stdout can refresh."""
+
+    def __init__(self, timeout_seconds: float):
+        self._timeout_seconds = timeout_seconds
+        self._deadline = time.monotonic() + timeout_seconds
+        self._lock = Lock()
+
+    def reset(self) -> None:
+        with self._lock:
+            self._deadline = time.monotonic() + self._timeout_seconds
+
+    def expired(self) -> bool:
+        with self._lock:
+            return time.monotonic() >= self._deadline
 
 REASONING_MAP = {
     "light": "low",
@@ -181,11 +198,23 @@ class AgentRunner:
 
         output: dict[str, list[str]] = {"stdout": [], "stderr": []}
         messages: list[str] = []
+        timeout_tracker = (
+            _TimeoutTracker(request.timeout_seconds)
+            if request.timeout_seconds is not None
+            else None
+        )
         threads = [
-            self._stream_stdout(process.stdout, request.provider, output, messages, on_output),
+            self._stream_stdout(
+                process.stdout,
+                request.provider,
+                output,
+                messages,
+                on_output,
+                timeout_tracker.reset if timeout_tracker is not None else None,
+            ),
             self._stream(process.stderr, "stderr", output),
         ]
-        stopped_reason, timed_out = self._wait_for_process(process, request.control, request.timeout_seconds)
+        stopped_reason, timed_out = self._wait_for_process(process, request.control, timeout_tracker)
         returncode = process.returncode
         for thread in threads:
             # A CLI descendant can inherit a pipe and keep a reader blocked
@@ -278,12 +307,11 @@ class AgentRunner:
     def _wait_for_process(
         process,
         control: AgentControl | None,
-        timeout_seconds: float | None = None,
+        timeout_tracker: _TimeoutTracker | None = None,
     ) -> tuple[str | None, bool]:
-        if control is None and timeout_seconds is None:
+        if control is None and timeout_tracker is None:
             process.wait()
             return None, False
-        deadline = time.monotonic() + timeout_seconds if timeout_seconds is not None else None
         while True:
             returncode = process.poll()
             if returncode is not None:
@@ -293,7 +321,7 @@ class AgentRunner:
                 LOGGER.info("Stopping agent process reason=%s pid=%s", reason, getattr(process, "pid", None))
                 AgentRunner._terminate_process(process)
                 return reason, False
-            if deadline is not None and time.monotonic() >= deadline:
+            if timeout_tracker is not None and timeout_tracker.expired():
                 LOGGER.warning("Agent process deadline reached pid=%s", getattr(process, "pid", None))
                 AgentRunner._terminate_process(process)
                 return None, True
@@ -332,6 +360,7 @@ class AgentRunner:
         output: dict[str, list[str]],
         messages: list[str],
         callback: OutputCallback,
+        on_activity: Callable[[], None] | None = None,
     ) -> Thread:
         def forward() -> None:
             if stream is None:
@@ -340,6 +369,8 @@ class AgentRunner:
                 if not chunk:
                     continue
                 output["stdout"].append(chunk)
+                if on_activity is not None:
+                    on_activity()
                 if provider == "codex":
                     message = AgentRunner.parse_codex_event(chunk)
                     if message:

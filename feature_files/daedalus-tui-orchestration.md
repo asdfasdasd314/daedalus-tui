@@ -44,3 +44,4 @@ HACKING
 - 2026-08-17: Preserved mounted plan-answer selectors while answer confirmation is queued, and moved unexpected-exit cleanup ahead of Python's executor-thread join.
 - 2026-08-17: Persisted queued task snapshots before worker submission so fast completions cannot be overwritten by stale queued state, including retries.
 - 2026-08-17: Hardened plan-confirmation handoff against invalid or revised agent payloads, retained recoverable answers, and removed the clean planning worktree once implementation is queued.
+- 2026-08-17: Extended agent inactivity timeouts to 450 seconds and refreshed them for every stdout update so long-running tasks remain connected while the agent is making progress.

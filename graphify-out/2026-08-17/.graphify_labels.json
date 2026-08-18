@@ -26,5 +26,7 @@
   "24": "Daedalus TUI Coding Statistics",
   "25": "._usage_entries",
   "26": ".provider_split",
-  "30": "._render_selected_task_safely"
+  "27": "CodingStatisticsScreen",
+  "28": "KeyboardShortcutsScreen",
+  "29": "PlanAnswerSelect"
 }
