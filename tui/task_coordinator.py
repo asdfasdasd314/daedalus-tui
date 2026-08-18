@@ -71,6 +71,7 @@ class TaskRecord:
     plan_answers: dict[str, str] = field(default_factory=dict)
     plan_answer_details: dict[str, str] = field(default_factory=dict)
     plan_confirmed: bool = False
+    plan_implemented: bool = False
     plan_error: str | None = None
     prompt_history: list[str] = field(default_factory=list, repr=False, compare=False)
     plan_followup_prompt: str | None = field(default=None, repr=False, compare=False)
@@ -211,23 +212,38 @@ class TaskCoordinator:
 
     def implement_plan(self, task_id: str) -> TaskRecord | None:
         """Create a new coding task from a confirmed plan review."""
-        record = self.get(task_id)
-        if record is None or record.mode != "plan" or record.status != "completed" or not record.plan_confirmed:
-            return None
-        if any(question.question_id not in record.plan_answers for question in record.plan_questions):
-            return None
-        coding_record = self.submit(
-            build_implementation_prompt(
-                record.prompt,
-                record.plan_text,
-                record.plan_answers,
-                record.plan_answer_details,
-            ),
-            record.provider,
-            record.model,
-            record.reasoning,
-            mode="coding",
-        )
+        with self._lock:
+            record = self._tasks.get(task_id)
+            if (
+                record is None
+                or record.mode != "plan"
+                or record.status != "completed"
+                or not record.plan_confirmed
+                or record.plan_implemented
+            ):
+                return None
+            if any(question.question_id not in record.plan_answers for question in record.plan_questions):
+                return None
+            # Claim the one-shot transition before submitting so concurrent UI
+            # events cannot create more than one coding task.
+            record.plan_implemented = True
+        try:
+            coding_record = self.submit(
+                build_implementation_prompt(
+                    record.prompt,
+                    record.plan_text,
+                    record.plan_answers,
+                    record.plan_answer_details,
+                ),
+                record.provider,
+                record.model,
+                record.reasoning,
+                mode="coding",
+            )
+        except Exception:
+            with self._lock:
+                record.plan_implemented = False
+            raise
         self._discard_plan_worktree(record)
         return coding_record
 

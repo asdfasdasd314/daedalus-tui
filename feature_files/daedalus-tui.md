@@ -66,3 +66,4 @@ HACKING
 - 2026-08-17: Validated the toolbar project at submission time so a newly selected project receives the draft even before its queued selector event is processed.
 - 2026-08-17: Limited task-update inbox promotion to completed or failed tasks and plan questions, leaving streaming progress events out of the update queue.
 - 2026-08-17: Made task diagnostics use the selectable output-log surface so error text supports mouse selection, Vim yanks, and Ctrl+C copying.
+- 2026-08-17: Made confirmed plan implementation a one-shot action and visibly faded the Implement button after it queues coding.

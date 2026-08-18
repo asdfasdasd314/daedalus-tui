@@ -15,9 +15,13 @@ The prompt should declare modes, such as:
     TASK_MODE: architecture
     TASK_MODE: bridge
 
-Read the corresponding profile:
-
-    .agents/profiles/<TASK_MODE>.md
+The orchestration layer may provide the selected profile inline in the prompt.
+When an inline profile is present, apply its contents directly; do not open the
+profile file merely to read it again. If no inline profile is supplied, read the
+corresponding profile from the active worktree. The standard routes are
+`coding` -> `.agents/profiles/coding.md`, `plan` ->
+`.agents/profiles/planning.md`, and `integrating` ->
+`.agents/profiles/integrating.md`.
 
 If no task mode is supplied, default to `coding`, unless there is an obvious
 mode that fits better.

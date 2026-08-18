@@ -17,6 +17,11 @@ from .verification import discover_commands, run_verification
 
 EventCallback = Callable[[str, str, str], None]
 IntegrationGate = Callable[[int, Callable[[], None]], None]
+PROFILE_FILENAMES = {
+    "coding": "coding.md",
+    "plan": "planning.md",
+    "integrating": "integrating.md",
+}
 
 
 @dataclass(frozen=True)
@@ -108,6 +113,7 @@ class LocalOrchestrator:
                 if mode == "plan"
                 else f"Running {provider} in the isolated worktree.",
             )
+            profile_text = self.load_profile(context.path, mode)
             result = self.run_agent(
                 manager,
                 context,
@@ -117,6 +123,7 @@ class LocalOrchestrator:
                     mode,
                     resume_notes,
                     resumed=existing_context is not None,
+                    profile_text=profile_text,
                 ),
                 control,
                 event_phase="planning" if mode == "plan" else "agent",
@@ -273,11 +280,18 @@ class LocalOrchestrator:
                     f"{result.output}"
                 )
             self.emit("repairing", f"Launching task repair attempt {attempts}/{self.settings.task_verification_attempt_limit}.")
+            profile_text = self.load_profile(context.path, "coding")
             repair = self.run_agent(
                 manager,
                 context,
                 selection,
-                build_repair_prompt(original, result.output, attempts, self.settings.task_verification_attempt_limit),
+                build_repair_prompt(
+                    original,
+                    result.output,
+                    attempts,
+                    self.settings.task_verification_attempt_limit,
+                    profile_text=profile_text,
+                ),
                 control,
             )
             if not repair.succeeded:
@@ -324,11 +338,18 @@ class LocalOrchestrator:
         for attempt in range(1, self.settings.resolver_attempt_limit + 1):
             self._raise_if_stopped(control)
             self.emit("resolving", f"Launching resolver attempt {attempt}/{self.settings.resolver_attempt_limit}.")
+            profile_text = self.load_profile(context.path, "integrating")
             result = self.run_agent(
                 manager,
                 context,
                 selection,
-                build_resolver_prompt(original, failure, attempt, self.settings.resolver_attempt_limit),
+                build_resolver_prompt(
+                    original,
+                    failure,
+                    attempt,
+                    self.settings.resolver_attempt_limit,
+                    profile_text=profile_text,
+                ),
                 control,
             )
             if result.succeeded:
@@ -352,6 +373,20 @@ class LocalOrchestrator:
         raise RuntimeError(
             f"Integration failed after {self.settings.resolver_attempt_limit} resolver attempts.\n\n{failure}"
         )
+
+    def load_profile(self, worktree: Path, route: str) -> str | None:
+        """Load a repository-owned profile immediately before building a prompt."""
+        filename = PROFILE_FILENAMES.get(route)
+        if filename is None:
+            return None
+        profile_path = worktree / ".agents" / "profiles" / filename
+        try:
+            return profile_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as error:
+            message = f"Could not load {route} profile from {profile_path}: {error}"
+            LOGGER.warning(message)
+            self.emit("profile", message, "error")
+            return None
 
     def refresh_graphify(self, manager: GitWorktreeManager, task_id: str) -> None:
         """Refresh graph metadata after promotion without blocking the task."""

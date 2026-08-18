@@ -161,6 +161,11 @@ Screen {
     margin-right: 1;
 }
 
+#implement-button.implemented {
+    color: $text-disabled;
+    opacity: 0.55;
+}
+
 #prompt-input {
     color: $text;
 }

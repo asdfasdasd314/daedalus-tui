@@ -17,6 +17,10 @@ class OrchestratorTests(unittest.TestCase):
             runner = Mock()
             runner.run.return_value = AgentResult("codex", 0, "plan", tokens_consumed=12)
             context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            (context.path / ".agents" / "profiles").mkdir(parents=True)
+            (context.path / ".agents" / "profiles" / "planning.md").write_text(
+                "PLANNING_PROFILE_FROM_WORKTREE", encoding="utf-8"
+            )
             manager = Mock()
             manager.create.return_value = context
             orchestrator = LocalOrchestrator(
@@ -35,6 +39,62 @@ class OrchestratorTests(unittest.TestCase):
         manager.remove_successful.assert_not_called()
         manager.discard_graphify_changes.assert_called_once_with(context.path)
         manager.reset_task_to_base.assert_called_once_with(context)
+        self.assertIn("PLANNING_PROFILE_FROM_WORKTREE", runner.run.call_args.args[0].prompt)
+
+    def test_missing_profile_is_reported_without_changing_plan_lifecycle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "plan")
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            manager.create.return_value = context
+            events = []
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(),
+                lambda phase, message, channel: events.append((phase, message, channel)),
+            )
+
+            with patch("tui.orchestrator.GitWorktreeManager", return_value=manager):
+                result = orchestrator.run("Make a plan", "codex", "luna", "high", mode="plan")
+
+        self.assertTrue(result.succeeded)
+        self.assertTrue(result.awaiting_plan)
+        self.assertTrue(any(phase == "profile" and channel == "error" for phase, _, channel in events))
+        self.assertNotIn(".agents/profiles", runner.run.call_args.args[0].prompt)
+
+    def test_planning_followup_uses_the_planning_profile_through_task_wrapper(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "updated plan")
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            (context.path / ".agents" / "profiles").mkdir(parents=True)
+            (context.path / ".agents" / "profiles" / "planning.md").write_text(
+                "PLANNING_PROFILE_FOR_FOLLOWUP", encoding="utf-8"
+            )
+            manager = Mock()
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(),
+                lambda _phase, _message, _channel: None,
+            )
+
+            with patch("tui.orchestrator.GitWorktreeManager", return_value=manager):
+                result = orchestrator.run(
+                    "Re-evaluate the plan using the user's answers.",
+                    "codex",
+                    "luna",
+                    "high",
+                    mode="plan",
+                    existing_context=context,
+                )
+
+        self.assertTrue(result.succeeded)
+        self.assertIn("PLANNING_PROFILE_FOR_FOLLOWUP", runner.run.call_args.args[0].prompt)
 
     def test_failed_plan_does_not_report_agent_tokens(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -101,6 +161,13 @@ class OrchestratorTests(unittest.TestCase):
             repository = Path(directory)
             runner = Mock()
             runner.run.return_value = AgentResult("codex", 0, "done")
+            (repository / "worktree" / ".agents" / "profiles").mkdir(parents=True)
+            (repository / "worktree" / ".agents" / "profiles" / "coding.md").write_text(
+                "CODING_PROFILE_FOR_INITIAL", encoding="utf-8"
+            )
+            (repository / "worktree" / ".agents" / "profiles" / "integrating.md").write_text(
+                "INTEGRATING_PROFILE_FOR_RESOLVER", encoding="utf-8"
+            )
             events = []
             orchestrator = LocalOrchestrator(
                 repository,
@@ -131,6 +198,8 @@ class OrchestratorTests(unittest.TestCase):
         self.assertLess(manager.method_calls.index(stage_call), manager.method_calls.index(unmerged_call))
         manager.promote.assert_called_once()
         manager.remove_successful.assert_called_once()
+        self.assertIn("CODING_PROFILE_FOR_INITIAL", runner.run.call_args_list[0].args[0].prompt)
+        self.assertIn("INTEGRATING_PROFILE_FOR_RESOLVER", runner.run.call_args_list[1].args[0].prompt)
 
     def test_failed_resolver_preserves_worktree(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -166,11 +235,20 @@ class OrchestratorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             repository = Path(directory)
             runner = Mock()
-            runner.run.side_effect = [
-                AgentResult("codex", 0, "done", tokens_consumed=10),
-                AgentResult("codex", 0, "repaired", tokens_consumed=5),
-            ]
             context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            (context.path / ".agents" / "profiles").mkdir(parents=True)
+            profile_path = context.path / ".agents" / "profiles" / "coding.md"
+            profile_path.write_text(
+                "CODING_PROFILE_FOR_INITIAL_AND_REPAIR", encoding="utf-8"
+            )
+
+            def run_agent(request, _on_event):
+                if "CODING_PROFILE_FOR_INITIAL" in request.prompt:
+                    profile_path.write_text("CODING_PROFILE_FOR_REPAIR", encoding="utf-8")
+                    return AgentResult("codex", 0, "done", tokens_consumed=10)
+                return AgentResult("codex", 0, "repaired", tokens_consumed=5)
+
+            runner.run.side_effect = run_agent
             manager = Mock()
             manager.create.return_value = context
             manager.head.return_value = "changed"
@@ -195,6 +273,8 @@ class OrchestratorTests(unittest.TestCase):
         self.assertEqual(runner.run.call_count, 2)
         self.assertEqual(result.tokens_consumed, 15)
         self.assertTrue(any(phase == "repairing" for phase, _, _ in events))
+        self.assertIn("CODING_PROFILE_FOR_INITIAL_AND_REPAIR", runner.run.call_args_list[0].args[0].prompt)
+        self.assertIn("CODING_PROFILE_FOR_REPAIR", runner.run.call_args_list[1].args[0].prompt)
 
     def test_cancelled_agent_removes_unintegrated_worktree(self):
         with tempfile.TemporaryDirectory() as directory:

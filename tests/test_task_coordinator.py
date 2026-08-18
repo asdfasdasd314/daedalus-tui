@@ -470,6 +470,8 @@ class TaskCoordinatorTests(unittest.TestCase):
                 coding_record = coordinator.implement_plan(plan_record.task_id)
                 self.assertIsNotNone(coding_record)
                 coding_record.future.result(timeout=5)
+                self.assertTrue(plan_record.plan_implemented)
+                self.assertIsNone(coordinator.implement_plan(plan_record.task_id))
 
             self.assertEqual(coding_record.mode, "coding")
             self.assertIn("Add the JSON store", coding_record.prompt)
