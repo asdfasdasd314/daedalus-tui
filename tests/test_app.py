@@ -1055,7 +1055,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
             self.assertIn("Task branch: agent/task-2", str(app.query_one("#task-context", Static).render()))
 
-    async def test_background_events_do_not_choose_an_unselected_task(self):
+    async def test_background_progress_does_not_promote_an_unselected_task(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:
             prompt = app.query_one("#prompt-input", TextArea)
@@ -1074,6 +1074,56 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
             self.assertIsNone(app._selected_task_id)
             row_key = app._task_row_key(app._active_project_path, second.task_id)
+            self.assertNotIn(row_key, app._updated_task_rows)
+
+    async def test_background_completion_promotes_an_unselected_task(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", TextArea)
+            prompt.insert("First task")
+            app.action_submit_prompt()
+
+            app.action_new_task()
+            prompt.insert("Second task")
+            app.action_submit_prompt()
+            first = coordinator.records[0]
+            app._selected_task_id = None
+
+            coordinator.finish(first, "The task is complete.")
+            await pilot.pause()
+
+            row_key = app._task_row_key(app._active_project_path, first.task_id)
+            self.assertIn(row_key, app._updated_task_rows)
+
+    async def test_plan_questions_promote_an_unselected_task(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Make a plan")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            app._selected_task_id = None
+            record.status = "awaiting_answers"
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "Which option?",
+                    (PlanOption("a", "A"), PlanOption("b", "B")),
+                ),
+            )
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+
+            row_key = app._task_row_key(app._active_project_path, record.task_id)
+            self.assertIn(row_key, app._updated_task_rows)
+
+            app._updated_task_rows.discard(row_key)
+            record.status = "completed"
+            record.plan_questions = ()
+            record.plan_confirmed = True
+            coordinator.emit(record, "completed", "", "status")
+            await pilot.pause()
+
             self.assertIn(row_key, app._updated_task_rows)
 
 

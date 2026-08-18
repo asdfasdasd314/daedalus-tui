@@ -64,3 +64,4 @@ HACKING
 - 2026-08-17: Disabled Textual's dark active-line highlight for the Vim prompt because it remained underneath the transparent cursor cell.
 - 2026-08-17: Replaced project-focused sidebar navigation with a cross-project task update inbox, moved project selection into the task toolbar, and made task focus synchronize the active project context.
 - 2026-08-17: Validated the toolbar project at submission time so a newly selected project receives the draft even before its queued selector event is processed.
+- 2026-08-17: Limited task-update inbox promotion to completed or failed tasks and plan questions, leaving streaming progress events out of the update queue.

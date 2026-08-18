@@ -654,9 +654,9 @@ class DaedalusTuiApp(App[None]):
                 project_path == self._active_project_path
                 and self._selected_task_id == record.task_id
             )
-            if not is_selected:
+            if not is_selected and self._should_promote_task_update(record, phase):
                 self._updated_task_rows.add(row_key)
-            else:
+            elif is_selected:
                 self._updated_task_rows.discard(row_key)
             self._refresh_project_selector()
             self._refresh_task_list()
@@ -671,6 +671,14 @@ class DaedalusTuiApp(App[None]):
                 self._set_status("Error")
             except Exception as display_error:
                 log_exception("Could not show task rendering error", display_error)
+
+    @staticmethod
+    def _should_promote_task_update(record: TaskRecord, phase: str) -> bool:
+        """Promote only events that need the user's attention in the inbox."""
+        normalized_phase = phase.lower()
+        if normalized_phase in {"completed", "failed"}:
+            return True
+        return record.mode == "plan" and normalized_phase == "questions"
 
     def _coordinator_for(self, project_path: Path) -> TaskCoordinator:
         project_path = project_path.resolve()
