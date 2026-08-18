@@ -20,8 +20,17 @@
   "18": "Daedalus TUI Project Instructions",
   "19": "integrating.md",
   "20": ".__init__",
+  "21": "._shutdown_coordinators",
+  "22": "._set_status",
   "23": "update_repository",
   "24": "Daedalus TUI Coding Statistics",
   "25": "._usage_entries",
-  "26": ".provider_split"
+  "26": ".provider_split",
+  "27": "test_app.py",
+  "28": "DaedalusProject",
+  "29": "CodingStatisticsScreen",
+  "30": "._render_selected_task_safely",
+  "31": "discover_projects",
+  "32": "KeyboardShortcutsScreen",
+  "33": "PlanAnswerSelect"
 }

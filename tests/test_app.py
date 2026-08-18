@@ -95,6 +95,16 @@ class FakeCoordinator:
         self.retry_actions.append(task_id)
         return True
 
+    def answer_plan(self, task_id, answers):
+        record = self.get(task_id)
+        if record is None:
+            return False
+        record.plan_answers.update(answers)
+        record.status = "queued"
+        record.phase = "Queued (reviewing answers)"
+        self.emit(record, "queued", "Plan answers queued for agent confirmation.", "status")
+        return True
+
 
 def settings():
     return TuiSettings(
@@ -699,6 +709,40 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(answer.query_one("#label"))
             self.assertIsNone(app._exception)
 
+    async def test_submitting_plan_answers_keeps_mounted_selectors_in_place(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Choose a storage layer")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = "Use the selected storage layer."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "Which storage layer?",
+                    (PlanOption("a", "SQLite"), PlanOption("b", "JSON")),
+                ),
+            )
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+            await pilot.pause()
+
+            answer = app.query_one("#plan-question-0", Select)
+            answer.value = "b"
+            await pilot.pause()
+            with patch.object(app, "run_worker") as run_worker:
+                app._answer_plan()
+                await pilot.pause()
+
+            self.assertEqual(record.status, "queued")
+            self.assertEqual(record.plan_answers, {"q1": "b"})
+            self.assertIs(app.query_one("#plan-question-0", Select), answer)
+            run_worker.assert_not_called()
+            self.assertIsNone(app._exception)
+
     async def test_plan_answer_mount_suppresses_textual_select_default_handler(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:
@@ -817,14 +861,14 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNone(app._exception)
 
-    def test_process_exit_fallback_stops_coordinator_when_unmount_is_skipped(self):
+    def test_run_loop_fallback_stops_coordinator_when_unmount_is_skipped(self):
         app, coordinator = self.make_app()
 
-        self.assertTrue(app._shutdown_coordinators("test process exit"))
+        app.shutdown_after_run()
         self.assertFalse(app._accept_task_events)
         self.assertIsNone(coordinator.callback)
-        # The guard is idempotent because both Textual and Python atexit may
-        # observe the same shutdown.
+        # The guard is idempotent because multiple lifecycle paths can observe
+        # the same shutdown.
         self.assertTrue(app._shutdown_coordinators("repeat process exit"))
 
     async def test_task_render_failure_is_logged_without_exiting_the_app(self):

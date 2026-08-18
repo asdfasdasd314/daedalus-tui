@@ -198,6 +198,7 @@ class TaskCoordinator:
             record.plan_error = None
             self._persist_task(record)
             record.future = self.executor.submit(self._run, record)
+            LOGGER.info("Plan answers queued task=%s answer_ids=%s", record.task_id, sorted(valid_answers))
         self._notify(record, "queued", "Plan answers queued for agent confirmation.", "status")
         return True
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import atexit
 import asyncio
 from pathlib import Path
 import threading
@@ -28,6 +27,46 @@ from .task_coordinator import TaskCoordinator, TaskRecord
 from .transcript import TranscriptLog
 from .token_usage import calculate_token_usage, merge_usage_entries, task_usage_entry, usage_entries_from_memory
 from .vim_text_area import DaedalusVimTextArea
+
+
+_THREAD_EXIT_APPS: dict[int, "DaedalusTuiApp"] = {}
+_THREAD_EXIT_APPS_LOCK = threading.Lock()
+_THREAD_EXIT_HOOK_REGISTERED = False
+
+
+def _shutdown_apps_before_thread_join() -> None:
+    """Cancel active agents before ThreadPoolExecutor joins its workers.
+
+    CPython executes ``threading._register_atexit`` callbacks before the
+    executor's own thread join. Ordinary ``atexit`` callbacks are too late:
+    the executor is already waiting for an agent process by then.
+    """
+    with _THREAD_EXIT_APPS_LOCK:
+        apps = tuple(_THREAD_EXIT_APPS.values())
+    for app in apps:
+        try:
+            app._shutdown_before_thread_join()
+        except BaseException as error:
+            log_exception("Pre-thread-shutdown coordinator cleanup failed", error)
+
+
+def _register_app_for_thread_exit(app: "DaedalusTuiApp") -> None:
+    global _THREAD_EXIT_HOOK_REGISTERED
+    with _THREAD_EXIT_APPS_LOCK:
+        _THREAD_EXIT_APPS[id(app)] = app
+        if _THREAD_EXIT_HOOK_REGISTERED:
+            return
+        register = getattr(threading, "_register_atexit", None)
+        if not callable(register):
+            LOGGER.warning("Python does not provide a pre-thread-shutdown hook.")
+            return
+        register(_shutdown_apps_before_thread_join)
+        _THREAD_EXIT_HOOK_REGISTERED = True
+
+
+def _unregister_app_for_thread_exit(app: "DaedalusTuiApp") -> None:
+    with _THREAD_EXIT_APPS_LOCK:
+        _THREAD_EXIT_APPS.pop(id(app), None)
 
 
 GLOBAL_SHORTCUTS = (
@@ -250,8 +289,9 @@ class DaedalusTuiApp(App[None]):
         self._accept_task_events = False
         self._shutdown_lock = threading.Lock()
         self._shutdown_started = False
-        self._atexit_registered = False
+        self._textual_unmounted = False
         self._previous_asyncio_exception_handler = None
+        self._rendered_plan_question_signature: tuple[object, ...] | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -362,6 +402,8 @@ class DaedalusTuiApp(App[None]):
             event.stop()
 
     def on_unmount(self) -> None:
+        self._textual_unmounted = True
+        _unregister_app_for_thread_exit(self)
         shutdown_complete = self._shutdown_coordinators("Textual app unmount")
         if shutdown_complete:
             close_fault_handler(self._fault_log_file)
@@ -380,18 +422,13 @@ class DaedalusTuiApp(App[None]):
 
     def _install_exit_diagnostics(self) -> None:
         """Cover terminal and event-loop exits that bypass Textual unmount."""
-        if not self._atexit_registered:
-            atexit.register(self._shutdown_at_process_exit)
-            self._atexit_registered = True
+        _register_app_for_thread_exit(self)
         loop = asyncio.get_running_loop()
         self._previous_asyncio_exception_handler = loop.get_exception_handler()
         loop.set_exception_handler(self._log_asyncio_exception)
-        LOGGER.info("Installed process-exit and asyncio diagnostics for Textual lifecycle.")
+        LOGGER.info("Installed pre-thread-shutdown and asyncio diagnostics for Textual lifecycle.")
 
     def _remove_exit_diagnostics(self) -> None:
-        if self._atexit_registered:
-            atexit.unregister(self._shutdown_at_process_exit)
-            self._atexit_registered = False
         try:
             asyncio.get_running_loop().set_exception_handler(self._previous_asyncio_exception_handler)
         except RuntimeError:
@@ -409,10 +446,19 @@ class DaedalusTuiApp(App[None]):
         else:
             loop.default_exception_handler(context)
 
-    def _shutdown_at_process_exit(self) -> None:
-        """Run before ThreadPoolExecutor's own atexit join can hang Python."""
+    def _shutdown_before_thread_join(self) -> None:
+        """Run before ThreadPoolExecutor's internal interpreter-exit join."""
+        if self._textual_unmounted:
+            return
         LOGGER.error("Python is exiting while the Textual unmount hook was not observed.")
-        self._shutdown_coordinators("Python process exit")
+        self._shutdown_coordinators("Python pre-thread shutdown")
+
+    def shutdown_after_run(self) -> None:
+        """Clean up if Textual's run loop returns without its unmount hook."""
+        if self._textual_unmounted:
+            return
+        LOGGER.error("Textual run loop returned without the unmount hook.")
+        self._shutdown_coordinators("Textual run loop returned")
 
     def _shutdown_coordinators(self, reason: str) -> bool:
         """Idempotently detach task callbacks and request child-process shutdown."""
@@ -810,6 +856,7 @@ class DaedalusTuiApp(App[None]):
         output = self.query_one("#output", TranscriptLog)
         output.clear()
         if record is None:
+            self._rendered_plan_question_signature = None
             self._set_prompt_text("", editable=True)
             self.query_one("#output", TranscriptLog).styles.display = "block"
             self.query_one("#task-context", Static).update("Task branch: —    Worktree: —")
@@ -836,6 +883,7 @@ class DaedalusTuiApp(App[None]):
         if record.mode == "plan":
             self._render_plan_review(record, plan_review_generation)
         else:
+            self._rendered_plan_question_signature = None
             for index, message in enumerate(record.messages):
                 output.write_message(
                     message,
@@ -878,10 +926,21 @@ class DaedalusTuiApp(App[None]):
         plan_display.update(record.plan_text or "Waiting for the agent to return a structured plan.")
         questions = tuple(record.plan_questions)
         answers = dict(record.plan_answers)
+        question_signature = (
+            record.task_id,
+            tuple(
+                (
+                    question.question_id,
+                    question.text,
+                    tuple((option.option_id, option.label) for option in question.options),
+                )
+                for question in questions
+            ),
+        )
 
         async def rebuild_questions() -> None:
             try:
-                await self._rebuild_plan_questions(record, questions, answers, generation)
+                await self._rebuild_plan_questions(record, questions, answers, generation, question_signature)
             except asyncio.CancelledError:
                 raise
             except Exception as error:
@@ -891,12 +950,13 @@ class DaedalusTuiApp(App[None]):
                     self._set_error(f"Plan review could not be rendered: {error}")
                     self._set_status("Error")
 
-        self.run_worker(
-            rebuild_questions,
-            exclusive=True,
-            group="plan-questions",
-            exit_on_error=False,
-        )
+        if self._rendered_plan_question_signature != question_signature:
+            self.run_worker(
+                rebuild_questions,
+                exclusive=True,
+                group="plan-questions",
+                exit_on_error=False,
+            )
         answer_button = self.query_one("#answer-plan-button", Button)
         # The button stays disabled until the asynchronous controls have been
         # mounted, so a fast click cannot query widgets that do not exist yet.
@@ -935,6 +995,7 @@ class DaedalusTuiApp(App[None]):
         questions: tuple[PlanQuestion, ...],
         answers: dict[str, str],
         generation: int,
+        question_signature: tuple[object, ...],
     ) -> None:
         """Replace question controls after Textual has completed child removal."""
         if not self._is_current_plan_review(record, generation):
@@ -961,6 +1022,7 @@ class DaedalusTuiApp(App[None]):
                 )
             await question_container.mount(*widgets)
         if self._is_current_plan_review(record, generation):
+            self._rendered_plan_question_signature = question_signature
             self._update_plan_action_buttons()
 
     def _is_current_plan_review(self, record: TaskRecord, generation: int) -> bool:
@@ -982,6 +1044,7 @@ class DaedalusTuiApp(App[None]):
         if len(answers) != len(record.plan_questions):
             self._set_status("Answer every question first")
             return
+        LOGGER.info("Submitting plan answers task=%s answer_ids=%s", record.task_id, sorted(answers))
         answer_plan = getattr(self.coordinator, "answer_plan", None)
         if answer_plan is None or not answer_plan(record.task_id, answers):
             self._set_status("Plan answers could not be submitted")
