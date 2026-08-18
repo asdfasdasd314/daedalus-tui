@@ -11,6 +11,37 @@ class PromptTests(unittest.TestCase):
         self.assertIn("Do not run git add, git commit, git merge, git push, or switch branches", prompt)
         self.assertIn("Do not run graphify", prompt)
 
+    def test_task_prompt_embeds_profile_after_user_prompt_and_before_constraints(self):
+        profile = "CODING_PROFILE_SENTINEL\nUse the repository's feature files."
+
+        prompt = build_task_prompt("Build the feature", profile_text=profile)
+
+        self.assertIn(profile, prompt)
+        self.assertIn("BEGIN_DAEDALUS_PROFILE", prompt)
+        self.assertIn("Apply it directly; do not open the profile file merely to read it again", prompt)
+        self.assertLess(prompt.index(profile), prompt.index("Make the requested file changes"))
+        self.assertLess(prompt.index("Make the requested file changes"), prompt.index("Do not run graphify"))
+
+    def test_plan_repair_and_resolver_prompts_embed_distinct_profiles(self):
+        prompts = (
+            build_task_prompt("Plan the feature", "plan", profile_text="PLANNING_PROFILE_SENTINEL"),
+            build_repair_prompt("Original", "Failure", 1, 3, profile_text="REPAIR_PROFILE_SENTINEL"),
+            build_resolver_prompt("Original", "Failure", 1, 3, profile_text="RESOLVER_PROFILE_SENTINEL"),
+        )
+
+        for prompt, profile in zip(
+            prompts,
+            ("PLANNING_PROFILE_SENTINEL", "REPAIR_PROFILE_SENTINEL", "RESOLVER_PROFILE_SENTINEL"),
+        ):
+            self.assertIn(profile, prompt)
+            self.assertLess(prompt.index(profile), prompt.index("Do not run git add"))
+
+    def test_missing_profile_preserves_prompt_without_a_file_pointer(self):
+        prompt = build_task_prompt("Build the feature", profile_text=None)
+
+        self.assertNotIn("BEGIN_DAEDALUS_PROFILE", prompt)
+        self.assertNotIn(".agents/profiles", prompt)
+
     def test_repair_and_resolver_prompts_forbid_agent_git_operations(self):
         for prompt in (
             build_repair_prompt("Original", "Failure", 1, 3),

@@ -8,6 +8,7 @@ def build_task_prompt(
     mode: str = "coding",
     resume_notes: Sequence[str] = (),
     resumed: bool = False,
+    profile_text: str | None = None,
 ) -> str:
     if mode == "ask":
         instructions = (
@@ -33,9 +34,11 @@ def build_task_prompt(
         instructions = "Make the requested file changes and leave them in the worktree."
     else:
         raise ValueError(f"Unsupported task mode: {mode}")
+    embedded_profile = _embedded_profile(profile_text)
+    profile_prefix = f"\n\n{embedded_profile}" if embedded_profile else ""
     task_prompt = (
         f"TASK_MODE: {mode}\n\n"
-        f"{prompt}\n\n"
+        f"{prompt}{profile_prefix}\n\n"
         f"{instructions} Work only in this Git worktree. "
         "Do not run git add, git commit, git merge, git push, or switch branches. "
         "Do not run graphify, `graphify update`, or any graph refresh. "
@@ -56,9 +59,16 @@ def build_task_prompt(
     return f"{task_prompt}\n\n{continuation}"
 
 
-def build_repair_prompt(original: str, failure: str, attempt: int, limit: int) -> str:
+def build_repair_prompt(
+    original: str,
+    failure: str,
+    attempt: int,
+    limit: int,
+    profile_text: str | None = None,
+) -> str:
     return (
         "TASK_MODE: coding\n\n"
+        f"{_embedded_profile(profile_text)}"
         "Repair the failing verification suite in this existing isolated Git worktree. "
         "Preserve the original task intent and make the smallest compatible fix. "
         "Do not run git add, git commit, git merge, git push, or switch branches. "
@@ -70,9 +80,16 @@ def build_repair_prompt(original: str, failure: str, attempt: int, limit: int) -
     )
 
 
-def build_resolver_prompt(original: str, failure: str, attempt: int, limit: int) -> str:
+def build_resolver_prompt(
+    original: str,
+    failure: str,
+    attempt: int,
+    limit: int,
+    profile_text: str | None = None,
+) -> str:
     return (
         "TASK_MODE: integrating\n\n"
+        f"{_embedded_profile(profile_text)}"
         "Resolve the current integration failure in this existing Git worktree. "
         "Preserve the task intent, resolve conflicts or repair the failing checks, and run relevant checks. "
         "Do not run git add, git commit, git merge, git push, or switch branches. "
@@ -81,4 +98,18 @@ def build_resolver_prompt(original: str, failure: str, attempt: int, limit: int)
         f"Task goal:\n{original}\n\n"
         f"Resolver attempt: {attempt}/{limit}\n\n"
         f"Failure details:\n{failure}"
+    )
+
+
+def _embedded_profile(profile_text: str | None) -> str:
+    if profile_text is None:
+        return ""
+    return (
+        "BEGIN_DAEDALUS_PROFILE\n"
+        "The following profile is authoritative and has already been supplied inline. "
+        "Apply it directly; do not open the profile file merely to read it again.\n"
+        "--- PROFILE CONTENT START ---\n"
+        f"{profile_text}\n"
+        "--- PROFILE CONTENT END ---\n"
+        "END_DAEDALUS_PROFILE\n"
     )
