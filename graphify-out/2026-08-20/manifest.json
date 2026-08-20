@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "tests/test_app.py": {
-    "mtime": 1787247231.7680821,
-    "ast_hash": "f5d046a51dec784b8369b0e281b9f771",
+    "mtime": 1787017865.8905354,
+    "ast_hash": "8bf83530a077057edd7af434af5f30b1",
     "semantic_hash": ""
   },
   "tests/test_config.py": {
@@ -50,8 +50,8 @@
     "semantic_hash": ""
   },
   "tests/test_task_coordinator.py": {
-    "mtime": 1787247231.7692676,
-    "ast_hash": "7ab33483a3726d53954b74a4f2bb73b0",
+    "mtime": 1787017529.3684628,
+    "ast_hash": "0e758c968050e4f5892b7ac354dc0449",
     "semantic_hash": ""
   },
   "tests/test_verification.py": {
@@ -75,8 +75,8 @@
     "semantic_hash": ""
   },
   "tui/app.py": {
-    "mtime": 1787247231.7700157,
-    "ast_hash": "1cb2a586ce8047de772c5a3e169bd8d1",
+    "mtime": 1787017865.893377,
+    "ast_hash": "03844916e08fa1bc4c885b0b77d7db72",
     "semantic_hash": ""
   },
   "tui/clipboard.py": {
@@ -120,8 +120,8 @@
     "semantic_hash": ""
   },
   "tui/task_coordinator.py": {
-    "mtime": 1787247231.7715452,
-    "ast_hash": "477784248e2ed673fe08df1098f9d8f8",
+    "mtime": 1787017529.3701715,
+    "ast_hash": "a2f63cc107b4c4da22771c16098b8d00",
     "semantic_hash": ""
   },
   "tui/verification.py": {
@@ -145,8 +145,8 @@
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui.md": {
-    "mtime": 1787247231.7675724,
-    "ast_hash": "215c0cd1664d048551d0666e2dc876ff",
+    "mtime": 1787017529.367085,
+    "ast_hash": "74cf848866f4467f95c04655160e7bba",
     "semantic_hash": ""
   },
   "requirements.txt": {
@@ -220,13 +220,13 @@
     "semantic_hash": ""
   },
   "tests/test_plan.py": {
-    "mtime": 1787247231.768781,
-    "ast_hash": "0cb460a635f005558fb378958711fd97",
+    "mtime": 1787011633.9852622,
+    "ast_hash": "5b6b47a4b7c65f68c0dde05614e32292",
     "semantic_hash": ""
   },
   "tui/plan.py": {
-    "mtime": 1787247231.7710974,
-    "ast_hash": "f99295632c8501546e176f9b14f8a31f",
+    "mtime": 1787011678.2462914,
+    "ast_hash": "41406f46cf1be09d17723bb0a92ede7a",
     "semantic_hash": ""
   },
   "tui/debug_log.py": {

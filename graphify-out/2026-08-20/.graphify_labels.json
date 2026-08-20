@@ -24,8 +24,16 @@
   "22": "._set_status",
   "23": "update_repository",
   "24": "Daedalus TUI Coding Statistics",
+  "25": "._usage_entries",
   "26": ".provider_split",
   "27": "CodingStatisticsScreen",
+  "28": "KeyboardShortcutsScreen",
+  "29": "PlanAnswerSelect",
   "30": "calculate_token_usage",
-  "33": "CodingStatisticsScreen"
+  "31": "log_exception",
+  "32": "test_app.py",
+  "33": "CodingStatisticsScreen",
+  "34": "PlanAnswerSelect",
+  "35": "discover_projects",
+  "36": "._render_line_strip"
 }
