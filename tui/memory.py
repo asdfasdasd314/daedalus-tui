@@ -91,6 +91,11 @@ class TaskMemoryStore:
         tokens: int | None = 0,
         project: Path | None = None,
         prompt_history: list[str] | tuple[str, ...] = (),
+        logical_task_id: str | None = None,
+        branch_name: str | None = None,
+        worktree_path: Path | None = None,
+        base_commit: str | None = None,
+        submission_sequence: int | None = None,
     ) -> None:
         """Upsert a task snapshot keyed by the task worktree's directory name."""
         task = {
@@ -112,6 +117,16 @@ class TaskMemoryStore:
         }
         if len(prompt_history) > 1:
             task["prompt_history"] = list(prompt_history)
+        if logical_task_id is not None:
+            task["task_id"] = logical_task_id
+        if branch_name is not None:
+            task["branch_name"] = branch_name
+        if worktree_path is not None:
+            task["worktree_path"] = str(worktree_path.expanduser().resolve())
+        if base_commit is not None:
+            task["base_commit"] = base_commit
+        if submission_sequence is not None:
+            task["submission_sequence"] = int(submission_sequence)
         with self._lock:
             entries = self._read_entries()
             updated_entries: list[dict[str, object]] = []

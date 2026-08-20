@@ -11,6 +11,7 @@ from .agent_runner import AgentControl, AgentRequest, AgentResult, AgentRunner
 from .debug_log import LOGGER, log_exception
 from .graphify import update_repository
 from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
+from .project_config import load_project_worktree_settings
 from .prompts import build_repair_prompt, build_resolver_prompt, build_task_prompt
 from .verification import discover_commands, run_verification
 
@@ -97,6 +98,7 @@ class LocalOrchestrator:
             self.settings.worktree_root,
         )
         try:
+            project_worktree_settings = load_project_worktree_settings(self.repository)
             self.emit("worktree", "Validating the primary Git worktree.")
             if context is None:
                 context = manager.create(task_id)
@@ -104,6 +106,7 @@ class LocalOrchestrator:
             else:
                 manager.validate_primary()
                 self.emit("worktree", f"Resuming {context.branch_name} at {context.path}.")
+            manager.provision_worktree(context, project_worktree_settings)
             self._raise_if_stopped(control)
 
             selection = (provider, model, reasoning)

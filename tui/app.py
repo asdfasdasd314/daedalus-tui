@@ -42,7 +42,7 @@ _THREAD_EXIT_HOOK_REGISTERED = False
 
 
 def _shutdown_apps_before_thread_join() -> None:
-    """Cancel active agents before ThreadPoolExecutor joins its workers.
+    """Pause active agents before ThreadPoolExecutor joins its workers.
 
     CPython executes ``threading._register_atexit`` callbacks before the
     executor's own thread join. Ordinary ``atexit`` callbacks are too late:

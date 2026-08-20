@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 
+from .project_config import ProjectWorktreeSettings
+
 
 class GitWorktreeError(RuntimeError):
     pass
@@ -34,6 +36,34 @@ class GitWorktreeManager:
         path.parent.mkdir(parents=True, exist_ok=True)
         self.run_git(["worktree", "add", "-b", branch_name, str(path), base_commit])
         return WorktreeContext(self.repository, task_id, base_commit, branch_name, path)
+
+    def provision_worktree(self, context: WorktreeContext, settings: ProjectWorktreeSettings) -> None:
+        """Install project resources and link declared shared read-only paths."""
+        if settings.install_command:
+            process = subprocess.run(
+                list(settings.install_command),
+                cwd=context.path,
+                capture_output=True,
+                text=True,
+            )
+            if process.returncode != 0:
+                raise GitWorktreeError(
+                    self.format_failure(list(settings.install_command), process)
+                )
+
+        for relative_path in settings.readonly_paths:
+            source = self.repository / relative_path
+            target = context.path / relative_path
+            if not source.exists():
+                raise GitWorktreeError(
+                    f"Configured read-only path is missing from the primary worktree: {source}"
+                )
+            if target.exists() or target.is_symlink():
+                raise GitWorktreeError(
+                    f"Cannot link configured read-only path because the worktree destination exists: {target}"
+                )
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.symlink_to(source, target_is_directory=source.is_dir())
 
     def commit_changes(self, directory: Path, message: str) -> bool:
         if not self.git_output(["status", "--porcelain"], directory):

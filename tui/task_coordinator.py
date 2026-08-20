@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import Condition, Lock
 import time
@@ -42,6 +43,65 @@ TASK_STATUSES = (
     "cancelled",
     "awaiting_answers",
 )
+INTERRUPTIBLE_STATUSES = {
+    "queued",
+    "planning",
+    "running",
+    "verifying",
+    "ready",
+    "integrating",
+    "resolving",
+}
+
+
+def _string_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str)]
+
+
+def _nonnegative_int(value: object) -> int:
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _snapshot_timestamp(value: object) -> float:
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            pass
+    return time.time()
+
+
+def _snapshot_path(value: object) -> Path | None:
+    if not isinstance(value, str) or not value:
+        return None
+    return Path(value).expanduser().resolve()
+
+
+def _snapshot_sequence(snapshot: dict[str, object], task_id: str) -> int:
+    sequence = snapshot.get("submission_sequence")
+    if isinstance(sequence, int) and sequence > 0:
+        return sequence
+    prefix = task_id.split("-", 1)[0]
+    try:
+        return max(1, int(prefix))
+    except ValueError:
+        return 1
+
+
+def _phase_for_status(status: str) -> str:
+    return {
+        "awaiting_answers": "Questions",
+        "completed": "Completed",
+        "failed": "Failed",
+        "paused": "Paused",
+        "cancelled": "Cancelled",
+        "questioning": "Questioning",
+    }.get(status, status.replace("_", " ").capitalize())
 
 
 @dataclass
@@ -149,6 +209,7 @@ class TaskCoordinator:
         self._tasks: dict[str, TaskRecord] = {}
         self._closed = False
         self.memory = TaskMemoryStore(memory_path or self.repository / DEFAULT_MEMORY_FILE)
+        self._restore_tasks()
 
     def set_event_callback(self, callback: TaskEventCallback | None) -> None:
         self.on_event = callback
@@ -269,17 +330,13 @@ class TaskCoordinator:
             self._closed = True
             self.integration.shutdown()
             for record in self._tasks.values():
-                if record.status in {
-                    "queued",
-                    "planning",
-                    "running",
-                    "verifying",
-                    "ready",
-                    "integrating",
-                    "resolving",
-                }:
-                    record.control.request_cancel()
-                    LOGGER.info("Shutdown requested task=%s status=%s", record.task_id, record.status)
+                if record.status in INTERRUPTIBLE_STATUSES:
+                    record.status = "paused"
+                    record.phase = "Paused"
+                    record.error = "Daedalus was closed while this task was active; resume to continue."
+                    self._persist_task(record)
+                    record.control.request_pause()
+                    LOGGER.info("Shutdown paused task=%s status=%s", record.task_id, record.status)
         # Do not hold Textual's unmount path indefinitely. Active agent process
         # groups receive cancellation above and the executor will finish as they
         # return; any survivor is recorded for inspection in the debug log.
@@ -689,12 +746,91 @@ class TaskCoordinator:
                 tokens=record.tokens_consumed,
                 project=self.repository,
                 prompt_history=tuple(record.prompt_history or (record.prompt,)),
+                branch_name=record.context.branch_name if record.context is not None else None,
+                worktree_path=record.context.path if record.context is not None else None,
+                base_commit=record.context.base_commit if record.context is not None else None,
             )
         except (OSError, ValueError) as error:
             # Persistent task history must never change orchestration behavior.
             LOGGER.warning("Could not persist task task=%s error=%s", record.task_id, error)
             return
         record.memory_task_id = task_id
+
+    def _restore_tasks(self) -> None:
+        """Rehydrate this project's persisted tasks after a TUI restart."""
+        try:
+            snapshots = self.memory.get_tasks()
+        except (OSError, ValueError) as error:
+            LOGGER.warning("Could not restore persisted tasks for project=%s error=%s", self.repository, error)
+            return
+
+        maximum_sequence = 0
+        for memory_task_id, snapshot in snapshots.items():
+            if snapshot.get("project") != str(self.repository):
+                continue
+            prompt = snapshot.get("prompt")
+            if not isinstance(prompt, str) or not prompt:
+                continue
+            task_id = snapshot.get("task_id")
+            if not isinstance(task_id, str) or not task_id:
+                task_id = memory_task_id.removeprefix("task-")
+            sequence = _snapshot_sequence(snapshot, task_id)
+            maximum_sequence = max(maximum_sequence, sequence)
+            state = snapshot.get("state")
+            if state not in TASK_STATUSES:
+                continue
+            status = str(state)
+            error = snapshot.get("error") if isinstance(snapshot.get("error"), str) else None
+            if status in INTERRUPTIBLE_STATUSES:
+                status = "paused"
+                error = error or "Daedalus was closed while this task was active; resume to continue."
+            branch_name = snapshot.get("branch_name")
+            if not isinstance(branch_name, str) or not branch_name:
+                branch_name = f"agent/task-{task_id}"
+            worktree_path = _snapshot_path(snapshot.get("worktree_path"))
+            if worktree_path is None:
+                candidate = (
+                    self.repository.parent
+                    / self.settings.worktree_root
+                    / self.repository.name
+                    / f"task-{task_id}"
+                )
+                if candidate.exists():
+                    worktree_path = candidate
+            base_commit = snapshot.get("base_commit")
+            if not isinstance(base_commit, str):
+                base_commit = ""
+            context = None
+            if worktree_path is not None and worktree_path.exists():
+                context = WorktreeContext(
+                    self.repository,
+                    task_id,
+                    base_commit,
+                    branch_name,
+                    worktree_path,
+                )
+            record = TaskRecord(
+                task_id=task_id,
+                submission_sequence=sequence,
+                prompt=prompt,
+                provider=str(snapshot.get("provider") or "codex"),
+                model=str(snapshot.get("model") or ""),
+                reasoning=str(snapshot.get("reasoning") or ""),
+                mode=str(snapshot.get("mode") or "coding"),
+                status=status,
+                phase=_phase_for_status(status),
+                branch_name=branch_name,
+                worktree_path=worktree_path,
+                messages=_string_list(snapshot.get("outputs")),
+                error=error,
+                tokens_consumed=_nonnegative_int(snapshot.get("tokens")),
+                submitted_at=_snapshot_timestamp(snapshot.get("timestamp")),
+                context=context,
+                memory_task_id=memory_task_id,
+                prompt_history=_string_list(snapshot.get("prompt_history")) or [prompt],
+            )
+            self._tasks[task_id] = record
+        self._next_sequence = max(self._next_sequence, maximum_sequence + 1)
 
     def _notify(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         if self.on_event is not None:

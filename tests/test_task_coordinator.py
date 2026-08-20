@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from tui.orchestrator import OrchestrationResult, OrchestrationSettings
 from tui.git_worktree import WorktreeContext
+from tui.memory import TaskMemoryStore
 from tui.plan import PlanOption, PlanQuestion, encode_custom_answer
 from tui.task_coordinator import TASK_STATUSES, IntegrationCoordinator, TaskCoordinator, TaskRecord
 
@@ -151,8 +152,8 @@ class TaskCoordinatorTests(unittest.TestCase):
         thread_one.join(timeout=2)
         self.assertEqual(order, [2, 1])
 
-    def test_shutdown_cancels_an_active_worker_without_waiting_indefinitely(self):
-        class CancellableOrchestrator:
+    def test_shutdown_pauses_an_active_worker_without_waiting_indefinitely(self):
+        class PausableOrchestrator:
             started = threading.Event()
 
             def __init__(self, *_args, **_kwargs):
@@ -160,8 +161,8 @@ class TaskCoordinatorTests(unittest.TestCase):
 
             def run(self, _prompt, _provider, _model, _reasoning, task_id=None, control=None, **_kwargs):
                 type(self).started.set()
-                control.cancel_requested.wait(timeout=1)
-                return OrchestrationResult(False, task_id, cancelled=True)
+                control.pause_requested.wait(timeout=1)
+                return OrchestrationResult(False, task_id, paused=True)
 
         with tempfile.TemporaryDirectory() as directory:
             coordinator = TaskCoordinator(
@@ -169,12 +170,13 @@ class TaskCoordinatorTests(unittest.TestCase):
                 object(),
                 OrchestrationSettings(max_concurrent_tasks=1, shutdown_grace_seconds=0.5),
             )
-            with patch("tui.task_coordinator.LocalOrchestrator", CancellableOrchestrator):
+            with patch("tui.task_coordinator.LocalOrchestrator", PausableOrchestrator):
                 record = coordinator.submit("stop", "codex", "luna", "medium")
-                self.assertTrue(CancellableOrchestrator.started.wait(timeout=1))
+                self.assertTrue(PausableOrchestrator.started.wait(timeout=1))
                 self.assertTrue(coordinator.shutdown())
 
             self.assertTrue(record.future.done())
+            self.assertEqual(record.status, "paused")
 
     def test_failed_task_does_not_block_later_task(self):
         class FailingOrchestrator(FakeOrchestrator):
@@ -252,6 +254,76 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertEqual(succeeded_task["project"], str(Path(directory).resolve()))
             self.assertEqual(failed_task["tokens"], 0)
             self.assertEqual(failed_task["project"], str(Path(directory).resolve()))
+
+    def test_rehydrates_failed_and_interrupted_tasks_with_worktree_context(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "project"
+            worktree = root / ".daedalus-worktrees" / "project" / "task-003-rehydrated"
+            project.mkdir()
+            worktree.mkdir(parents=True)
+            memory_path = root / ".daedalus-memory.json"
+            memory = TaskMemoryStore(memory_path)
+            memory.record_task(
+                "task-003-rehydrated",
+                "Recover the task",
+                "codex",
+                "luna",
+                "medium",
+                "coding",
+                "failed",
+                ["The implementation was written."],
+                "Verification failed.",
+                project=project,
+                branch_name="agent/task-003-rehydrated",
+                worktree_path=worktree,
+                base_commit="base",
+            )
+            memory.record_task(
+                "task-004-running",
+                "Keep the task",
+                "codex",
+                "luna",
+                "medium",
+                "coding",
+                "running",
+                project=project,
+                branch_name="agent/task-004-running",
+                worktree_path=worktree.parent / "task-004-running",
+                base_commit="base",
+            )
+            (worktree.parent / "task-004-running").mkdir()
+            legacy_worktree = worktree.parent / "task-005-legacy"
+            legacy_worktree.mkdir()
+            memory.record_task(
+                "task-005-legacy",
+                "Recover an older snapshot",
+                "codex",
+                "luna",
+                "medium",
+                "coding",
+                "failed",
+                project=project,
+            )
+
+            coordinator = TaskCoordinator(project, object(), OrchestrationSettings(), memory_path=memory_path)
+            failed = coordinator.get("003-rehydrated")
+            interrupted = coordinator.get("004-running")
+
+            self.assertIsNotNone(failed)
+            self.assertEqual(failed.status, "failed")
+            self.assertIsNotNone(failed.context)
+            self.assertEqual(failed.context.branch_name, "agent/task-003-rehydrated")
+            self.assertEqual(failed.messages, ["The implementation was written."])
+            self.assertIsNotNone(interrupted)
+            self.assertEqual(interrupted.status, "paused")
+            self.assertIn("resume", interrupted.error.lower())
+            self.assertIsNotNone(interrupted.context)
+            legacy = coordinator.get("005-legacy")
+            self.assertIsNotNone(legacy)
+            self.assertIsNotNone(legacy.context)
+            self.assertEqual(legacy.context.branch_name, "agent/task-005-legacy")
+            coordinator.shutdown()
 
     def test_failed_agent_can_be_retried_with_the_same_request(self):
         class RetryOrchestrator:

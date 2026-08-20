@@ -44,12 +44,29 @@ commits `graphify-out` when the target repository has graphify configured;
 graph refresh failures are reported as warnings and never trigger resolver
 attempts.
 
+Target projects may add an optional `.daedalus` TOML file to prepare each task
+worktree before the agent starts. The `[worktree]` table accepts one argv-style
+`install_command` and repository-relative `readonly_paths`; the command runs in
+the task worktree, then each declared path is symlinked from the primary
+worktree. For example:
+
+```toml
+[worktree]
+install_command = ["npm", "ci"]
+readonly_paths = ["food-data"]
+```
+
+Symlinked paths are shared local resources and are not OS-enforced read-only;
+agents and setup commands must treat them as immutable.
+
 The launch root stores task history in `.daedalus-memory.json`. Its `tasks`
 entry maps each task worktree directory name to the submission timestamp,
 prompt, provider/model/reasoning/mode selection, current state, assistant
 outputs, token usage, resolved project path, and any error so failed, paused,
-and cancelled work can be reopened for analysis. The memory file also keeps a
-single `last_opened_project` entry.
+and cancelled work can be reopened for analysis. Failed tasks and tasks
+interrupted by a TUI restart are rehydrated into the task inbox; failed tasks
+can be retried and interrupted tasks can be resumed when their worktrees still
+exist. The memory file also keeps a single `last_opened_project` entry.
 Plan tasks with submitted answers additionally retain generated review requests
 in an optional `prompt_history` list on the same worktree record.
 Runtime diagnostics are written to `.daedalus-debug.log` next to that memory

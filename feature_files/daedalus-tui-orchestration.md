@@ -5,6 +5,8 @@ The standalone TUI orchestration layer creates isolated Git worktrees, runs a se
 
 ## Key Points
 - **Worktree isolation**: Each task receives an `agent/task-<id>` branch and a sibling `.daedalus-worktrees` directory.
+- **Project worktree provisioning**: An optional target-project `.daedalus` file can run one install command inside each task worktree and symlink declared repository-relative shared paths from the primary checkout.
+- **Restart recovery**: Persisted failed tasks are restored with Retry available, while tasks active during shutdown are restored as paused tasks with their existing worktree context.
 - **Verification repair**: Failed task checks launch repair attempts in the same worktree up to the configured limit.
 - **Resolver fallback**: Merge conflicts and post-merge verification failures launch the selected provider as a resolver with the latest failure details.
 - **Safe promotion**: The primary branch must remain clean, checked out, and unchanged before fast-forward promotion; failed worktrees remain available for inspection.
@@ -21,6 +23,8 @@ The standalone TUI orchestration layer creates isolated Git worktrees, runs a se
 - `tui/orchestrator.py`: Single-task lifecycle, verification repair, integration, and resolver loops.
 - `tui/task_coordinator.py`: Concurrent task records, executor limit, and serialized integration gate.
 - `tui/git_worktree.py`: Git validation, worktree, branch, merge, and cleanup operations.
+- `tui/project_config.py`: Target-project `.daedalus` worktree provisioning settings.
+- `tui/memory.py`: Atomic task snapshots, worktree identity, and restart metadata.
 - `tui/verification.py`: Configured and convention-based verification execution.
 - `parameter_files/daedalus-tui-orchestration.toml`: Local branch, worktree, verification, and retry settings.
 
@@ -47,3 +51,5 @@ HACKING
 - 2026-08-17: Hardened plan-confirmation handoff against invalid or revised agent payloads, retained recoverable answers, and removed the clean planning worktree once implementation is queued.
 - 2026-08-17: Injected repository-owned coding, planning, and integrating profiles into every applicable agent prompt, with non-fatal diagnostics for missing profiles and direct mode constraints preserved.
 - 2026-08-17: Extended agent inactivity timeouts to 450 seconds and refreshed them for every stdout update so long-running tasks remain connected while the agent is making progress.
+- 2026-08-20: Added target-project `.daedalus` provisioning so worktrees can install dependencies locally and link declared shared data folders before agents run.
+- 2026-08-20: Added restart recovery for failed and interrupted tasks, preserving actionable task records and existing worktree contexts across TUI relaunches.

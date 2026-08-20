@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import call, patch
 
 from tui.git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
+from tui.project_config import ProjectWorktreeSettings
 
 
 class GitWorktreeTests(unittest.TestCase):
@@ -74,6 +75,39 @@ class GitWorktreeTests(unittest.TestCase):
                 manager.stage_changes(worktree)
 
             run_git.assert_called_once_with(["add", "-A"], worktree)
+
+    @patch("tui.git_worktree.subprocess.run")
+    def test_provision_runs_install_and_links_readonly_path(self, run):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory) / "repo"
+            worktree = Path(directory) / "task"
+            repository.mkdir()
+            worktree.mkdir()
+            (repository / "food-data").mkdir()
+            context = WorktreeContext(repository, "task-1", "base", "agent/task-task-1", worktree)
+            run.return_value = type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            manager = GitWorktreeManager(repository)
+
+            manager.provision_worktree(
+                context,
+                ProjectWorktreeSettings(("npm", "ci"), ("food-data",)),
+            )
+
+            self.assertTrue((worktree / "food-data").is_symlink())
+            self.assertEqual((worktree / "food-data").resolve(), (repository / "food-data").resolve())
+            run.assert_called_once_with(["npm", "ci"], cwd=worktree, capture_output=True, text=True)
+
+    def test_provision_rejects_missing_readonly_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory) / "repo"
+            worktree = Path(directory) / "task"
+            repository.mkdir()
+            worktree.mkdir()
+            context = WorktreeContext(repository, "task-1", "base", "agent/task-task-1", worktree)
+            manager = GitWorktreeManager(repository)
+
+            with self.assertRaises(GitWorktreeError):
+                manager.provision_worktree(context, ProjectWorktreeSettings(readonly_paths=("food-data",)))
 
 
 if __name__ == "__main__":

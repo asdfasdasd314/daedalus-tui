@@ -12,9 +12,12 @@ daemon, a remote service, or a database server.
 - **Task history**: A single `tasks` entry maps each task worktree directory
   name to an ISO-8601 UTC submission `timestamp`, prompt, provider, model,
   reasoning, mode, current state, assistant outputs, non-negative token usage,
-  resolved project path, and error. The entry is upserted as the task
-  progresses, including for planning, questioning, failed, paused, and
-  cancelled tasks.
+  resolved project path, error, and (when available) branch/worktree identity.
+  The entry is upserted as the task progresses, including for planning,
+  questioning, failed, paused, and cancelled tasks.
+- **Restart recovery**: Each project coordinator rehydrates its persisted task
+  snapshots at startup. Failed tasks retain Retry, while active snapshots are
+  normalized to paused so their preserved worktrees can be resumed safely.
 - **Prompt history**: Plan answer submissions are retained in the task's
   optional `prompt_history` list, so the original request and each generated
   review prompt remain visible without creating duplicate worktree records.
@@ -44,7 +47,8 @@ daemon, a remote service, or a database server.
   atomic file replacement.
 - `tui/app.py`: Restores the remembered project at startup and updates it on
   project selection.
-- `tui/task_coordinator.py`: Records task snapshots throughout orchestration.
+- `tui/task_coordinator.py`: Records and rehydrates project task snapshots,
+  and preserves active worktrees during coordinator shutdown.
 - `tests/test_memory.py`: Covers task-history creation and upserts, removal of
   legacy usage entries, project-marker updates, and preservation of a corrupt
   file.
@@ -70,3 +74,4 @@ HACKING
 - 2026-08-17: Folded the legacy token count and resolved project path into each central task record and removed the standalone store alias.
 - 2026-08-17: Persisted Plan tasks while they await questions or approval so their planning state and transcript remain selectable.
 - 2026-08-17: Persisted generated plan-review prompts alongside the original task snapshot so submitted answers leave an auditable request history.
+- 2026-08-20: Added branch/worktree metadata and startup rehydration for failed and interrupted tasks, with shutdown pausing active work instead of deleting its worktree.
