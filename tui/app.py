@@ -259,13 +259,30 @@ class CodingStatisticsScreen(ModalScreen[None]):
 
         table = self.query_one("#usage-table", DataTable)
         table.clear(columns=True)
-        table.add_columns("Timestamp", "Provider", suffix.capitalize())
-        if not self.stats.entries:
-            table.add_row("—", "No recorded tasks", "0")
-            return
-        for entry in self.stats.entries:
-            timestamp = entry.timestamp.astimezone().strftime("%Y-%m-%d %H:%M")
-            table.add_row(timestamp, entry.provider, "1" if is_tasks else _format_tokens(entry.tokens))
+        rows = [
+            (
+                entry.timestamp.astimezone().strftime("%Y-%m-%d %H:%M"),
+                entry.provider,
+                "1" if is_tasks else _format_tokens(entry.tokens),
+            )
+            for entry in self.stats.entries
+        ]
+        if not rows:
+            rows = [("—", "No recorded tasks", "0")]
+
+        # Set widths before adding rows so DataTable doesn't render once with
+        # header-only auto widths and cache clipped cell content.
+        table.add_column(
+            "Timestamp", width=max(len("Timestamp"), *(len(row[0]) for row in rows))
+        )
+        table.add_column(
+            "Provider", width=max(len("Provider"), *(len(row[1]) for row in rows))
+        )
+        table.add_column(
+            suffix.capitalize(), width=max(len(suffix), *(len(row[2]) for row in rows))
+        )
+        for row in rows:
+            table.add_row(*row)
 
     def action_close_statistics(self) -> None:
         self.dismiss(None)

@@ -11,6 +11,7 @@ The coding statistics tracker presents local task token usage and derived provid
 - The right panel shows average usage per prompt, recent-hour usage, seven- and 30-day projections, and provider percentages in the selected unit.
 - The tracker reads the existing local task memory and overlays live task snapshots so current-session totals stay accurate.
 - Only completed tasks contribute to token usage; this applies equally to completed plan and coding tasks.
+- Usage-history columns are sized from their complete content before rows are rendered so timestamps and token counts are visible immediately.
 
 ## Relevant Files
 - `tui/token_usage.py`: Usage records, aggregation utilities, and memory/live-record conversion.
@@ -26,3 +27,4 @@ HACKING
 - 2026-08-17: Added persisted and live token usage aggregation with a `Ctrl+T` coding statistics modal.
 - 2026-08-17: Restricted token accounting to tasks that complete successfully, including plan tasks.
 - 2026-08-17: Added task-unit statistics, a token/task toggle, and a configurable 30-day projection.
+- 2026-08-20: Sized usage-history columns before row insertion to prevent initial clipped values that only repainted after mouse movement.

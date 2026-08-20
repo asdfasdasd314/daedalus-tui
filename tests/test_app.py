@@ -322,7 +322,12 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             self.assertIsInstance(app.screen, CodingStatisticsScreen)
-            self.assertEqual(app.screen.query_one("#usage-table", DataTable).row_count, 1)
+            usage_table = app.screen.query_one("#usage-table", DataTable)
+            self.assertEqual(usage_table.row_count, 1)
+            self.assertEqual(
+                [column.width for column in usage_table.columns.values()],
+                [16, len("Provider"), len("Tokens")],
+            )
             summary_text = "\n".join(str(widget.render()) for widget in app.screen.query(".usage-metric"))
             statistics_text = "\n".join(
                 str(widget.render()) for widget in app.screen.query(".statistics-value")
