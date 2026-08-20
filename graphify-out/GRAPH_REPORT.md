@@ -1,16 +1,16 @@
 # Graph Report - daedalus-tui  (2026-08-20)
 
 ## Corpus Check
-- 46 files · ~29,102 words
+- 46 files · ~29,232 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 698 nodes · 1845 edges · 29 communities (26 shown, 3 thin omitted)
+- 698 nodes · 1845 edges · 28 communities (25 shown, 3 thin omitted)
 - Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 216 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `44f9360c`
+- Built from commit: `a84daa43`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -40,7 +40,6 @@
 - update_repository
 - Daedalus TUI Coding Statistics
 - .provider_split
-- CodingStatisticsScreen
 - calculate_token_usage
 - CodingStatisticsScreen
 
@@ -71,11 +70,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (29 total, 3 thin omitted)
+## Communities (28 total, 3 thin omitted)
 
 ### Community 0 - "PlanQuestion"
-Cohesion: 0.13
-Nodes (7): RowSelected, Path, Focus a task from the cross-project update inbox., Promote only events that need the user's attention in the inbox., Render every known task, promoting rows with unseen updates., Switch the project context and focus a row selected in the inbox., Keep one bad dynamic widget update from closing the entire TUI.
+Cohesion: 0.15
+Nodes (6): RowSelected, Path, Focus a task from the cross-project update inbox., Promote only events that need the user's attention in the inbox., Render every known task, promoting rows with unseen updates., Switch the project context and focus a row selected in the inbox.
 
 ### Community 1 - "DaedalusVimTextArea"
 Cohesion: 0.06
@@ -86,8 +85,8 @@ Cohesion: 0.07
 Nodes (19): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+11 more)
 
 ### Community 3 - "DaedalusTuiApp"
-Cohesion: 0.16
-Nodes (3): Pressed, DaedalusTuiApp, Clear the selected task and unlock a fresh prompt editor.
+Cohesion: 0.11
+Nodes (8): Pressed, DaedalusTuiApp, Key, Clear the selected task and unlock a fresh prompt editor., Return a TextArea selection or the active screen selection., Use Textual's OSC 52 path and a native clipboard fallback., Add Vim-like navigation without changing TextArea insert behavior., Keep one bad dynamic widget update from closing the entire TUI.
 
 ### Community 4 - "app.py"
 Cohesion: 0.12
@@ -165,10 +164,6 @@ Nodes (6): Daedalus TUI Coding Statistics, Dev Mode, Key Points, Relevant Files,
 Cohesion: 0.29
 Nodes (6): PromptTests, build_repair_prompt(), build_resolver_prompt(), build_task_prompt(), _embedded_profile(), Prompt wrappers used by task and resolver agents.
 
-### Community 27 - "CodingStatisticsScreen"
-Cohesion: 0.20
-Nodes (4): Key, Return a TextArea selection or the active screen selection., Use Textual's OSC 52 path and a native clipboard fallback., Add Vim-like navigation without changing TextArea insert behavior.
-
 ### Community 30 - "calculate_token_usage"
 Cohesion: 0.07
 Nodes (27): datetime, TaskMemoryStoreTests, TokenUsageTests, Path, Small local JSON stores for persistent task history., Persist task history and the most recently opened project., Return the remembered project path, if the memory contains one., Set the single project marker without losing task records. (+19 more)
@@ -181,11 +176,11 @@ Nodes (27): datetime, TaskMemoryStoreTests, TokenUsageTests, Path, Small local J
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `PlanQuestion`, `DaedalusVimTextArea`, `AgentRunner`, `CodingStatisticsScreen`, `GitWorktreeManager`, `update_repository`, `Key`, `.__init__`, `._shutdown_coordinators`, `._set_status`, `update_repository`, `CodingStatisticsScreen`, `calculate_token_usage`?**
+- **Why does `DaedalusTuiApp` connect `DaedalusTuiApp` to `PlanQuestion`, `DaedalusVimTextArea`, `AgentRunner`, `CodingStatisticsScreen`, `GitWorktreeManager`, `update_repository`, `Key`, `.__init__`, `._shutdown_coordinators`, `._set_status`, `update_repository`, `calculate_token_usage`?**
   _High betweenness centrality (0.223) - this node is a cross-community bridge._
 - **Why does `AgentRunner` connect `AgentRunner` to `update_repository`, `Key`, `DaedalusTuiApp`, `.__init__`?**
   _High betweenness centrality (0.138) - this node is a cross-community bridge._
-- **Why does `DaedalusVimTextArea` connect `DaedalusVimTextArea` to `PlanQuestion`, `DaedalusTuiApp`, `GitWorktreeManager`, `update_repository`, `update_repository`, `CodingStatisticsScreen`?**
+- **Why does `DaedalusVimTextArea` connect `DaedalusVimTextArea` to `PlanQuestion`, `DaedalusTuiApp`, `GitWorktreeManager`, `update_repository`, `update_repository`?**
   _High betweenness centrality (0.099) - this node is a cross-community bridge._
 - **Are the 14 inferred relationships involving `DaedalusTuiApp` (e.g. with `FakeCoordinator` and `FakeRunner`) actually correct?**
   _`DaedalusTuiApp` has 14 INFERRED edges - model-reasoned connections that need verification._
