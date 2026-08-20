@@ -23,6 +23,13 @@ from .config import (
 from .debug_log import LOGGER, close_fault_handler, configure_debug_logging, install_fault_handler, log_exception
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .projects import DaedalusProject, discover_projects
+from .plan import (
+    CUSTOM_ANSWER_OPTION_ID,
+    PlanQuestion,
+    custom_answer_text,
+    encode_custom_answer,
+    plan_answer_options,
+)
 from .task_coordinator import TaskCoordinator, TaskRecord
 from .transcript import TranscriptLog
 from .token_usage import calculate_token_usage, merge_usage_entries, task_usage_entry, usage_entries_from_memory
@@ -597,6 +604,7 @@ class DaedalusTuiApp(App[None]):
                 self._switch_project(Path(str(event.value)))
             return
         if event.select.id and event.select.id.startswith("plan-question-"):
+            self._update_plan_custom_answer_visibility(event.select.id, event.value)
             self._update_plan_action_buttons()
             return
         if event.select.id != "provider-select":
@@ -618,6 +626,10 @@ class DaedalusTuiApp(App[None]):
             reasoning_select.set_options([(option.label, option.value) for option in self.settings.codex_reasoning])
             reasoning_select.value = self.settings.default_reasoning
             reasoning_select.disabled = False
+
+    def on_text_area_changed(self, event: TextArea.Changed) -> None:
+        if event.text_area.id and event.text_area.id.startswith("plan-custom-answer-"):
+            self._update_plan_action_buttons()
 
     def _submit_prompt(self) -> None:
         prompt_widget = self.query_one("#prompt-input", TextArea)
@@ -1031,11 +1043,14 @@ class DaedalusTuiApp(App[None]):
         if record is None or record.mode != "plan":
             return
         selected = {
-            question.question_id: self.query_one(f"#plan-question-{index}", Select).value
+            index: self.query_one(f"#plan-question-{index}", Select).value
             for index, question in enumerate(record.plan_questions)
             if self.query(f"#plan-question-{index}").nodes
         }
-        all_answered = all(self._has_plan_answer(value) for value in selected.values())
+        all_answered = all(
+            self._has_plan_answer(selected.get(index), self._plan_custom_answer_text(index))
+            for index in range(len(record.plan_questions))
+        )
         self.query_one("#answer-plan-button", Button).disabled = not (
             bool(record.plan_questions)
             and record.status in {"completed", "awaiting_answers"}
@@ -1053,8 +1068,20 @@ class DaedalusTuiApp(App[None]):
         implement_button.label = "Implemented" if implemented else "Implement"
 
     @staticmethod
-    def _has_plan_answer(value) -> bool:
-        return value not in (Select.BLANK, "", getattr(Select, "NULL", object()))
+    def _has_plan_answer(value, custom_text: str = "") -> bool:
+        if value in (Select.BLANK, "", getattr(Select, "NULL", object())):
+            return False
+        return value != CUSTOM_ANSWER_OPTION_ID or bool(custom_text.strip())
+
+    def _plan_custom_answer_text(self, index: int) -> str:
+        nodes = self.query(f"#plan-custom-answer-{index}").nodes
+        return nodes[0].text if nodes else ""
+
+    def _update_plan_custom_answer_visibility(self, select_id: str, value) -> None:
+        index = select_id.removeprefix("plan-question-")
+        nodes = self.query(f"#plan-custom-answer-{index}").nodes
+        if nodes:
+            nodes[0].styles.display = "block" if value == CUSTOM_ANSWER_OPTION_ID else "none"
 
     async def _rebuild_plan_questions(
         self,
@@ -1076,18 +1103,33 @@ class DaedalusTuiApp(App[None]):
         else:
             widgets = [Static("Questions", classes="plan-questions-heading")]
             for index, question in enumerate(questions):
+                saved_answer = answers.get(question.question_id)
+                saved_custom_text = custom_answer_text(saved_answer)
+                selected_value = CUSTOM_ANSWER_OPTION_ID if saved_custom_text else saved_answer or Select.NULL
                 widgets.extend(
                     (
                         Static(question.text, classes="plan-question"),
                         PlanAnswerSelect(
-                            [(option.label, option.option_id) for option in question.options],
-                            value=answers.get(question.question_id, Select.NULL),
+                            [(option.label, option.option_id) for option in plan_answer_options(question)],
+                            value=selected_value,
                             allow_blank=True,
                             id=f"plan-question-{index}",
+                        ),
+                        TextArea(
+                            saved_custom_text or "",
+                            id=f"plan-custom-answer-{index}",
+                            classes="plan-custom-answer",
                         ),
                     )
                 )
             await question_container.mount(*widgets)
+            for index, question in enumerate(questions):
+                saved_answer = answers.get(question.question_id)
+                saved_custom_text = custom_answer_text(saved_answer)
+                self._update_plan_custom_answer_visibility(
+                    f"plan-question-{index}",
+                    CUSTOM_ANSWER_OPTION_ID if saved_custom_text else saved_answer or Select.NULL,
+                )
         if self._is_current_plan_review(record, generation):
             self._rendered_plan_question_signature = question_signature
             self._update_plan_action_buttons()
@@ -1106,12 +1148,21 @@ class DaedalusTuiApp(App[None]):
         answers: dict[str, str] = {}
         for index, question in enumerate(record.plan_questions):
             selection = self.query_one(f"#plan-question-{index}", Select).value
-            if self._has_plan_answer(selection):
-                answers[question.question_id] = str(selection)
+            custom_text = self._plan_custom_answer_text(index)
+            if self._has_plan_answer(selection, custom_text):
+                answers[question.question_id] = (
+                    encode_custom_answer(custom_text)
+                    if selection == CUSTOM_ANSWER_OPTION_ID
+                    else str(selection)
+                )
         if len(answers) != len(record.plan_questions):
             self._set_status("Answer every question first")
             return
-        LOGGER.info("Submitting plan answers task=%s answer_ids=%s", record.task_id, sorted(answers))
+        LOGGER.info(
+            "Submitting plan answers task=%s answer_ids=%s",
+            record.task_id,
+            sorted(CUSTOM_ANSWER_OPTION_ID if custom_answer_text(answer) else answer for answer in answers.values()),
+        )
         answer_plan = getattr(self.coordinator, "answer_plan", None)
         if answer_plan is None or not answer_plan(record.task_id, answers):
             self._set_status("Plan answers could not be submitted")

@@ -19,6 +19,8 @@ from .plan import (
     PlanQuestion,
     build_implementation_prompt,
     build_plan_followup_prompt,
+    custom_answer_text,
+    is_valid_plan_answer,
     parse_plan_response,
 )
 
@@ -185,7 +187,7 @@ class TaskCoordinator:
                 question.question_id: answer
                 for question in record.plan_questions
                 for answer in [answers.get(question.question_id)]
-                if answer is not None and any(option.option_id == answer for option in question.options)
+                if is_valid_plan_answer(question, answer)
             }
             if question_ids - valid_answers.keys():
                 return False
@@ -194,8 +196,13 @@ class TaskCoordinator:
                 answer_id = valid_answers.get(question.question_id)
                 if answer_id is None:
                     continue
-                option = next(option for option in question.options if option.option_id == answer_id)
-                record.plan_answer_details[question.question_id] = f"{question.text}: {option.label}"
+                custom_text = custom_answer_text(answer_id)
+                if custom_text is not None:
+                    answer_label = f"Custom answer: {custom_text}"
+                else:
+                    option = next(option for option in question.options if option.option_id == answer_id)
+                    answer_label = option.label
+                record.plan_answer_details[question.question_id] = f"{question.text}: {answer_label}"
             record.plan_followup_prompt = build_plan_followup_prompt(
                 record.prompt, record.plan_text, record.plan_questions, record.plan_answers
             )
@@ -602,7 +609,7 @@ class TaskCoordinator:
         # that disappeared because they remain useful implementation context.
         for question in parsed.questions:
             answer_id = record.plan_answers.get(question.question_id)
-            if answer_id is not None and not any(option.option_id == answer_id for option in question.options):
+            if answer_id is not None and not is_valid_plan_answer(question, answer_id):
                 record.plan_answers.pop(question.question_id, None)
                 record.plan_answer_details.pop(question.question_id, None)
         return True

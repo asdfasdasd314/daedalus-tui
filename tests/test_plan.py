@@ -1,13 +1,17 @@
 import unittest
 
 from tui.plan import (
+    CUSTOM_ANSWER_OPTION_ID,
     PLAN_END,
     PLAN_START,
     PlanOption,
     PlanQuestion,
     build_implementation_prompt,
     build_plan_followup_prompt,
+    custom_answer_text,
+    encode_custom_answer,
     parse_plan_response,
+    plan_answer_options,
 )
 
 
@@ -28,6 +32,7 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(result.plan, "1. Add the API.\n2. Test it.")
         self.assertEqual(result.questions[0].text, "Which store?")
         self.assertEqual(result.questions[0].options[1], PlanOption("b", "JSON"))
+        self.assertNotIn(CUSTOM_ANSWER_OPTION_ID, {option.option_id for option in result.questions[0].options})
         self.assertFalse(result.no_more_questions)
 
     def test_parser_requires_explicit_confirmation(self):
@@ -65,6 +70,23 @@ class PlanTests(unittest.TestCase):
         self.assertIn("JSON", followup)
         self.assertIn("Approved implementation plan", implementation)
         self.assertIn("q1: b", implementation)
+
+    def test_custom_answer_is_added_by_the_ui_and_formatted_for_followups(self):
+        question = PlanQuestion("q1", "Which store?", (PlanOption("a", "SQLite"), PlanOption("b", "JSON")))
+        options = plan_answer_options(question)
+        encoded = encode_custom_answer("A store selected by the user")
+        followup = build_plan_followup_prompt("Build it", "Use a store.", (question,), {"q1": encoded})
+        implementation = build_implementation_prompt(
+            "Build it",
+            "Use a store.",
+            {"q1": encoded},
+            {"q1": "Which store?: Custom answer: A store selected by the user"},
+        )
+
+        self.assertEqual(options[-1], PlanOption(CUSTOM_ANSWER_OPTION_ID, "Custom answer"))
+        self.assertEqual(custom_answer_text(encoded), "A store selected by the user")
+        self.assertIn("Custom answer: A store selected by the user", followup)
+        self.assertIn("q1: A store selected by the user", implementation)
 
 
 if __name__ == "__main__":

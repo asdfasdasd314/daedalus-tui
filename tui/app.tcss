@@ -150,6 +150,13 @@ Screen {
     margin-top: 1;
 }
 
+#plan-questions .plan-custom-answer {
+    width: 1fr;
+    height: 3;
+    margin-top: 1;
+    display: none;
+}
+
 #plan-actions {
     height: 3;
     align: left middle;

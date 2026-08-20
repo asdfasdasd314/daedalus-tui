@@ -9,6 +9,9 @@ from typing import Any
 
 PLAN_START = "BEGIN_DAEDALUS_PLAN"
 PLAN_END = "END_DAEDALUS_PLAN"
+CUSTOM_ANSWER_OPTION_ID = "__daedalus_custom_answer__"
+CUSTOM_ANSWER_LABEL = "Custom answer"
+_CUSTOM_ANSWER_PREFIX = f"{CUSTOM_ANSWER_OPTION_ID}:"
 
 
 @dataclass(frozen=True)
@@ -32,6 +35,36 @@ class PlanResult:
     no_more_questions: bool
     valid: bool = True
     error: str | None = None
+
+
+def plan_answer_options(question: PlanQuestion) -> tuple[PlanOption, ...]:
+    """Return agent choices plus the UI-owned custom-answer choice."""
+    if any(option.option_id == CUSTOM_ANSWER_OPTION_ID for option in question.options):
+        return question.options
+    return question.options + (PlanOption(CUSTOM_ANSWER_OPTION_ID, CUSTOM_ANSWER_LABEL),)
+
+
+def encode_custom_answer(text: str) -> str:
+    """Encode free text without confusing it with an agent option id."""
+    cleaned = text.strip()
+    if not cleaned:
+        raise ValueError("A custom plan answer cannot be empty.")
+    return f"{_CUSTOM_ANSWER_PREFIX}{cleaned}"
+
+
+def custom_answer_text(answer: str | None) -> str | None:
+    """Extract UI-entered text from an encoded custom answer, if present."""
+    if not isinstance(answer, str) or not answer.startswith(_CUSTOM_ANSWER_PREFIX):
+        return None
+    text = answer[len(_CUSTOM_ANSWER_PREFIX) :].strip()
+    return text or None
+
+
+def is_valid_plan_answer(question: PlanQuestion, answer: str | None) -> bool:
+    """Validate agent option ids and the software-owned custom answer format."""
+    return custom_answer_text(answer) is not None or any(
+        option.option_id == answer for option in question.options
+    )
 
 
 def parse_plan_response(response: str) -> PlanResult:
@@ -105,7 +138,13 @@ def build_plan_followup_prompt(
         if question is None:
             continue
         option = next((option for option in question.options if option.option_id == answer_id), None)
-        answer_lines.append(f"- {question.text}: {option.label if option else answer_id}")
+        custom_text = custom_answer_text(answer_id)
+        answer_label = (
+            f"{CUSTOM_ANSWER_LABEL}: {custom_text}"
+            if custom_text
+            else (option.label if option else answer_id)
+        )
+        answer_lines.append(f"- {question.text}: {answer_label}")
     answers_text = "\n".join(answer_lines) or "(No answers were supplied.)"
     return (
         "Re-evaluate the plan using the user's answers below. Preserve the original request and "
@@ -127,7 +166,7 @@ def build_implementation_prompt(
 ) -> str:
     answer_details = answer_details or {}
     answer_text = "\n".join(
-        f"- {question_id}: {answer}"
+        f"- {question_id}: {custom_answer_text(answer) or answer}"
         + (f" ({answer_details[question_id]})" if question_id in answer_details else "")
         for question_id, answer in answers.items()
     )

@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from tui.orchestrator import OrchestrationResult, OrchestrationSettings
 from tui.git_worktree import WorktreeContext
-from tui.plan import PlanOption, PlanQuestion
+from tui.plan import PlanOption, PlanQuestion, encode_custom_answer
 from tui.task_coordinator import TASK_STATUSES, IntegrationCoordinator, TaskCoordinator, TaskRecord
 
 
@@ -477,6 +477,42 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertIn("Add the JSON store", coding_record.prompt)
             self.assertIn("Original user request", coding_record.prompt)
             self.assertIn("q1: b (Which store?: JSON)", coding_record.prompt)
+            coordinator.shutdown()
+
+    def test_plan_answers_accept_ui_owned_custom_text(self):
+        class PlanOrchestrator:
+            prompts = []
+            responses = [
+                '{"plan":"Choose the store.","questions":[{"id":"q1",'
+                '"question":"Which store?","options":[{"id":"a","label":"SQLite"},'
+                '{"id":"b","label":"JSON"}]}],"no_more_questions":false}',
+                '{"plan":"Use the custom store.","questions":[],"no_more_questions":true}',
+            ]
+
+            def __init__(self, _repository, _runner, _settings, on_event, integration_gate=None):
+                self.on_event = on_event
+
+            def run(self, prompt, _provider, _model, _reasoning, task_id=None, **_kwargs):
+                type(self).prompts.append(prompt)
+                self.on_event("agent", type(self).responses.pop(0), "message")
+                return OrchestrationResult(True, task_id)
+
+        custom_answer = encode_custom_answer("A user-defined store")
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", PlanOrchestrator):
+                record = coordinator.submit("Choose a store", "codex", "luna", "medium", mode="plan")
+                record.future.result(timeout=5)
+
+                self.assertTrue(coordinator.answer_plan(record.task_id, {"q1": custom_answer}))
+                record.future.result(timeout=5)
+
+            self.assertTrue(record.plan_confirmed)
+            self.assertIn("Custom answer: A user-defined store", PlanOrchestrator.prompts[1])
+            self.assertEqual(
+                record.plan_answer_details["q1"],
+                "Which store?: Custom answer: A user-defined store",
+            )
             coordinator.shutdown()
 
     def test_invalid_confirmation_preserves_answers_for_a_safe_retry(self):

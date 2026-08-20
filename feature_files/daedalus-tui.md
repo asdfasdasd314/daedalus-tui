@@ -9,6 +9,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, a database, or a remote push.
 - **Concurrent task inbox**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript; the left-side inbox promotes tasks with unseen updates.
 - **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
+- **Plan custom answers**: Plan review renders a software-owned custom-answer choice alongside the agent's reasonable options and collects free text only when that choice is selected; the agent protocol remains unchanged.
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project selection**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the task toolbar selects the project for new submissions, and focusing an inbox row synchronizes the active project without mixing transcripts or worktrees.
@@ -16,11 +17,13 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 
 ## Relevant Files
 - `tui/app.py`: Textual layout, selectors, task list, transcript replay, and task controls.
+- `tui/plan.py`: Agent plan parsing plus UI-owned custom-answer encoding and prompt formatting.
 - `tui/vim_text_area.py`: Incremental modal Vim prompt adapter and system clipboard integration.
 - `tui/agent_runner.py`: Independent Codex and Cursor subprocess adapter.
 - `tui/task_coordinator.py`: Concurrent task executor and serialized integration gate.
 - `parameter_files/daedalus-tui.toml`: Provider, model, reasoning, and default UI settings.
 - `feature_files/daedalus-tui-orchestration.md`: Local orchestration ownership boundary.
+- `tests/test_plan.py`, `tests/test_app.py`, `tests/test_task_coordinator.py`: Coverage for custom-answer rendering, validation, and follow-up handoff.
 
 ## Dev Mode
 HACKING
@@ -67,3 +70,4 @@ HACKING
 - 2026-08-17: Limited task-update inbox promotion to completed or failed tasks and plan questions, leaving streaming progress events out of the update queue.
 - 2026-08-17: Made task diagnostics use the selectable output-log surface so error text supports mouse selection, Vim yanks, and Ctrl+C copying.
 - 2026-08-17: Made confirmed plan implementation a one-shot action and visibly faded the Implement button after it queues coding.
+- 2026-08-20: Added a UI-owned Custom answer choice to plan questions, with conditional free-text input and encoded follow-up handoff that leaves agent-generated options unchanged.

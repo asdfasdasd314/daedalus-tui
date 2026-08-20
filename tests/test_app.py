@@ -14,7 +14,7 @@ from vimkeys_input import VimMode
 from tui.app import CodingStatisticsScreen, DaedalusTuiApp, KeyboardShortcutsScreen
 from tui.config import ModelOption, TuiSettings
 from tui.projects import DaedalusProject
-from tui.plan import PlanOption, PlanQuestion
+from tui.plan import CUSTOM_ANSWER_OPTION_ID, PlanOption, PlanQuestion, encode_custom_answer
 from tui.task_coordinator import TaskRecord
 from tui.vim_text_area import DaedalusVimTextArea
 
@@ -773,6 +773,44 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIs(app.query_one("#plan-question-0", Select), answer)
             run_worker.assert_not_called()
             self.assertIsNone(app._exception)
+
+    async def test_plan_review_accepts_a_ui_owned_custom_answer(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Choose a storage layer")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = "Use the selected storage layer."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "Which storage layer?",
+                    (PlanOption("a", "SQLite"), PlanOption("b", "JSON")),
+                ),
+            )
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+
+            answer = app.query_one("#plan-question-0", Select)
+            custom_input = app.query_one("#plan-custom-answer-0", TextArea)
+            self.assertTrue(app.query_one("#answer-plan-button", Button).disabled)
+            answer.value = CUSTOM_ANSWER_OPTION_ID
+            await pilot.pause()
+            self.assertEqual(custom_input.styles.display, "block")
+            self.assertTrue(app.query_one("#answer-plan-button", Button).disabled)
+
+            custom_input.insert("A user-defined storage layer")
+            await pilot.pause()
+            self.assertFalse(app.query_one("#answer-plan-button", Button).disabled)
+            app._answer_plan()
+
+            self.assertEqual(
+                record.plan_answers,
+                {"q1": encode_custom_answer("A user-defined storage layer")},
+            )
 
     async def test_plan_answer_mount_suppresses_textual_select_default_handler(self):
         app, coordinator = self.make_app()
