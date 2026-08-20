@@ -28,3 +28,4 @@ HACKING
 - 2026-08-17: Restricted token accounting to tasks that complete successfully, including plan tasks.
 - 2026-08-17: Added task-unit statistics, a token/task toggle, and a configurable 30-day projection.
 - 2026-08-20: Sized usage-history columns before row insertion to prevent initial clipped values that only repainted after mouse movement.
+- 2026-08-20: Corrected the statistics layout regression fixture to mark its submitted task completed so it exercises real usage-row sizing.

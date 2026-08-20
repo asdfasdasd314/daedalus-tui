@@ -318,6 +318,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             prompt.insert("Track my token usage")
             app.action_submit_prompt()
             coordinator.records[0].tokens_consumed = 165
+            coordinator.records[0].status = "completed"
             await pilot.press("ctrl+t")
             await pilot.pause()
 
