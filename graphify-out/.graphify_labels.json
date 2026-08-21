@@ -33,5 +33,6 @@
   "31": "PlanAnswerSelect",
   "32": "discover_projects",
   "33": "CodingStatisticsScreen",
-  "34": "._render_line_strip"
+  "34": "._render_line_strip",
+  "35": ".on_data_table_row_selected"
 }
