@@ -88,6 +88,19 @@ GLOBAL_SHORTCUTS = (
     ("Ctrl+T", "Show coding statistics", "show_statistics"),
 )
 
+_ACTIVE_TASK_STATUSES = {
+    "queued",
+    "planning",
+    "questioning",
+    "running",
+    "verifying",
+    "ready",
+    "integrating",
+    "resolving",
+    "paused",
+    "awaiting_answers",
+}
+
 SHORTCUT_SECTIONS = (
     (
         "Global shortcuts",
@@ -358,6 +371,7 @@ class DaedalusTuiApp(App[None]):
         # The task inbox spans all discovered projects. Row keys include the
         # project path because task IDs are only unique within a coordinator.
         self._task_rows: dict[str, tuple[Path, str]] = {}
+        self._session_task_rows: set[str] = set()
         self._updated_task_rows: set[str] = set()
         self._new_task_mode = True
         self._vim_pending_g = False
@@ -689,6 +703,7 @@ class DaedalusTuiApp(App[None]):
             self._set_error(str(error))
             self._set_status("Error")
             return
+        self._session_task_rows.add(self._task_row_key(self._active_project_path, record.task_id))
         self._selected_task_id = record.task_id
         self._new_task_mode = False
         self._clear_task_update(self._task_row_key(self._active_project_path, record.task_id))
@@ -855,7 +870,7 @@ class DaedalusTuiApp(App[None]):
         return f"Launch root: {self.launch_root}    Active project: {self.directory}"
 
     def _refresh_task_list(self) -> None:
-        """Render every known task, promoting rows with unseen updates."""
+        """Render actionable history and tasks created during this session."""
         task_list = self.query_one("#task-list", DataTable)
         task_list.clear(columns=True)
         task_list.add_columns("", "Project", "Task", "Status")
@@ -870,7 +885,11 @@ class DaedalusTuiApp(App[None]):
             coordinator = self._coordinators.get(project_path)
             if coordinator is None:
                 continue
-            rows.extend((project_path, record) for record in coordinator.tasks())
+            rows.extend(
+                (project_path, record)
+                for record in coordinator.tasks()
+                if self._should_show_task(project_path, record)
+            )
         rows.sort(
             key=lambda item: (
                 self._task_row_key(item[0], item[1].task_id) not in self._updated_task_rows,
@@ -898,6 +917,15 @@ class DaedalusTuiApp(App[None]):
             if selected_key in self._task_rows:
                 task_list.move_cursor(row=list(self._task_rows).index(selected_key), column=0)
 
+    def _should_show_task(self, project_path: Path, record: TaskRecord) -> bool:
+        """Keep failures, active work, and all tasks submitted in this launch."""
+        row_key = self._task_row_key(project_path, record.task_id)
+        return (
+            row_key in self._session_task_rows
+            or record.status == "failed"
+            or record.status in _ACTIVE_TASK_STATUSES
+        )
+
     @staticmethod
     def _task_row_key(project_path: Path, task_id: str) -> str:
         return f"{project_path.resolve()}::{task_id}"
@@ -910,6 +938,10 @@ class DaedalusTuiApp(App[None]):
 
     def _clear_task_update(self, row_key: str) -> None:
         self._updated_task_rows.discard(row_key)
+
+    def _mark_task_current_session(self, record: TaskRecord) -> None:
+        """Keep a task visible after user activity during this launch."""
+        self._session_task_rows.add(self._task_row_key(self._active_project_path, record.task_id))
 
     def _focus_task(self, project_path: Path, task_id: str) -> None:
         """Switch the project context and focus a row selected in the inbox."""
@@ -1184,6 +1216,7 @@ class DaedalusTuiApp(App[None]):
         if answer_plan is None or not answer_plan(record.task_id, answers):
             self._set_status("Plan answers could not be submitted")
             return
+        self._mark_task_current_session(record)
         self._set_status("Reviewing answers")
 
     def _implement_plan(self) -> None:
@@ -1195,6 +1228,7 @@ class DaedalusTuiApp(App[None]):
         if coding_record is None:
             self._set_status("The agent must confirm no more questions")
             return
+        self._mark_task_current_session(coding_record)
         implement_button = self.query_one("#implement-button", Button)
         implement_button.disabled = True
         implement_button.add_class("implemented")
@@ -1316,6 +1350,7 @@ class DaedalusTuiApp(App[None]):
     def _pause_task(self) -> None:
         record = self.coordinator.get(self._selected_task_id or "")
         if record is not None and self.coordinator.pause(record.task_id):
+            self._mark_task_current_session(record)
             self._set_status("Pausing")
 
     def _resume_task(self) -> None:
@@ -1323,6 +1358,7 @@ class DaedalusTuiApp(App[None]):
         notes_widget = self.query_one("#resume-notes", TextArea)
         notes = notes_widget.text.strip()
         if record is not None and self.coordinator.resume(record.task_id, notes):
+            self._mark_task_current_session(record)
             notes_widget.clear()
             self._set_status("Resuming")
 
@@ -1331,6 +1367,7 @@ class DaedalusTuiApp(App[None]):
         notes_widget = self.query_one("#resume-notes", TextArea)
         notes = notes_widget.text.strip()
         if record is not None and self.coordinator.continue_plan(record.task_id, notes):
+            self._mark_task_current_session(record)
             notes_widget.clear()
             self._set_status("Continuing plan")
 
@@ -1339,6 +1376,7 @@ class DaedalusTuiApp(App[None]):
         notes_widget = self.query_one("#resume-notes", TextArea)
         notes = notes_widget.text.strip()
         if record is not None and self.coordinator.start_coding(record.task_id, notes):
+            self._mark_task_current_session(record)
             notes_widget.clear()
             self._set_status("Starting coding")
 
@@ -1353,6 +1391,7 @@ class DaedalusTuiApp(App[None]):
         if record is None or retry is None or not retry(record.task_id):
             self._set_status("Retry unavailable")
             return
+        self._mark_task_current_session(record)
         self._set_status("Retrying")
 
     def _set_status(self, status: str) -> None:

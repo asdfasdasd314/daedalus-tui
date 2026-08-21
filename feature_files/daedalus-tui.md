@@ -13,6 +13,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project selection**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the task toolbar selects the project for new submissions, and focusing an inbox row synchronizes the active project without mixing transcripts or worktrees.
+- **Actionable task history**: The task inbox keeps every failed task, active or paused work, and all tasks from the current TUI session while hiding older completed, blocked, and cancelled tasks.
 - **Retryable failures**: Failed agent tasks expose their diagnostics and a Retry action so transient connectivity or service failures can be recovered in place.
 
 ## Relevant Files
@@ -71,3 +72,4 @@ HACKING
 - 2026-08-17: Made task diagnostics use the selectable output-log surface so error text supports mouse selection, Vim yanks, and Ctrl+C copying.
 - 2026-08-17: Made confirmed plan implementation a one-shot action and visibly faded the Implement button after it queues coding.
 - 2026-08-20: Added a UI-owned Custom answer choice to plan questions, with conditional free-text input and encoded follow-up handoff that leaves agent-generated options unchanged.
+- 2026-08-20: Filtered the task inbox to failed history, active work, and tasks from the current TUI session, while preserving visibility when an older task is resumed or retried.

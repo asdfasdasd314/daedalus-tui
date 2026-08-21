@@ -168,6 +168,70 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
             await pilot.pause()
 
+    async def test_task_list_keeps_failures_active_work_and_current_session_tasks(self):
+        app, coordinator = self.make_app()
+        historical_completed = TaskRecord(
+            "001-completed",
+            1,
+            "An old completed task",
+            "codex",
+            "model",
+            "medium",
+            status="completed",
+        )
+        historical_failed = TaskRecord(
+            "002-failed",
+            2,
+            "An old failed task",
+            "codex",
+            "model",
+            "medium",
+            status="failed",
+        )
+        historical_paused = TaskRecord(
+            "003-paused",
+            3,
+            "An interrupted task",
+            "codex",
+            "model",
+            "medium",
+            status="paused",
+        )
+        historical_cancelled = TaskRecord(
+            "004-cancelled",
+            4,
+            "An old cancelled task",
+            "codex",
+            "model",
+            "medium",
+            status="cancelled",
+        )
+        coordinator.records.extend(
+            (historical_completed, historical_failed, historical_paused, historical_cancelled)
+        )
+
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            visible_before_submit = set(app._task_rows)
+            self.assertIn(app._task_row_key(app._active_project_path, historical_failed.task_id), visible_before_submit)
+            self.assertIn(app._task_row_key(app._active_project_path, historical_paused.task_id), visible_before_submit)
+            self.assertNotIn(
+                app._task_row_key(app._active_project_path, historical_completed.task_id),
+                visible_before_submit,
+            )
+            self.assertNotIn(
+                app._task_row_key(app._active_project_path, historical_cancelled.task_id),
+                visible_before_submit,
+            )
+
+            app.query_one("#prompt-input", TextArea).insert("A task from this session")
+            app.action_submit_prompt()
+            current = coordinator.records[-1]
+            current.status = "completed"
+            app._refresh_task_list()
+
+            self.assertIn(app._task_row_key(app._active_project_path, current.task_id), app._task_rows)
+
     @patch("tui.app.TaskCoordinator")
     @patch("tui.app.discover_projects")
     async def test_all_project_coordinators_share_the_launch_root_memory_file(self, discover, coordinator_class):
