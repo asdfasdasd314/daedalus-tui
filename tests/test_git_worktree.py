@@ -109,6 +109,38 @@ class GitWorktreeTests(unittest.TestCase):
             with self.assertRaises(GitWorktreeError):
                 manager.provision_worktree(context, ProjectWorktreeSettings(readonly_paths=("food-data",)))
 
+    def test_provision_reuses_existing_correct_readonly_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory) / "repo"
+            worktree = Path(directory) / "task"
+            repository.mkdir()
+            worktree.mkdir()
+            source = repository / "food-data"
+            source.mkdir()
+            target = worktree / "food-data"
+            target.symlink_to(source, target_is_directory=True)
+            context = WorktreeContext(repository, "task-1", "base", "agent/task-task-1", worktree)
+            manager = GitWorktreeManager(repository)
+
+            manager.provision_worktree(context, ProjectWorktreeSettings(readonly_paths=("food-data",)))
+
+            self.assertTrue(target.is_symlink())
+            self.assertEqual(target.resolve(), source.resolve())
+
+    def test_provision_rejects_existing_real_readonly_destination(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory) / "repo"
+            worktree = Path(directory) / "task"
+            repository.mkdir()
+            worktree.mkdir()
+            (repository / "food-data").mkdir()
+            (worktree / "food-data").mkdir()
+            context = WorktreeContext(repository, "task-1", "base", "agent/task-task-1", worktree)
+            manager = GitWorktreeManager(repository)
+
+            with self.assertRaisesRegex(GitWorktreeError, "destination exists"):
+                manager.provision_worktree(context, ProjectWorktreeSettings(readonly_paths=("food-data",)))
+
 
 if __name__ == "__main__":
     unittest.main()

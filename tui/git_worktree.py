@@ -58,7 +58,13 @@ class GitWorktreeManager:
                 raise GitWorktreeError(
                     f"Configured read-only path is missing from the primary worktree: {source}"
                 )
-            if target.exists() or target.is_symlink():
+            if target.is_symlink():
+                if target.resolve(strict=False) == source.resolve():
+                    continue
+                raise GitWorktreeError(
+                    f"Cannot link configured read-only path because the worktree destination exists: {target}"
+                )
+            if target.exists():
                 raise GitWorktreeError(
                     f"Cannot link configured read-only path because the worktree destination exists: {target}"
                 )
