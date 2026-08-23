@@ -5,6 +5,7 @@ from __future__ import annotations
 from rich.style import Style
 from rich.text import Text
 from rich.cells import cell_len
+from textual import events
 from textual.strip import Strip
 from textual.widgets import Log
 
@@ -22,6 +23,7 @@ class TranscriptLog(Log):
         super().__init__(*args, **kwargs)
         self._line_tones: dict[int, str] = {}
         self._final_color = None
+        self._messages: list[tuple[str, bool]] = []
 
     @property
     def line_tones(self) -> tuple[str, ...]:
@@ -30,7 +32,13 @@ class TranscriptLog(Log):
 
     def clear(self) -> "TranscriptLog":
         self._line_tones.clear()
+        self._messages.clear()
         return super().clear()
+
+    def on_resize(self, event: events.Resize) -> None:
+        """Reflow stored messages when the output box changes width."""
+        if self._messages:
+            self._rebuild_lines(scroll_end=self.auto_scroll)
 
     def set_final_color(self, color) -> None:
         """Use the prompt's normal text color for the final transcript tone."""
@@ -46,17 +54,50 @@ class TranscriptLog(Log):
         """Append one assistant message and assign its semantic tone."""
         if not message:
             return self
-        block = message if message.endswith("\n") else f"{message}\n"
-        # Log keeps one trailing blank line as the insertion point for the
-        # next write, so a subsequent message starts one line before len().
-        first_line = max(0, len(self._lines) - 1)
-        super().write(block)
-        last_line = len(self._lines) - (1 if block.endswith("\n") else 0)
-        tone = "final" if final else "generic"
-        for line_number in range(first_line, last_line):
-            self._line_tones[line_number] = tone
-        self._render_line_cache.clear()
+        self._messages.append((message, final))
+        self._rebuild_lines(scroll_end=self.auto_scroll)
         return self
+
+    def _rebuild_lines(self, *, scroll_end: bool) -> None:
+        """Render logical messages as wrapped, selectable Log lines."""
+        width = self.size.width
+        rendered_lines: list[str] = []
+        tones: list[str] = []
+        for message_index, (message, final) in enumerate(self._messages):
+            if message_index:
+                # Keep one complete blank line between streamed messages.
+                rendered_lines.append("")
+                tones.append("generic")
+
+            tone = "final" if final else "generic"
+            for source_line in message.split("\n"):
+                wrapped_lines = self._wrap_line(source_line, width)
+                rendered_lines.extend(wrapped_lines)
+                tones.extend([tone] * len(wrapped_lines))
+
+        block = "\n".join(rendered_lines)
+        if block:
+            # Log keeps a trailing empty entry as the insertion point for its
+            # next write; it is not included in line_count.
+            block += "\n"
+        super().clear()
+        super().write(block, scroll_end=scroll_end)
+        self._line_tones = {
+            line_number: tone for line_number, tone in enumerate(tones)
+        }
+        self._render_line_cache.clear()
+
+    def _wrap_line(self, line: str, width: int) -> list[str]:
+        """Wrap one logical line without changing its selectable text."""
+        processed_line = self._process_line(line)
+        if not processed_line or width <= 0 or cell_len(processed_line) <= width:
+            return [processed_line]
+        wrapped = Text(processed_line).wrap(
+            self.app.console,
+            width=width,
+            overflow="fold",
+        )
+        return [wrapped_line.plain for wrapped_line in wrapped] or [""]
 
     def _render_line_strip(self, y: int, rich_style: Style) -> Strip:
         """Render a line with the final-message color before selection styling."""

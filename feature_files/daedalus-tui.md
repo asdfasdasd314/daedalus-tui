@@ -11,6 +11,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
 - **Plan custom answers**: Plan review renders a software-owned custom-answer choice alongside the agent's reasonable options and collects free text only when that choice is selected; the agent protocol remains unchanged.
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
+- **Readable streamed output**: Assistant messages are separated by a blank line, and transcript lines are reflowed to the output pane width so long responses remain visible.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project selection**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the task toolbar selects the project for new submissions, and focusing an inbox row synchronizes the active project without mixing transcripts or worktrees.
 - **Actionable task history**: The task inbox keeps every failed task, active or paused work, and all tasks from the current TUI session while hiding older completed, blocked, and cancelled tasks.
@@ -73,3 +74,4 @@ HACKING
 - 2026-08-17: Made confirmed plan implementation a one-shot action and visibly faded the Implement button after it queues coding.
 - 2026-08-20: Added a UI-owned Custom answer choice to plan questions, with conditional free-text input and encoded follow-up handoff that leaves agent-generated options unchanged.
 - 2026-08-20: Filtered the task inbox to failed history, active work, and tasks from the current TUI session, while preserving visibility when an older task is resumed or retried.
+- 2026-08-23: Added blank-line separation between streamed assistant messages and width-aware transcript wrapping that reflows when the terminal is resized.

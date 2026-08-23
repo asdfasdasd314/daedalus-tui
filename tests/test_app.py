@@ -1115,7 +1115,34 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             output = app.query_one("#output", Log)
-            self.assertEqual(output.line_tones[:2], ("generic", "final"))
+            self.assertEqual(output.line_tones[:3], ("generic", "generic", "final"))
+
+    async def test_output_messages_are_separated_and_wrapped(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#prompt-input", TextArea).insert("Show progress")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.messages.extend(
+                [
+                    "Deciphering things",
+                    "Deciphering more things",
+                    "Here is the final answer: " + ("a " * 200),
+                ]
+            )
+            record.status = "completed"
+            record.phase = "Completed"
+            coordinator.emit(record, "completed", "", "status")
+            await pilot.pause()
+
+            output = app.query_one("#output", Log)
+            self.assertEqual(output._lines[:3], [
+                "Deciphering things",
+                "",
+                "Deciphering more things",
+            ])
+            self.assertGreater(len(output._lines), 5)
+            self.assertTrue(all(len(line) <= output.size.width for line in output._lines))
 
     async def test_final_assistant_message_renders_with_resolved_theme_color(self):
         app, coordinator = self.make_app()
@@ -1130,7 +1157,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             output = app.query_one("#output", Log)
-            output._render_line_strip(1, output.rich_style)
+            output._render_line_strip(2, output.rich_style)
 
     async def test_submitted_prompt_uses_faded_read_only_text_style(self):
         app, _ = self.make_app()
