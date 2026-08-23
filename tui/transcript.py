@@ -24,6 +24,7 @@ class TranscriptLog(Log):
         self._line_tones: dict[int, str] = {}
         self._final_color = None
         self._messages: list[tuple[str, bool]] = []
+        self._wrapped_width: int | None = None
 
     @property
     def line_tones(self) -> tuple[str, ...]:
@@ -33,12 +34,19 @@ class TranscriptLog(Log):
     def clear(self) -> "TranscriptLog":
         self._line_tones.clear()
         self._messages.clear()
+        self._wrapped_width = None
         return super().clear()
 
     def on_resize(self, event: events.Resize) -> None:
         """Reflow stored messages when the output box changes width."""
         if self._messages:
             self._rebuild_lines(scroll_end=self.auto_scroll)
+
+    def render(self):
+        """Reflow when styling changes the width without sending Resize."""
+        if self._messages and self._content_width() != self._wrapped_width:
+            self._rebuild_lines(scroll_end=self.auto_scroll)
+        return super().render()
 
     def set_final_color(self, color) -> None:
         """Use the prompt's normal text color for the final transcript tone."""
@@ -85,6 +93,7 @@ class TranscriptLog(Log):
         self._line_tones = {
             line_number: tone for line_number, tone in enumerate(tones)
         }
+        self._wrapped_width = width
         self._render_line_cache.clear()
 
     def _content_width(self) -> int:

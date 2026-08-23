@@ -77,3 +77,4 @@ HACKING
 - 2026-08-23: Added blank-line separation between streamed assistant messages and width-aware transcript wrapping that reflows when the terminal is resized.
 - 2026-08-23: Updated final-tone verification to locate the final message after width-aware wrapping rather than assuming a fixed physical line index.
 - 2026-08-23: Wrapped transcript lines to the output Log's content region so border and padding remain clear, with resize coverage for reflow.
+- 2026-08-23: Reflowed cached transcript lines during rendering when a style width change does not emit a resize event.
