@@ -11,3 +11,6 @@ dependencies = ["textual>=8.2,<9", "textual-vimkeys-input>=0.3.2,<0.4"]
 
 [tool.setuptools.packages.find]
 include = ["tui*"]
+
+[tool.setuptools.package-data]
+tui = ["app.tcss", "templates/**"]

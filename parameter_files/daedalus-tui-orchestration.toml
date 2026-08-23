@@ -1,4 +1,7 @@
-primary_branch = "main"
+# Local branch that task worktrees are based on and that successful tasks
+# promote into. Defaults to main; change this to any local branch name.
+# The operator does not need this branch checked out while the TUI runs.
+target_branch = "main"
 worktree_root = ".daedalus-worktrees"
 task_verification_attempt_limit = 3
 resolver_attempt_limit = 3

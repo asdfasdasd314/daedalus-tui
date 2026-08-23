@@ -1,0 +1,6 @@
+initial_branch = "main"
+initial_commit_message = "Initialize Daedalus project"
+generate_readme = true
+generate_gitignore = true
+template_version = 1
+maximum_project_name_length = 100

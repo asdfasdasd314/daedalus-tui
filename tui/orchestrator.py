@@ -399,30 +399,57 @@ class LocalOrchestrator:
             self.emit("graphify", "Graph refresh skipped because graphify-out is not present.")
             return
         self.emit("graphify", "Refreshing the primary repository graph.")
-        result = update_repository(self.repository, self.settings.graphify_executable)
-        if not result.succeeded:
-            # A failed or partial refresh must not dirty the primary worktree
-            # and must never trigger a resolver attempt for the code task.
+        checkout: Path | None = None
+        temporary: Path | None = None
+        try:
+            checkout, temporary = manager.prepare_primary_checkout()
+        except GitWorktreeError as error:
+            self.emit("graphify", f"Graph refresh skipped: could not open target branch checkout: {error}", "error")
+            return
+        try:
+            result = update_repository(checkout, self.settings.graphify_executable)
+            if not result.succeeded:
+                # A failed or partial refresh must not dirty the primary worktree
+                # and must never trigger a resolver attempt for the code task.
+                try:
+                    manager.discard_graphify_changes(checkout)
+                except GitWorktreeError as cleanup_error:
+                    self.emit(
+                        "graphify",
+                        f"Graph refresh failed and cleanup also failed: {cleanup_error}",
+                        "error",
+                    )
+                self.emit("graphify", f"Graph refresh skipped: {result.output or 'unknown error'}")
+                return
             try:
-                manager.discard_graphify_changes(self.repository)
+                committed = manager.commit_graphify_changes(
+                    f"Daedalus graphify update after task {task_id}",
+                    checkout,
+                )
+            except GitWorktreeError as error:
+                try:
+                    manager.discard_graphify_changes(checkout)
+                except GitWorktreeError as cleanup_error:
+                    self.emit(
+                        "graphify",
+                        f"Graph refresh commit failed and cleanup also failed: {cleanup_error}",
+                        "error",
+                    )
+                self.emit("graphify", f"Graph refresh completed but could not be committed: {error}", "error")
+                return
+            self.emit(
+                "graphify",
+                "Graph refresh committed." if committed else "Graph refresh completed with no changes.",
+            )
+        finally:
+            try:
+                manager.cleanup_temporary_checkout(temporary)
             except GitWorktreeError as cleanup_error:
                 self.emit(
                     "graphify",
-                    f"Graph refresh failed and cleanup also failed: {cleanup_error}",
+                    f"Temporary target-branch checkout cleanup failed: {cleanup_error}",
                     "error",
                 )
-            self.emit("graphify", f"Graph refresh skipped: {result.output or 'unknown error'}")
-            return
-        try:
-            committed = manager.commit_graphify_changes(f"Daedalus graphify update after task {task_id}")
-        except GitWorktreeError as error:
-            try:
-                manager.discard_graphify_changes(self.repository)
-            except GitWorktreeError as cleanup_error:
-                self.emit("graphify", f"Graph refresh commit failed and cleanup also failed: {cleanup_error}", "error")
-            self.emit("graphify", f"Graph refresh completed but could not be committed: {error}", "error")
-            return
-        self.emit("graphify", "Graph refresh committed." if committed else "Graph refresh completed with no changes.")
 
     def emit(self, phase: str, message: str, kind: str = "status") -> None:
         LOGGER.debug("Orchestration event phase=%s kind=%s message_length=%d", phase, kind, len(message))

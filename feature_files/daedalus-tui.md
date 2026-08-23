@@ -14,6 +14,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Readable streamed output**: Assistant messages are separated by a blank line, and transcript lines are reflowed to the output pane width so long responses remain visible.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project selection**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the task toolbar selects the project for new submissions, and focusing an inbox row synchronizes the active project without mixing transcripts or worktrees.
+- **Project initialization**: New Project materializes bundled Daedalus templates under the launch root, runs Graphify/Git setup, optionally creates a private GitHub repo, then refreshes discovery onto the new project.
 - **Actionable task history**: The task inbox keeps every failed task, active or paused work, and all tasks from the current TUI session while hiding older completed, blocked, and cancelled tasks.
 - **Retryable failures**: Failed agent tasks expose their diagnostics and a Retry action so transient connectivity or service failures can be recovered in place.
 
@@ -25,6 +26,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - `tui/task_coordinator.py`: Concurrent task executor and serialized integration gate.
 - `parameter_files/daedalus-tui.toml`: Provider, model, reasoning, and default UI settings.
 - `feature_files/daedalus-tui-orchestration.md`: Local orchestration ownership boundary.
+- `feature_files/daedalus-tui-project-initialization.md`: Launch-root project scaffolding.
 - `tests/test_plan.py`, `tests/test_app.py`, `tests/test_task_coordinator.py`: Coverage for custom-answer rendering, validation, and follow-up handoff.
 
 ## Dev Mode
@@ -81,3 +83,4 @@ HACKING
 - 2026-08-23: Used an explicit cell width immediately during transcript reflow so direct output width updates are reflected before the next layout pass.
 - 2026-08-23: Accounted for border-box gutters when using an explicit output width, keeping wrapped text inside the Log content area.
 - 2026-08-23: Folded transcript messages by cell width so constrained output panes visibly reflow on narrow resize changes without crossing the content boundary.
+- 2026-08-23: Linked New Project initialization so launch-root scaffolding refreshes the discovered project list.
