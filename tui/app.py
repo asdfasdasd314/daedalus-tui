@@ -5,12 +5,13 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 import threading
+import uuid
 
 from textual import events, on
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, DataTable, Footer, Header, Log, Select, Static, TextArea
+from textual.widgets import Button, Checkbox, DataTable, Footer, Header, Input, Log, Select, Static, TextArea
 from .agent_runner import AgentRunner
 from .clipboard import copy_to_system_clipboard, paste_from_system_clipboard
 from .config import (
@@ -22,6 +23,7 @@ from .config import (
 )
 from .debug_log import LOGGER, close_fault_handler, configure_debug_logging, install_fault_handler, log_exception
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
+from .project_initializer import initialize_project, load_initializer_settings, validate_project_name
 from .projects import DaedalusProject, discover_projects
 from .plan import (
     CUSTOM_ANSWER_OPTION_ID,
@@ -83,6 +85,7 @@ GLOBAL_SHORTCUTS = (
     ("Ctrl+P", "Pause task", "pause_task"),
     ("Ctrl+R", "Resume task", "resume_task"),
     ("Ctrl+X", "Cancel task", "cancel_task"),
+    ("Ctrl+N", "New project", "show_new_project"),
     ("Ctrl+Q", "Quit", "quit"),
     ("Ctrl+K", "Show keyboard shortcuts", "show_shortcuts"),
     ("Ctrl+T", "Show coding statistics", "show_statistics"),
@@ -171,6 +174,94 @@ class KeyboardShortcutsScreen(ModalScreen[None]):
 
     def action_close_shortcuts(self) -> None:
         self.dismiss(None)
+
+
+class ProjectInitializerScreen(ModalScreen[dict | None]):
+    """Collect a project slug and create a Daedalus-compatible directory."""
+
+    BINDINGS = [
+        ("escape", "cancel_initializer", "Cancel"),
+    ]
+
+    def __init__(self, launch_root: Path) -> None:
+        super().__init__()
+        self.launch_root = launch_root.resolve()
+        self._busy = False
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="project-initializer-dialog"):
+            yield Static("New Daedalus project", id="project-initializer-title")
+            yield Static(
+                f"Creates a folder under {self.launch_root}",
+                id="project-initializer-subtitle",
+            )
+            yield Static("Project name (lowercase, digits, hyphens)", id="project-name-label")
+            yield Input(placeholder="example-project", id="project-name-input")
+            yield Checkbox("Also create a private GitHub repository", id="project-github-checkbox")
+            yield Static("", id="project-initializer-status")
+            with Horizontal(id="project-initializer-actions"):
+                yield Button("Create", id="create-project-button", variant="primary")
+                yield Button("Cancel", id="cancel-project-button")
+
+    def on_mount(self) -> None:
+        self.query_one("#project-name-input", Input).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "cancel-project-button":
+            self.dismiss(None)
+        elif event.button.id == "create-project-button":
+            self._create_project()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "project-name-input":
+            self._create_project()
+
+    def action_cancel_initializer(self) -> None:
+        if not self._busy:
+            self.dismiss(None)
+
+    def _create_project(self) -> None:
+        if self._busy:
+            return
+        status = self.query_one("#project-initializer-status", Static)
+        name_input = self.query_one("#project-name-input", Input)
+        create_github = self.query_one("#project-github-checkbox", Checkbox).value
+        try:
+            settings = load_initializer_settings()
+            project_name = validate_project_name(
+                name_input.value,
+                int(settings["maximum_project_name_length"]),
+            )
+        except ValueError as error:
+            status.update(str(error))
+            name_input.focus()
+            return
+
+        self._busy = True
+        status.update(f"Initializing {project_name}…")
+        self.query_one("#create-project-button", Button).disabled = True
+        try:
+            result = initialize_project(
+                {
+                    "requestId": str(uuid.uuid4()),
+                    "projectName": project_name,
+                    "createGitHubRepository": create_github,
+                },
+                execution_root=self.launch_root,
+            )
+        except ValueError as error:
+            self._busy = False
+            self.query_one("#create-project-button", Button).disabled = False
+            status.update(str(error))
+            return
+
+        if result["status"] in {"success", "partial_success"}:
+            self.dismiss(result)
+            return
+
+        self._busy = False
+        self.query_one("#create-project-button", Button).disabled = False
+        status.update(str(result.get("error") or "Initialization failed."))
 
 
 class CodingStatisticsScreen(ModalScreen[None]):
@@ -399,6 +490,7 @@ class DaedalusTuiApp(App[None]):
                             value=self._project_select_value(),
                             id="project-select",
                         )
+                        yield Button("New Project", id="new-project-button")
                         yield Button("New Task", id="new-task-button", variant="primary")
                     with Horizontal(id="settings"):
                         yield Select(
@@ -607,11 +699,16 @@ class DaedalusTuiApp(App[None]):
     def action_show_statistics(self) -> None:
         self.push_screen(CodingStatisticsScreen(self._usage_entries(), self.statistics_settings))
 
+    def action_show_new_project(self) -> None:
+        self.push_screen(ProjectInitializerScreen(self.launch_root), self._on_project_initialized)
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "send-button":
             self._submit_prompt()
         elif event.button.id == "new-task-button":
             self._start_new_task()
+        elif event.button.id == "new-project-button":
+            self.action_show_new_project()
         elif event.button.id == "continue-plan-button":
             self._continue_plan()
         elif event.button.id == "start-coding-button":
@@ -844,6 +941,43 @@ class DaedalusTuiApp(App[None]):
         self._refresh_task_list()
         self._render_selected_task_safely("project switch")
         self._set_status("Project switched")
+
+    def _on_project_initialized(self, result: dict | None) -> None:
+        if result is None:
+            return
+        destination = Path(str(result["projectDirectory"])).resolve()
+        self._reload_projects(preferred=destination)
+        if result["status"] == "partial_success" and result.get("error"):
+            self._set_error(str(result["error"]))
+            self._set_status("Project created with GitHub warning")
+        else:
+            self._set_status(f"Initialized {destination.name}")
+        self._start_new_task()
+
+    def _reload_projects(self, preferred: Path | None = None) -> None:
+        discovered = list(discover_projects(self.launch_root))
+        if not discovered:
+            discovered = [DaedalusProject(self.launch_root, self.launch_root)]
+        discovered_paths = {project.path.resolve() for project in discovered}
+        for known in self.projects:
+            path = known.path.resolve()
+            if path not in discovered_paths and path in self._coordinators:
+                discovered.append(known)
+                discovered_paths.add(path)
+        self.projects = tuple(
+            sorted(
+                discovered,
+                key=lambda project: (project.path.resolve() != self.launch_root, project.display_name),
+            )
+        )
+        self._refresh_project_selector()
+        if preferred is not None and preferred.resolve() in discovered_paths:
+            target = preferred.resolve()
+            if target != self._active_project_path:
+                self._switch_project(target)
+            else:
+                self.query_one("#directory", Static).update(self._directory_text())
+            self.query_one("#project-select", Select).value = self._project_select_value()
 
     def _refresh_project_selector(self) -> None:
         project_select = self.query_one("#project-select", Select)

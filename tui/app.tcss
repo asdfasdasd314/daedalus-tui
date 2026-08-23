@@ -244,6 +244,43 @@ CodingStatisticsScreen {
     align: center middle;
 }
 
+ProjectInitializerScreen {
+    align: center middle;
+}
+
+#project-initializer-dialog {
+    width: 72;
+    height: auto;
+    border: round $primary;
+    background: $surface;
+    padding: 1 2;
+}
+
+#project-initializer-title {
+    color: $text-accent;
+    text-style: bold;
+    height: 2;
+}
+
+#project-initializer-subtitle, #project-name-label, #project-initializer-status {
+    color: $text-muted;
+    height: 1;
+    margin-bottom: 1;
+}
+
+#project-name-input {
+    margin-bottom: 1;
+}
+
+#project-github-checkbox {
+    margin-bottom: 1;
+}
+
+#project-initializer-actions {
+    height: 3;
+    align: left middle;
+}
+
 #coding-statistics-dialog {
     width: 94%;
     height: 88%;
