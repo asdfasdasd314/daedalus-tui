@@ -98,6 +98,15 @@ class TranscriptLog(Log):
 
     def _content_width(self) -> int:
         """Return the width available for transcript text inside the Log."""
+        # An explicit cell width is available as soon as the style changes,
+        # while ``content_region`` may still describe the previous layout
+        # until Textual processes the pending layout pass. Use that value so
+        # cached lines reflow during the same render cycle as a direct width
+        # update.
+        style_width = self.styles.width
+        if style_width is not None and style_width.is_cells:
+            return max(0, style_width.cells or 0)
+
         # ``size.width`` includes the output border and padding. Wrapping to
         # that outer width lets the final characters run into the box chrome,
         # so use Textual's content region for the actual text width.
