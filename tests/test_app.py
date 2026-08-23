@@ -1145,6 +1145,26 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertGreater(len(output._lines), 5)
             self.assertTrue(all(len(line) <= output.size.width for line in output._lines))
 
+    async def test_output_rewraps_messages_when_the_content_width_changes(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#prompt-input", TextArea).insert("Resize the output")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.messages.append("A long output line that should reflow when the output box changes width.")
+            record.status = "running"
+            record.phase = "Agent"
+            coordinator.emit(record, "agent", "", "status")
+            await pilot.pause()
+
+            output = app.query_one("#output", Log)
+            original_lines = tuple(output._lines)
+            output.styles.width = 32
+            await pilot.pause()
+
+            self.assertNotEqual(tuple(output._lines), original_lines)
+            self.assertTrue(all(len(line) <= output.content_region.width for line in output._lines if line))
+
     async def test_final_assistant_message_renders_with_resolved_theme_color(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:

@@ -60,7 +60,7 @@ class TranscriptLog(Log):
 
     def _rebuild_lines(self, *, scroll_end: bool) -> None:
         """Render logical messages as wrapped, selectable Log lines."""
-        width = self.size.width
+        width = self._content_width()
         rendered_lines: list[str] = []
         tones: list[str] = []
         for message_index, (message, final) in enumerate(self._messages):
@@ -86,6 +86,20 @@ class TranscriptLog(Log):
             line_number: tone for line_number, tone in enumerate(tones)
         }
         self._render_line_cache.clear()
+
+    def _content_width(self) -> int:
+        """Return the width available for transcript text inside the Log."""
+        # ``size.width`` includes the output border and padding. Wrapping to
+        # that outer width lets the final characters run into the box chrome,
+        # so use Textual's content region for the actual text width.
+        content_region = self.content_region
+        width = content_region.width
+        if width <= 0:
+            # Messages can arrive before the first layout pass. Keep them
+            # temporarily unwrapped; the first resize/layout event will
+            # rebuild them using the content region.
+            width = self.size.width
+        return max(0, width)
 
     def _wrap_line(self, line: str, width: int) -> list[str]:
         """Wrap one logical line without changing its selectable text."""
