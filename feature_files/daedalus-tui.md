@@ -79,3 +79,4 @@ HACKING
 - 2026-08-23: Wrapped transcript lines to the output Log's content region so border and padding remain clear, with resize coverage for reflow.
 - 2026-08-23: Reflowed cached transcript lines during rendering when a style width change does not emit a resize event.
 - 2026-08-23: Used an explicit cell width immediately during transcript reflow so direct output width updates are reflected before the next layout pass.
+- 2026-08-23: Accounted for border-box gutters when using an explicit output width, keeping wrapped text inside the Log content area.

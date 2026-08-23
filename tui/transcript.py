@@ -105,7 +105,10 @@ class TranscriptLog(Log):
         # update.
         style_width = self.styles.width
         if style_width is not None and style_width.is_cells:
-            return max(0, style_width.cells or 0)
+            width = style_width.cells or 0
+            if self.styles.box_sizing == "border-box":
+                width -= self.styles.gutter.width
+            return max(0, width)
 
         # ``size.width`` includes the output border and padding. Wrapping to
         # that outer width lets the final characters run into the box chrome,

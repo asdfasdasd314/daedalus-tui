@@ -1163,7 +1163,8 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             self.assertNotEqual(tuple(output._lines), original_lines)
-            self.assertTrue(all(len(line) <= output.content_region.width for line in output._lines if line))
+            content_width = output.content_region.width
+            self.assertTrue(all(len(line) <= content_width for line in output._lines if line))
 
     async def test_final_assistant_message_renders_with_resolved_theme_color(self):
         app, coordinator = self.make_app()
