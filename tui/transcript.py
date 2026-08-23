@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from rich.style import Style
 from rich.text import Text
-from rich.cells import cell_len
+from rich.cells import cell_len, chop_cells
 from textual import events
 from textual.strip import Strip
 from textual.widgets import Log
@@ -127,12 +127,7 @@ class TranscriptLog(Log):
         processed_line = self._process_line(line)
         if not processed_line or width <= 0 or cell_len(processed_line) <= width:
             return [processed_line]
-        wrapped = Text(processed_line).wrap(
-            self.app.console,
-            width=width,
-            overflow="fold",
-        )
-        return [wrapped_line.plain for wrapped_line in wrapped] or [""]
+        return chop_cells(processed_line, width) or [""]
 
     def _render_line_strip(self, y: int, rich_style: Style) -> Strip:
         """Render a line with the final-message color before selection styling."""
