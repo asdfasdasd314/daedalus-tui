@@ -75,3 +75,4 @@ HACKING
 - 2026-08-20: Added a UI-owned Custom answer choice to plan questions, with conditional free-text input and encoded follow-up handoff that leaves agent-generated options unchanged.
 - 2026-08-20: Filtered the task inbox to failed history, active work, and tasks from the current TUI session, while preserving visibility when an older task is resumed or retried.
 - 2026-08-23: Added blank-line separation between streamed assistant messages and width-aware transcript wrapping that reflows when the terminal is resized.
+- 2026-08-23: Updated final-tone verification to locate the final message after width-aware wrapping rather than assuming a fixed physical line index.

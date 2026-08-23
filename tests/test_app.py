@@ -1115,7 +1115,8 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
 
             output = app.query_one("#output", Log)
-            self.assertEqual(output.line_tones[:3], ("generic", "generic", "final"))
+            final_line = output._lines.index("The feature is complete.")
+            self.assertEqual(output.line_tones[final_line], "final")
 
     async def test_output_messages_are_separated_and_wrapped(self):
         app, coordinator = self.make_app()
