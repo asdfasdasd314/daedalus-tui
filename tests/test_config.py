@@ -27,6 +27,16 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(orchestration.graphify_update_enabled)
         self.assertEqual(orchestration.graphify_executable, "graphify")
 
+    def test_loads_target_branch_and_primary_branch_alias(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target_path = Path(directory) / "target.toml"
+            target_path.write_text('target_branch = "develop"\nverification_commands = []\n', encoding="utf-8")
+            alias_path = Path(directory) / "alias.toml"
+            alias_path.write_text('primary_branch = "release"\nverification_commands = []\n', encoding="utf-8")
+
+            self.assertEqual(load_orchestration_settings(target_path).primary_branch, "develop")
+            self.assertEqual(load_orchestration_settings(alias_path).primary_branch, "release")
+
     def test_loads_coding_statistics_forecast_settings(self):
         root = Path(__file__).resolve().parents[1]
         statistics = load_coding_statistics_settings(

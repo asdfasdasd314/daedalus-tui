@@ -34,15 +34,17 @@ cp .env.example .env
 The TUI passes `CURSOR_API_KEY` to Cursor only when it is not already present
 in the process environment. You can also authenticate with `agent login`.
 
-Each prompt creates an independent local Git worktree, runs Codex or Cursor
-there, verifies the result, resolves integration failures with the selected
-agent, and fast-forwards the local primary branch after successful checks. Up
-to four prompts can run concurrently; integration and promotion remain
+Each prompt creates an independent local Git worktree based on the configured
+`target_branch` (default `main`; `primary_branch` remains accepted as an
+alias), runs Codex or Cursor there, verifies the result, resolves integration
+failures with the selected agent, and fast-forwards that target branch after
+successful checks. The operator does not need the target branch checked out.
+Up to four prompts can run concurrently; integration and promotion remain
 serialized. No remote push is performed, and failed worktrees are preserved
 for inspection. After a successful promotion, the orchestrator refreshes and
-commits `graphify-out` when the target repository has graphify configured;
-graph refresh failures are reported as warnings and never trigger resolver
-attempts.
+commits `graphify-out` onto the target branch when the target repository has
+graphify configured; graph refresh failures are reported as warnings and never
+trigger resolver attempts.
 
 Target projects may add an optional `.daedalus` TOML file to prepare each task
 worktree before the agent starts. The `[worktree]` table accepts one argv-style

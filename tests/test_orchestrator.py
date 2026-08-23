@@ -129,6 +129,7 @@ class OrchestratorTests(unittest.TestCase):
                 lambda phase, message, channel="status": events.append((phase, message, channel)),
             )
             manager = Mock()
+            manager.prepare_primary_checkout.return_value = (repository.resolve(), None)
             manager.discard_graphify_changes = Mock()
             with patch(
                 "tui.orchestrator.update_repository",
@@ -138,6 +139,7 @@ class OrchestratorTests(unittest.TestCase):
 
         manager.commit_graphify_changes.assert_not_called()
         manager.discard_graphify_changes.assert_called_once_with(repository.resolve())
+        manager.cleanup_temporary_checkout.assert_called_once_with(None)
         self.assertTrue(any(phase == "graphify" and "Operation not permitted" in message for phase, message, _ in events))
 
     def test_successful_graphify_changes_are_committed_after_promotion(self):
@@ -146,6 +148,7 @@ class OrchestratorTests(unittest.TestCase):
             (repository / "graphify-out").mkdir()
             orchestrator = LocalOrchestrator(repository, Mock(), OrchestrationSettings(), lambda *_: None)
             manager = Mock()
+            manager.prepare_primary_checkout.return_value = (repository.resolve(), None)
             manager.commit_graphify_changes.return_value = True
             with patch(
                 "tui.orchestrator.update_repository",
@@ -153,8 +156,12 @@ class OrchestratorTests(unittest.TestCase):
             ):
                 orchestrator.refresh_graphify(manager, "task-1")
 
-        manager.commit_graphify_changes.assert_called_once_with("Daedalus graphify update after task task-1")
+        manager.commit_graphify_changes.assert_called_once_with(
+            "Daedalus graphify update after task task-1",
+            repository.resolve(),
+        )
         manager.discard_graphify_changes.assert_not_called()
+        manager.cleanup_temporary_checkout.assert_called_once_with(None)
 
     def test_merge_failure_deploys_resolver_and_retries_verification(self):
         with tempfile.TemporaryDirectory() as directory:

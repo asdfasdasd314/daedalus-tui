@@ -95,9 +95,12 @@ def load_orchestration_settings(parameter_path: Path | None = None) -> Orchestra
     shutdown_grace_seconds = float(values.get("shutdown_grace_seconds", 8))
     if shutdown_grace_seconds <= 0:
         raise ValueError(f"{path} shutdown_grace_seconds must be positive.")
+    # target_branch is preferred; primary_branch remains as a compatibility alias.
+    target_branch = values.get("target_branch", values.get("primary_branch", "main"))
     return OrchestrationSettings(
-        primary_branch=str(values.get("primary_branch", "main")),
+        primary_branch=str(target_branch),
         worktree_root=str(values.get("worktree_root", ".daedalus-worktrees")),
+
         verification_commands=tuple(normalized),
         task_verification_attempt_limit=int(values.get("task_verification_attempt_limit", 3)),
         resolver_attempt_limit=int(values.get("resolver_attempt_limit", 3)),

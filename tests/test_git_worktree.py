@@ -19,11 +19,89 @@ class GitWorktreeTests(unittest.TestCase):
             self.assertEqual(context.path, Path(directory).resolve() / ".daedalus-worktrees" / "repo" / "task-task-1")
             self.assertEqual(run_git.call_args.args[0][:4], ["worktree", "add", "-b", "agent/task-task-1"])
 
-    def test_primary_validation_rejects_dirty_repository(self):
+    def test_primary_validation_rejects_dirty_repository_when_target_checked_out(self):
         manager = GitWorktreeManager(Path("/repo"))
-        with patch.object(manager, "git_output", side_effect=["main", " M changed.py"]):
+        with patch("tui.git_worktree.subprocess.run") as run, patch.object(
+            manager, "git_output", side_effect=["main", " M changed.py"]
+        ):
+            run.return_value = type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             with self.assertRaises(GitWorktreeError):
                 manager._validate_primary()
+
+    def test_primary_validation_allows_other_checked_out_branch(self):
+        manager = GitWorktreeManager(Path("/repo"), primary_branch="develop")
+        with patch("tui.git_worktree.subprocess.run") as run, patch.object(
+            manager, "git_output", return_value="feature"
+        ):
+            run.return_value = type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            manager.validate_primary()
+
+    def test_primary_validation_rejects_missing_target_branch(self):
+        manager = GitWorktreeManager(Path("/repo"), primary_branch="missing")
+        with patch("tui.git_worktree.subprocess.run") as run:
+            run.return_value = type("Process", (), {"returncode": 1, "stdout": "", "stderr": ""})()
+            with self.assertRaisesRegex(GitWorktreeError, "does not exist"):
+                manager.validate_primary()
+
+    def test_promote_fast_forwards_checked_out_target_with_merge(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory) / "repo"
+            worktree = Path(directory) / "task"
+            worktree.mkdir()
+            manager = GitWorktreeManager(repository, primary_branch="main")
+            context = WorktreeContext(repository, "task-1", "base", "agent/task-task-1", worktree)
+            with patch.object(manager, "_validate_primary"), patch.object(
+                manager, "git_output", side_effect=["base", "tip", "main"]
+            ), patch.object(manager, "run_git") as run_git, patch(
+                "tui.git_worktree.subprocess.run"
+            ) as run:
+                run.return_value = type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+                manager.promote(context, "base")
+
+            self.assertEqual(run_git.call_args.args[0], ["merge", "--ff-only", "agent/task-task-1"])
+
+    def test_promote_updates_target_ref_when_not_checked_out(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory) / "repo"
+            worktree = Path(directory) / "task"
+            worktree.mkdir()
+            manager = GitWorktreeManager(repository, primary_branch="develop")
+            context = WorktreeContext(repository, "task-1", "base", "agent/task-task-1", worktree)
+            with patch.object(manager, "_validate_primary"), patch.object(
+                manager, "git_output", side_effect=["base", "tip", "feature"]
+            ), patch.object(manager, "run_git") as run_git, patch(
+                "tui.git_worktree.subprocess.run"
+            ) as run:
+                run.return_value = type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+                manager.promote(context, "base")
+
+            self.assertEqual(
+                run_git.call_args.args[0],
+                ["update-ref", "refs/heads/develop", "tip", "base"],
+            )
+
+    def test_prepare_primary_checkout_reuses_repository_when_target_checked_out(self):
+        manager = GitWorktreeManager(Path("/repo"), primary_branch="main")
+        with patch.object(manager, "is_primary_checked_out", return_value=True):
+            checkout, temporary = manager.prepare_primary_checkout()
+        self.assertEqual(checkout, Path("/repo").resolve())
+        self.assertIsNone(temporary)
+
+    def test_prepare_primary_checkout_adds_temporary_worktree_when_needed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory) / "repo"
+            repository.mkdir()
+            manager = GitWorktreeManager(repository, primary_branch="develop")
+            with patch.object(manager, "is_primary_checked_out", return_value=False), patch.object(
+                manager, "run_git"
+            ) as run_git:
+                checkout, temporary = manager.prepare_primary_checkout()
+
+            self.assertEqual(checkout, temporary)
+            self.assertEqual(checkout.parent, manager.repository.parent / manager.root_name / manager.repository.name)
+            self.assertTrue(checkout.name.startswith(".graphify-"))
+            self.assertEqual(run_git.call_args.args[0][:2], ["worktree", "add"])
+            self.assertEqual(run_git.call_args.args[0][3], "develop")
 
     def test_successful_cleanup_forces_worktree_removal_before_branch_delete(self):
         with tempfile.TemporaryDirectory() as directory:

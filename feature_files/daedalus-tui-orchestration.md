@@ -1,7 +1,7 @@
 # Daedalus TUI Local Orchestration
 
 ## Summary
-The standalone TUI orchestration layer creates isolated Git worktrees, runs a selected local agent, verifies its changes, resolves integration failures, and promotes successful task branches into the local primary branch.
+The standalone TUI orchestration layer creates isolated Git worktrees from a configurable target branch (default `main`), runs a selected local agent, verifies its changes, resolves integration failures, and promotes successful task branches into that target branch.
 
 ## Key Points
 - **Worktree isolation**: Each task receives an `agent/task-<id>` branch and a sibling `.daedalus-worktrees` directory.
@@ -9,7 +9,8 @@ The standalone TUI orchestration layer creates isolated Git worktrees, runs a se
 - **Restart recovery**: Persisted failed tasks are restored with Retry available, while tasks active during shutdown are restored as paused tasks with their existing worktree context.
 - **Verification repair**: Failed task checks launch repair attempts in the same worktree up to the configured limit.
 - **Resolver fallback**: Merge conflicts and post-merge verification failures launch the selected provider as a resolver with the latest failure details.
-- **Safe promotion**: The primary branch must remain clean, checked out, and unchanged before fast-forward promotion; failed worktrees remain available for inspection.
+- **Configurable target branch**: `target_branch` (default `main`, alias `primary_branch`) is the local branch every task worktree is based on and that successful tasks promote into; the operator does not need it checked out.
+- **Safe promotion**: The target branch tip must remain unchanged during integration; when it is checked out the working tree must stay clean for merge-based promotion, otherwise promotion fast-forwards the target ref in place; failed worktrees remain available for inspection.
 - **Concurrent integration**: Up to four task agents and their verification runs execute concurrently, then ready tasks pass through a first-ready serialized integration gate before promotion.
 - **Connectivity recovery**: Agent subprocesses have a bounded timeout, report actionable offline/service diagnostics, and failed requests can be retried without losing their task context.
 - **Agent Git boundary**: Task, repair, and resolver agents edit files only; the orchestration layer owns staging, commits, merges, and cleanup.
@@ -32,6 +33,7 @@ The standalone TUI orchestration layer creates isolated Git worktrees, runs a se
 HACKING
 
 ## State Log
+- 2026-08-23: Allowed any configured target branch (default main) as the worktree base and promotion destination without requiring that branch to be checked out.
 - 2026-08-14: Added independent worktree, verification, merge, and resolver orchestration without daemon or cloud communication dependencies.
 - 2026-08-14: Added bounded multi-task execution with first-ready serialized promotion and explicit orchestration ownership of all Git operations.
 - 2026-08-14: Hardened successful worktree removal so committed tasks clean up even when agent tooling leaves untracked artifacts behind.

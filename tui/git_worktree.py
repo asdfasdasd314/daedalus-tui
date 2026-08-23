@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import subprocess
+import uuid
 
 from .project_config import ProjectWorktreeSettings
 
@@ -100,12 +101,13 @@ class GitWorktreeManager:
         self.run_git(["reset", "--hard", context.base_commit], context.path)
         self.run_git(["clean", "-fd"], context.path)
 
-    def commit_graphify_changes(self, message: str) -> bool:
+    def commit_graphify_changes(self, message: str, directory: Path | None = None) -> bool:
         """Commit only the generated graph after a successful primary update."""
-        if not self.git_output(["status", "--porcelain", "--", "graphify-out"]):
+        checkout = directory or self.repository
+        if not self.git_output(["status", "--porcelain", "--", "graphify-out"], checkout):
             return False
-        self.run_git(["add", "--", "graphify-out"])
-        self.run_git(["commit", "-m", message])
+        self.run_git(["add", "--", "graphify-out"], checkout)
+        self.run_git(["commit", "-m", message], checkout)
         return True
 
     def merge_primary_into_task(self, context: WorktreeContext) -> None:
@@ -117,11 +119,54 @@ class GitWorktreeManager:
         current = self.git_output(["rev-parse", self.primary_branch])
         if current != expected_base:
             raise GitWorktreeError("Primary branch advanced outside the integration run.")
-        self.run_git(["merge", "--ff-only", context.branch_name])
+        task_tip = self.git_output(["rev-parse", context.branch_name])
+        ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", expected_base, task_tip],
+            cwd=self.repository,
+            capture_output=True,
+            text=True,
+        )
+        if ancestor.returncode != 0:
+            raise GitWorktreeError("Task branch is not a fast-forward of the target branch.")
+        if self.is_primary_checked_out():
+            self.run_git(["merge", "--ff-only", context.branch_name])
+            return
+        # Fast-forward the target ref without requiring it to be checked out.
+        self.run_git(
+            ["update-ref", f"refs/heads/{self.primary_branch}", task_tip, expected_base]
+        )
 
     def capture_primary(self) -> str:
         self._validate_primary()
         return self.git_output(["rev-parse", self.primary_branch])
+
+    def prepare_primary_checkout(self) -> tuple[Path, Path | None]:
+        """Return a directory whose HEAD matches the target branch tip.
+
+        When the repository already has the target branch checked out, reuse it.
+        Otherwise create a short-lived worktree checked out on the target branch
+        so graph refreshes commit there without switching the operator's checkout.
+        """
+        if self.is_primary_checked_out():
+            return self.repository, None
+        path = (
+            self.repository.parent
+            / self.root_name
+            / self.repository.name
+            / f".graphify-{uuid.uuid4().hex[:8]}"
+        )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.run_git(["worktree", "add", str(path), self.primary_branch])
+        return path, path
+
+    def cleanup_temporary_checkout(self, temporary: Path | None) -> None:
+        """Remove a short-lived primary checkout created for post-promotion work."""
+        if temporary is None:
+            return
+        if temporary.exists():
+            self.run_git(["worktree", "remove", "--force", str(temporary)])
+        else:
+            self.run_git(["worktree", "prune"])
 
     def remove_successful(self, context: WorktreeContext) -> None:
         if context.path.exists():
@@ -147,11 +192,30 @@ class GitWorktreeManager:
     def has_unmerged_paths(self, directory: Path) -> bool:
         return bool(self.git_output(["diff", "--name-only", "--diff-filter=U"], directory))
 
+    def is_primary_checked_out(self) -> bool:
+        return self.git_output(["branch", "--show-current"]) == self.primary_branch
+
     def validate_primary(self) -> None:
-        if self.git_output(["branch", "--show-current"]) != self.primary_branch:
-            raise GitWorktreeError(f"Primary worktree must have {self.primary_branch} checked out.")
-        if not self.is_clean(self.repository):
-            raise GitWorktreeError("Primary worktree must be clean before starting or promoting an agent.")
+        """Ensure the configured target branch exists and is safe to integrate into.
+
+        The operator does not need that branch checked out. Task worktrees are
+        always created from the target branch tip. When it *is* checked out, the
+        working tree must be clean so promotion and graph commits stay coherent.
+        """
+        verify = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{self.primary_branch}"],
+            cwd=self.repository,
+            capture_output=True,
+            text=True,
+        )
+        if verify.returncode != 0:
+            raise GitWorktreeError(
+                f"Target branch {self.primary_branch!r} does not exist as a local branch."
+            )
+        if self.is_primary_checked_out() and not self.is_clean(self.repository):
+            raise GitWorktreeError(
+                "Primary worktree must be clean before starting or promoting an agent."
+            )
 
     def _validate_primary(self) -> None:
         """Compatibility alias for callers that used the original private helper."""
