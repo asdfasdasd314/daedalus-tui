@@ -13,6 +13,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Concurrent task inbox**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript; the left-side inbox promotes tasks with unseen updates.
 - **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
 - **Plan custom answers**: Plan review renders a software-owned custom-answer choice alongside the agent's reasonable options and collects free text only when that choice is selected; the agent protocol remains unchanged.
+- **Literal plan review text**: `#plan-display` and dynamic plan-question Static widgets render agent-generated text with `markup=False` so brackets and scientific notation cannot trigger Textual/Rich markup parsing.
 - **Plan recommended defaults**: Plan and follow-up prompts require every multiple-choice question to mark exactly one option with ` (Recommended)` so a safe default is always visible when the user does not care which answer to pick.
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
 - **Readable streamed output**: Assistant messages are separated by a blank line, and transcript lines are reflowed to the output pane width so long responses remain visible.
@@ -92,3 +93,4 @@ HACKING
 - 2026-08-23: Linked New Project initialization so launch-root scaffolding refreshes the discovered project list.
 - 2026-08-23: Preserved editable prompt drafts across toolbar project switches so a mis-targeted draft can be redirected instead of erased.
 - 2026-08-23: Required plan-mode questions to label exactly one option with (Recommended) via the plan and follow-up system prompts.
+- 2026-08-23: Rendered agent plan and question text as literal Static content (`markup=False`) so square brackets and scientific notation cannot fail Textual markup parsing.

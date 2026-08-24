@@ -546,9 +546,11 @@ class DaedalusTuiApp(App[None]):
                     # Log supports Textual click-drag selection; RichLog does not.
                     yield TranscriptLog(id="output", auto_scroll=True)
                     with Vertical(id="plan-review"):
-                        yield Static("", id="plan-display")
+                        # Agent plan text is literal; brackets and scientific
+                        # notation must not be parsed as Textual/Rich markup.
+                        yield Static("", id="plan-display", markup=False)
                         with Vertical(id="plan-questions"):
-                            yield Static("", id="plan-questions-empty")
+                            yield Static("", id="plan-questions-empty", markup=False)
                         with Horizontal(id="plan-actions"):
                             yield Button("Submit Answers", id="answer-plan-button", disabled=True)
                             yield Button("Implement", id="implement-button", disabled=True, variant="primary")
@@ -1394,16 +1396,16 @@ class DaedalusTuiApp(App[None]):
         if not self._is_current_plan_review(record, generation):
             return
         if not questions:
-            await question_container.mount(Static("No questions from the agent."))
+            await question_container.mount(Static("No questions from the agent.", markup=False))
         else:
-            widgets = [Static("Questions", classes="plan-questions-heading")]
+            widgets = [Static("Questions", classes="plan-questions-heading", markup=False)]
             for index, question in enumerate(questions):
                 saved_answer = answers.get(question.question_id)
                 saved_custom_text = custom_answer_text(saved_answer)
                 selected_value = CUSTOM_ANSWER_OPTION_ID if saved_custom_text else saved_answer or Select.NULL
                 widgets.extend(
                     (
-                        Static(question.text, classes="plan-question"),
+                        Static(question.text, classes="plan-question", markup=False),
                         PlanAnswerSelect(
                             [(option.label, option.option_id) for option in plan_answer_options(question)],
                             value=selected_value,

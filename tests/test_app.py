@@ -948,6 +948,50 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 ("coding", record.task_id, "Use the smallest compatible change."),
             )
 
+    async def test_plan_review_renders_literal_markup_like_agent_text(self):
+        """Agent plan text must not be parsed as Textual/Rich markup."""
+        app, coordinator = self.make_app()
+        markup_like_plan = (
+            "[Q=1e-4`, measurement noise `R=1e-2` on price "
+            "(or log-price — pick price-level for readability)"
+        )
+        markup_like_question = (
+            "Keep process noise [Q=1e-4` and measurement noise `R=1e-2`?"
+        )
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Plan a Kalman filter")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = markup_like_plan
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    markup_like_question,
+                    (
+                        PlanOption("a", "Price-level (Recommended)"),
+                        PlanOption("b", "Log-price"),
+                    ),
+                ),
+            )
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+            await pilot.pause()
+
+            plan_display = app.query_one("#plan-display", Static)
+            self.assertEqual(plan_display.render().plain, markup_like_plan)
+            question = app.query_one(".plan-question", Static)
+            self.assertEqual(question.render().plain, markup_like_question)
+            self.assertIsNone(app._exception)
+            self.assertNotEqual(str(app.query_one("#status", Static).render()), "Error")
+            self.assertNotIn(
+                "Expected markup value",
+                "\n".join(app.query_one("#task-error", Log)._lines),
+            )
+            self.assertTrue(app.query_one("#plan-question-0", Select).query_one("#label"))
+
     async def test_plan_review_renders_choices_and_keeps_implementation_locked(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:
