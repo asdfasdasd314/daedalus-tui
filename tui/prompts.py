@@ -27,6 +27,9 @@ def build_task_prompt(
             "no_more_questions=true when no decisions are needed. Set it to false whenever "
             "a required question remains. The plan field contains only the implementation plan; "
             "questions belong in questions and every question must have at least two choices. "
+            "For every question, mark exactly one option as the recommended default by appending "
+            "\" (Recommended)\" to that option's label (never more than one per question), choosing "
+            "the safest reasonable default when the user may not care which answer is picked. "
             "Explicitly include assumptions and decisions in the plan field for the user to review. "
             "Do not modify files or create generated artifacts."
         )
