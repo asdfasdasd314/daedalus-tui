@@ -151,6 +151,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(app.query_one("#model-select", Select).value, "gpt-5.6-luna")
             self.assertEqual(app.query_one("#reasoning-select", Select).value, "medium")
             self.assertEqual(app.query_one("#mode-select", Select).value, "coding")
+            self.assertEqual(app.query_one("#target-branch-select", Select).value, "main")
             self.assertIn("/workspace/project", str(app.query_one("#directory", Static).render()))
             self.assertIsInstance(app.query_one("#task-list", DataTable), DataTable)
             self.assertIsInstance(app.query_one("#prompt-input", TextArea), DaedalusVimTextArea)
@@ -257,6 +258,161 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 [call.kwargs["memory_path"] for call in coordinator_class.call_args_list],
                 [root.resolve() / ".daedalus-memory.json"] * 2,
             )
+            self.assertEqual(
+                [call.args[2].primary_branch for call in coordinator_class.call_args_list],
+                ["main", "main"],
+            )
+
+    @patch("tui.app.TaskCoordinator")
+    @patch("tui.app.list_local_branches")
+    @patch("tui.app.discover_projects")
+    async def test_target_branch_select_persists_per_project_and_restores_on_switch(
+        self, discover, list_branches, coordinator_class
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "wfinance"
+            second = root / "other"
+            memory_path = root / ".daedalus-memory.json"
+            discover.return_value = (
+                DaedalusProject(first, root),
+                DaedalusProject(second, root),
+            )
+            list_branches.side_effect = lambda path: {
+                first.resolve(): ["main", "james"],
+                second.resolve(): ["main", "develop"],
+            }.get(Path(path).resolve(), ["main"])
+            coordinator_class.side_effect = lambda *args, **kwargs: FakeCoordinator()
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+
+            async with app.run_test() as pilot:
+                branch_select = app.query_one("#target-branch-select", Select)
+                self.assertEqual(branch_select.value, "main")
+                branch_select.value = "james"
+                await pilot.pause()
+                self.assertEqual(app.coordinator.settings.primary_branch, "james")
+                self.assertEqual(
+                    json.loads(memory_path.read_text(encoding="utf-8")),
+                    [
+                        {"last_opened_project": str(first.resolve())},
+                        {
+                            "project_target_branches": {
+                                str(first.resolve()): "james",
+                            }
+                        },
+                    ],
+                )
+
+                project_select = app.query_one("#project-select", Select)
+                project_select.value = str(second)
+                await pilot.pause()
+                self.assertEqual(app.query_one("#target-branch-select", Select).value, "main")
+                self.assertEqual(app.coordinator.settings.primary_branch, "main")
+
+                app.query_one("#target-branch-select", Select).value = "develop"
+                await pilot.pause()
+                project_select.value = str(first)
+                await pilot.pause()
+
+                self.assertEqual(app.query_one("#target-branch-select", Select).value, "james")
+                self.assertEqual(app.coordinator.settings.primary_branch, "james")
+                mapping = next(
+                    entry["project_target_branches"]
+                    for entry in json.loads(memory_path.read_text(encoding="utf-8"))
+                    if "project_target_branches" in entry
+                )
+                self.assertEqual(
+                    mapping,
+                    {
+                        str(first.resolve()): "james",
+                        str(second.resolve()): "develop",
+                    },
+                )
+
+    @patch("tui.app.list_local_branches")
+    @patch("tui.app.discover_projects")
+    async def test_stale_remembered_target_branch_clears_memory_and_falls_back(
+        self, discover, list_branches
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "wfinance"
+            memory_path = root / ".daedalus-memory.json"
+            memory_path.write_text(
+                json.dumps(
+                    [
+                        {"last_opened_project": str(project.resolve())},
+                        {
+                            "project_target_branches": {
+                                str(project.resolve()): "james",
+                            }
+                        },
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            discover.return_value = (DaedalusProject(project, root),)
+            list_branches.return_value = ["main", "develop"]
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+
+            async with app.run_test() as pilot:
+                await pilot.pause()
+                self.assertEqual(app.query_one("#target-branch-select", Select).value, "main")
+                self.assertEqual(app.coordinator.settings.primary_branch, "main")
+
+            self.assertEqual(
+                json.loads(memory_path.read_text(encoding="utf-8")),
+                [{"last_opened_project": str(project.resolve())}],
+            )
+
+    @patch("tui.app.TaskCoordinator")
+    @patch("tui.app.list_local_branches")
+    @patch("tui.app.discover_projects")
+    async def test_new_task_coordinator_uses_project_primary_branch(
+        self, discover, list_branches, coordinator_class
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "wfinance"
+            memory_path = root / ".daedalus-memory.json"
+            memory_path.write_text(
+                json.dumps(
+                    [
+                        {
+                            "project_target_branches": {
+                                str(project.resolve()): "james",
+                            }
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            discover.return_value = (DaedalusProject(project, root),)
+            list_branches.return_value = ["main", "james"]
+            coordinator_class.return_value = FakeCoordinator()
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+            )
+
+            self.assertEqual(coordinator_class.call_args.args[2].primary_branch, "james")
+            async with app.run_test() as pilot:
+                await pilot.pause()
+                self.assertEqual(app.coordinator.settings.primary_branch, "james")
 
     @patch("tui.app.discover_projects")
     async def test_restores_and_updates_last_opened_project(self, discover):

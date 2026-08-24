@@ -14,6 +14,22 @@ class GitWorktreeError(RuntimeError):
     pass
 
 
+def list_local_branches(repository: Path) -> list[str]:
+    """Return local branch names under ``refs/heads`` without checking anything out."""
+    try:
+        process = subprocess.run(
+            ["git", "for-each-ref", "--format=%(refname:short)", "refs/heads"],
+            cwd=repository,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return []
+    if process.returncode != 0:
+        return []
+    return [line.strip() for line in process.stdout.splitlines() if line.strip()]
+
+
 @dataclass(frozen=True)
 class WorktreeContext:
     repository: Path

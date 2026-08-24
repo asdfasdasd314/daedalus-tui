@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from pathlib import Path
 import threading
 import uuid
@@ -22,6 +23,7 @@ from .config import (
     load_tui_settings,
 )
 from .debug_log import LOGGER, close_fault_handler, configure_debug_logging, install_fault_handler, log_exception
+from .git_worktree import list_local_branches
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .project_initializer import initialize_project, load_initializer_settings, validate_project_name
 from .projects import DaedalusProject, discover_projects
@@ -473,6 +475,7 @@ class DaedalusTuiApp(App[None]):
         self._textual_unmounted = False
         self._previous_asyncio_exception_handler = None
         self._rendered_plan_question_signature: tuple[object, ...] | None = None
+        self._suppress_target_branch_change = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -512,6 +515,16 @@ class DaedalusTuiApp(App[None]):
                             [(option.label, option.value) for option in self.settings.modes],
                             value="coding",
                             id="mode-select",
+                        )
+                        yield Select(
+                            [
+                                (
+                                    self.orchestration_settings.primary_branch,
+                                    self.orchestration_settings.primary_branch,
+                                )
+                            ],
+                            value=self.orchestration_settings.primary_branch,
+                            id="target-branch-select",
                         )
                     yield Static(self._directory_text(), id="directory")
                     yield Static("Phase: Idle", id="phase")
@@ -556,6 +569,7 @@ class DaedalusTuiApp(App[None]):
         self._fault_log_file = install_fault_handler(self.debug_log_path)
         self._install_exit_diagnostics()
         self._accept_task_events = True
+        self._refresh_target_branch_select()
         self._refresh_task_list()
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
         prompt.enter_insert_mode()
@@ -731,6 +745,12 @@ class DaedalusTuiApp(App[None]):
             if event.value not in (Select.BLANK, ""):
                 self._switch_project(Path(str(event.value)))
             return
+        if event.select.id == "target-branch-select":
+            if self._suppress_target_branch_change:
+                return
+            if event.value not in (Select.BLANK, ""):
+                self._on_target_branch_selected(str(event.value))
+            return
         if event.select.id and event.select.id.startswith("plan-question-"):
             self._update_plan_custom_answer_visibility(event.select.id, event.value)
             self._update_plan_action_buttons()
@@ -877,18 +897,91 @@ class DaedalusTuiApp(App[None]):
         project_path = project_path.resolve()
         if project_path in self._coordinators:
             return self._coordinators[project_path]
-        coordinator = self._external_coordinator if self._external_coordinator is not None else TaskCoordinator(
-            project_path,
-            self.runner,
+        settings = replace(
             self.orchestration_settings,
-            self._on_task_event,
-            memory_path=self.launch_root / DEFAULT_MEMORY_FILE,
+            primary_branch=self._effective_primary_branch(project_path),
         )
-        self._external_coordinator = None
+        if self._external_coordinator is not None:
+            coordinator = self._external_coordinator
+            self._external_coordinator = None
+            coordinator.settings = settings
+        else:
+            coordinator = TaskCoordinator(
+                project_path,
+                self.runner,
+                settings,
+                self._on_task_event,
+                memory_path=self.launch_root / DEFAULT_MEMORY_FILE,
+            )
         if hasattr(coordinator, "set_event_callback"):
             coordinator.set_event_callback(self._on_task_event)
         self._coordinators[project_path] = coordinator
         return coordinator
+
+    def _effective_primary_branch(self, project_path: Path) -> str:
+        """Memory override for the project, else the parameter-file default."""
+        try:
+            remembered = self.memory.get_project_target_branch(project_path)
+        except (OSError, ValueError):
+            remembered = None
+        if remembered:
+            return remembered
+        return self.orchestration_settings.primary_branch
+
+    def _apply_primary_branch(self, project_path: Path, branch: str) -> None:
+        """Update the project's coordinator so later submits use ``branch``."""
+        coordinator = self._coordinator_for(project_path)
+        base = getattr(coordinator, "settings", self.orchestration_settings)
+        try:
+            coordinator.settings = replace(base, primary_branch=branch)
+        except TypeError:
+            coordinator.settings = replace(
+                self.orchestration_settings,
+                primary_branch=branch,
+            )
+
+    def _on_target_branch_selected(self, branch: str) -> None:
+        project_path = self._active_project_path
+        default_branch = self.orchestration_settings.primary_branch
+        try:
+            if branch == default_branch:
+                # Absent key means parameter default; do not store the seed.
+                self.memory.clear_project_target_branch(project_path)
+            else:
+                self.memory.set_project_target_branch(project_path, branch)
+        except (OSError, ValueError):
+            pass
+        self._apply_primary_branch(project_path, branch)
+
+    def _refresh_target_branch_select(self) -> None:
+        """Refresh Branch Select options for the active project and sync coordinator."""
+        project_path = self._active_project_path
+        default_branch = self.orchestration_settings.primary_branch
+        branches = list_local_branches(project_path)
+        try:
+            remembered = self.memory.get_project_target_branch(project_path)
+        except (OSError, ValueError):
+            remembered = None
+        if remembered is not None and remembered not in branches:
+            try:
+                self.memory.clear_project_target_branch(project_path)
+            except (OSError, ValueError):
+                pass
+            remembered = None
+        effective = remembered if remembered is not None else default_branch
+        options = list(branches)
+        if default_branch not in options:
+            options.insert(0, default_branch)
+        if effective not in options:
+            options.insert(0, effective)
+        branch_select = self.query_one("#target-branch-select", Select)
+        self._suppress_target_branch_change = True
+        try:
+            branch_select.set_options([(name, name) for name in options])
+            branch_select.value = effective
+        finally:
+            self._suppress_target_branch_change = False
+        self._apply_primary_branch(project_path, effective)
 
     def _usage_entries(self):
         try:
@@ -944,6 +1037,7 @@ class DaedalusTuiApp(App[None]):
             row_key for row_key in self._updated_task_rows if row_key in self._task_rows
         }
         self.query_one("#directory", Static).update(self._directory_text())
+        self._refresh_target_branch_select()
         self._refresh_task_list()
         self._render_selected_task_safely("project switch")
         if draft is not None:

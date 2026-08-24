@@ -11,7 +11,12 @@ The standalone TUI orchestration layer creates isolated Git worktrees from a con
 - **Verification diagnostics**: When every verification attempt fails, each attempt's failure output is written to the task error panel and included in the final failure message.
 - **Integration-stage retry**: After coding and verification succeed, failed integration or resolver retries resume at the integration gate instead of re-running the coding agent.
 - **Resolver fallback**: Merge conflicts and post-merge verification failures launch the selected provider as a resolver with the latest failure details.
-- **Configurable target branch**: `target_branch` (default `main`, alias `primary_branch`) is the local branch every task worktree is based on and that successful tasks promote into; the operator does not need it checked out.
+- **Configurable target branch**: `target_branch` (default `main`, alias
+  `primary_branch`) in the orchestration parameter file is only the default
+  seed for new projects; each project's Branch Select can override it in
+  launch-root memory. New task worktrees are based on that effective local
+  branch and successful tasks promote into it; the operator does not need it
+  checked out.
 - **Safe promotion**: The target branch tip must remain unchanged during integration; when it is checked out the working tree must stay clean for merge-based promotion, otherwise promotion fast-forwards the target ref in place; failed worktrees remain available for inspection.
 - **Concurrent integration**: Up to four task agents and their verification runs execute concurrently, then ready tasks pass through a first-ready serialized integration gate before promotion.
 - **Connectivity recovery**: Agent subprocesses have a bounded timeout, report actionable offline/service diagnostics, and failed requests can be retried without losing their task context.
@@ -25,16 +30,17 @@ The standalone TUI orchestration layer creates isolated Git worktrees from a con
 ## Relevant Files
 - `tui/orchestrator.py`: Single-task lifecycle, verification repair, integration, and resolver loops.
 - `tui/task_coordinator.py`: Concurrent task records, executor limit, and serialized integration gate.
-- `tui/git_worktree.py`: Git validation, worktree, branch, merge, and cleanup operations.
+- `tui/git_worktree.py`: Git validation, worktree, branch listing, merge, and cleanup operations.
 - `tui/project_config.py`: Target-project `.daedalus` worktree provisioning settings.
-- `tui/memory.py`: Atomic task snapshots, worktree identity, and restart metadata.
+- `tui/memory.py`: Atomic task snapshots, worktree identity, restart metadata, and per-project target branches.
 - `tui/verification.py`: Configured and convention-based verification execution.
-- `parameter_files/daedalus-tui-orchestration.toml`: Local branch, worktree, verification, and retry settings.
+- `parameter_files/daedalus-tui-orchestration.toml`: Default target branch seed, worktree, verification, and retry settings.
 
 ## Dev Mode
 HACKING
 
 ## State Log
+- 2026-08-23: Made the orchestration parameter `target_branch` a default seed only, with per-project operating-branch overrides applied through each coordinator's cloned settings.
 - 2026-08-23: Logged every exhausted verification failure reason into the task error panel and resumed retries from integration once coding had already succeeded.
 - 2026-08-23: Allowed any configured target branch (default main) as the worktree base and promotion destination without requiring that branch to be checked out.
 - 2026-08-14: Added independent worktree, verification, merge, and resolver orchestration without daemon or cloud communication dependencies.

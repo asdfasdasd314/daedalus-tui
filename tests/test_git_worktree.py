@@ -8,6 +8,32 @@ from tui.project_config import ProjectWorktreeSettings
 
 
 class GitWorktreeTests(unittest.TestCase):
+    def test_list_local_branches_returns_short_ref_names(self):
+        with patch("tui.git_worktree.subprocess.run") as run:
+            run.return_value = type(
+                "Process",
+                (),
+                {"returncode": 0, "stdout": "main\njames\ndevelop\n", "stderr": ""},
+            )()
+            from tui.git_worktree import list_local_branches
+
+            self.assertEqual(list_local_branches(Path("/repo")), ["main", "james", "develop"])
+            self.assertEqual(
+                run.call_args.args[0],
+                ["git", "for-each-ref", "--format=%(refname:short)", "refs/heads"],
+            )
+
+    def test_list_local_branches_returns_empty_on_git_failure(self):
+        with patch("tui.git_worktree.subprocess.run") as run:
+            run.return_value = type(
+                "Process",
+                (),
+                {"returncode": 128, "stdout": "", "stderr": "not a git repository"},
+            )()
+            from tui.git_worktree import list_local_branches
+
+            self.assertEqual(list_local_branches(Path("/repo")), [])
+
     def test_create_uses_primary_sha_and_task_branch(self):
         with tempfile.TemporaryDirectory() as directory:
             manager = GitWorktreeManager(Path(directory) / "repo")

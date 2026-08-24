@@ -31,6 +31,13 @@ daemon, a remote service, or a database server.
 - **Project updates**: Selecting a different project immediately replaces the
   existing `last_opened_project` entry, including when focus later switches
   back to an earlier project, without changing task-history entries.
+- **Per-project operating branch**: A `project_target_branches` map keyed by
+  resolved project path stores each project's Branch Select choice. Absent key
+  means the orchestration parameter default (`main`). Choosing that parameter
+  default clears the project's map entry instead of storing the seed. Stale
+  remembered branches that are no longer local heads are cleared on Select
+  refresh so the default applies again without rewriting the default into
+  memory.
 - **Safe writes**: Updates are serialized in-process and written through a
   temporary file followed by an atomic replacement, so a completed write does
   not leave a partially written JSON document.
@@ -43,17 +50,17 @@ daemon, a remote service, or a database server.
 
 ## Relevant Files
 - `tui/memory.py`: `TaskMemoryStore`, the default memory filename, central JSON
-  schema, task-history and last-project entries, validation, locking, and
-  atomic file replacement.
+  schema, task-history, last-project, and per-project target-branch entries,
+  validation, locking, and atomic file replacement.
 - `tui/app.py`: Restores the remembered project at startup and updates it on
-  project selection.
+  project selection; persists and restores each project's operating branch.
 - `tui/task_coordinator.py`: Records and rehydrates project task snapshots,
   and preserves active worktrees during coordinator shutdown.
 - `tests/test_memory.py`: Covers task-history creation and upserts, removal of
-  legacy usage entries, project-marker updates, and preservation of a corrupt
-  file.
+  legacy usage entries, project-marker and target-branch map updates, and
+  preservation of a corrupt file.
 - `tests/test_app.py`: Covers startup restoration and sidebar persistence of
-  the last opened project.
+  the last opened project and per-project operating branch.
 - `tests/test_task_coordinator.py`: Covers task snapshots for successful and
   unsuccessful task results.
 - `README.md`: Documents the launch-root file and its lifecycle.
@@ -62,6 +69,7 @@ daemon, a remote service, or a database server.
 HACKING
 
 ## State Log
+- 2026-08-23: Added a per-project `project_target_branches` map so Branch Select choices persist in launch-root memory without rewriting the orchestration parameter default.
 - 2026-08-16: Documented the existing local JSON token-usage store, its completion-only recording boundary, and its atomic write and validation behavior.
 - 2026-08-16: Added an updatable launch-root project marker so startup restores the last available project and falls back to the first discovered project.
 - 2026-08-16: Normalized discovered project paths at app startup so memory restoration and fallback remain canonical across symlinked temporary paths.

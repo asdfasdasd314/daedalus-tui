@@ -12,11 +12,12 @@ from threading import Lock
 
 DEFAULT_MEMORY_FILE = ".daedalus-memory.json"
 LAST_OPENED_PROJECT_KEY = "last_opened_project"
+PROJECT_TARGET_BRANCHES_KEY = "project_target_branches"
 TASKS_KEY = "tasks"
 
 
 class TaskMemoryStore:
-    """Persist task history and the most recently opened project."""
+    """Persist task history, last project, and per-project target branches."""
 
     _locks_guard = Lock()
     _locks: dict[Path, Lock] = {}
@@ -60,6 +61,65 @@ class TaskMemoryStore:
     def record_last_opened_project(self, project_path: Path) -> None:
         """Backward-compatible alias for :meth:`set_last_opened_project`."""
         self.set_last_opened_project(project_path)
+
+    def get_project_target_branch(self, project_path: Path) -> str | None:
+        """Return the remembered operating branch for a project, if any."""
+        key = str(project_path.expanduser().resolve())
+        with self._lock:
+            entries = self._read_entries()
+        for entry in reversed(entries):
+            mapping = entry.get(PROJECT_TARGET_BRANCHES_KEY)
+            if not isinstance(mapping, dict):
+                continue
+            value = mapping.get(key)
+            if isinstance(value, str) and value:
+                return value
+        return None
+
+    def set_project_target_branch(self, project_path: Path, branch: str) -> None:
+        """Remember one project's operating branch without losing other entries."""
+        key = str(project_path.expanduser().resolve())
+        with self._lock:
+            entries = self._read_entries()
+            updated_entries: list[dict[str, object]] = []
+            mapping: dict[str, object] = {}
+            replaced = False
+            for existing in entries:
+                existing_map = existing.get(PROJECT_TARGET_BRANCHES_KEY)
+                if isinstance(existing_map, dict):
+                    if not replaced:
+                        mapping.update(existing_map)
+                        replaced = True
+                    continue
+                if "tokens" in existing:
+                    continue
+                updated_entries.append(existing)
+            mapping[key] = branch
+            updated_entries.append({PROJECT_TARGET_BRANCHES_KEY: mapping})
+            self._write_entries(updated_entries)
+
+    def clear_project_target_branch(self, project_path: Path) -> None:
+        """Remove one project's operating-branch override (absent = use default)."""
+        key = str(project_path.expanduser().resolve())
+        with self._lock:
+            entries = self._read_entries()
+            updated_entries: list[dict[str, object]] = []
+            mapping: dict[str, object] = {}
+            replaced = False
+            for existing in entries:
+                existing_map = existing.get(PROJECT_TARGET_BRANCHES_KEY)
+                if isinstance(existing_map, dict):
+                    if not replaced:
+                        mapping.update(existing_map)
+                        replaced = True
+                    continue
+                if "tokens" in existing:
+                    continue
+                updated_entries.append(existing)
+            mapping.pop(key, None)
+            if mapping:
+                updated_entries.append({PROJECT_TARGET_BRANCHES_KEY: mapping})
+            self._write_entries(updated_entries)
 
     def get_tasks(self) -> dict[str, dict[str, object]]:
         """Return persisted task snapshots keyed by their stable task ID."""

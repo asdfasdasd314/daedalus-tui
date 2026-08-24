@@ -1,5 +1,7 @@
-# Local branch that task worktrees are based on and that successful tasks
-# promote into. Defaults to main; change this to any local branch name.
+# Default seed for the per-project operating branch used as the worktree base
+# and promotion destination. Projects may override this in the TUI Branch
+# Select; overrides live in launch-root .daedalus-memory.json and never rewrite
+# this file. Defaults to main; change this to any local branch name.
 # The operator does not need this branch checked out while the TUI runs.
 target_branch = "main"
 worktree_root = ".daedalus-worktrees"

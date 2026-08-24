@@ -268,6 +268,86 @@ class TaskMemoryStoreTests(unittest.TestCase):
                 [{"last_opened_project": str(first_project.resolve())}],
             )
 
+    def test_tracks_project_target_branches_without_replacing_other_entries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / ".daedalus-memory.json"
+            store = TaskMemoryStore(path)
+            first_project = Path(directory) / "first"
+            second_project = Path(directory) / "second"
+
+            store.record_task(
+                "task-one",
+                "Make the change",
+                "codex",
+                "luna",
+                "medium",
+                "coding",
+                "completed",
+                submitted_at=0,
+            )
+            store.set_last_opened_project(first_project)
+            store.set_project_target_branch(first_project, "james")
+            store.set_project_target_branch(second_project, "develop")
+            store.set_project_target_branch(first_project, "feature")
+
+            self.assertEqual(store.get_project_target_branch(first_project), "feature")
+            self.assertEqual(store.get_project_target_branch(second_project), "develop")
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(payload[0]["tasks"]["task-one"]["prompt"], "Make the change")
+            self.assertEqual(
+                payload[1],
+                {"last_opened_project": str(first_project.resolve())},
+            )
+            self.assertEqual(
+                payload[2],
+                {
+                    "project_target_branches": {
+                        str(first_project.resolve()): "feature",
+                        str(second_project.resolve()): "develop",
+                    }
+                },
+            )
+
+    def test_clear_project_target_branch_removes_only_that_project(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / ".daedalus-memory.json"
+            store = TaskMemoryStore(path)
+            first_project = Path(directory) / "first"
+            second_project = Path(directory) / "second"
+
+            store.set_project_target_branch(first_project, "james")
+            store.set_project_target_branch(second_project, "develop")
+            store.clear_project_target_branch(first_project)
+
+            self.assertIsNone(store.get_project_target_branch(first_project))
+            self.assertEqual(store.get_project_target_branch(second_project), "develop")
+            self.assertEqual(
+                json.loads(path.read_text(encoding="utf-8")),
+                [
+                    {
+                        "project_target_branches": {
+                            str(second_project.resolve()): "develop",
+                        }
+                    }
+                ],
+            )
+
+    def test_clear_last_project_target_branch_omits_empty_map(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / ".daedalus-memory.json"
+            store = TaskMemoryStore(path)
+            project = Path(directory) / "project"
+
+            store.set_last_opened_project(project)
+            store.set_project_target_branch(project, "james")
+            store.clear_project_target_branch(project)
+
+            self.assertIsNone(store.get_project_target_branch(project))
+            self.assertEqual(
+                json.loads(path.read_text(encoding="utf-8")),
+                [{"last_opened_project": str(project.resolve())}],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
