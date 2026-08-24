@@ -782,12 +782,9 @@ class DaedalusTuiApp(App[None]):
             self._set_status("Error")
             return
         if selected_project != self._active_project_path:
-            draft = prompt_widget.text
+            # _switch_project preserves editable drafts; call it so Send uses
+            # the toolbar project even before its Select.Changed event runs.
             self._switch_project(selected_project)
-            # A project switch renders the idle view and clears its prompt;
-            # restore the draft so a selection made immediately before Send
-            # cannot discard the user's new-task text.
-            self._set_prompt_text(draft, editable=True)
 
         provider = str(self.query_one("#provider-select", Select).value)
         model = str(self.query_one("#model-select", Select).value)
@@ -926,6 +923,15 @@ class DaedalusTuiApp(App[None]):
             return
         if project_path not in {project.path.resolve() for project in self.projects}:
             return
+        # Keep in-progress editable drafts when changing projects so a
+        # mis-targeted prompt can be redirected instead of erased.
+        draft: str | None = None
+        try:
+            prompt_widget = self.query_one("#prompt-input", TextArea)
+            if not prompt_widget.read_only:
+                draft = prompt_widget.text
+        except Exception:
+            draft = None
         self._active_project_path = project_path
         self.directory = project_path
         # Persist after the active focus changes so the marker mirrors the
@@ -933,13 +939,15 @@ class DaedalusTuiApp(App[None]):
         self._remember_project(project_path)
         self.coordinator = self._coordinator_for(project_path)
         self._selected_task_id = None
-        self._new_task_mode = False
+        self._new_task_mode = draft is not None
         self._updated_task_rows = {
             row_key for row_key in self._updated_task_rows if row_key in self._task_rows
         }
         self.query_one("#directory", Static).update(self._directory_text())
         self._refresh_task_list()
         self._render_selected_task_safely("project switch")
+        if draft is not None:
+            self._set_prompt_text(draft, editable=True)
         self._set_status("Project switched")
 
     def _on_project_initialized(self, result: dict | None) -> None:

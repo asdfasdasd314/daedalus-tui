@@ -451,6 +451,65 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
             self.assertIs(app.coordinator, first_coordinator)
 
+    @patch("tui.app.discover_projects")
+    async def test_project_switch_preserves_editable_prompt_draft(self, discover):
+        root = Path("/workspace")
+        first = root / "first"
+        second = root / "second"
+        discover.return_value = (
+            DaedalusProject(first, root),
+            DaedalusProject(second, root),
+        )
+        app, first_coordinator = self.make_app()
+        app.launch_root = root
+        app.projects = discover.return_value
+        app._active_project_path = first
+        app.directory = first
+        app.coordinator = first_coordinator
+        app._coordinators = {first: first_coordinator}
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("Draft written for the wrong project")
+            await pilot.pause()
+
+            app.query_one("#project-select", Select).value = str(second)
+            await pilot.pause()
+
+            self.assertEqual(app.directory, second)
+            self.assertEqual(prompt.text, "Draft written for the wrong project")
+            self.assertFalse(prompt.read_only)
+            self.assertFalse(app.query_one("#send-button", Button).disabled)
+
+    @patch("tui.app.discover_projects")
+    async def test_project_switch_does_not_keep_read_only_task_prompt(self, discover):
+        root = Path("/workspace")
+        first = root / "first"
+        second = root / "second"
+        discover.return_value = (
+            DaedalusProject(first, root),
+            DaedalusProject(second, root),
+        )
+        app, first_coordinator = self.make_app()
+        app.launch_root = root
+        app.projects = discover.return_value
+        app._active_project_path = first
+        app.directory = first
+        app.coordinator = first_coordinator
+        app._coordinators = {first: first_coordinator}
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("Submitted task prompt")
+            app.action_submit_prompt()
+            await pilot.pause()
+            self.assertTrue(prompt.read_only)
+
+            app.query_one("#project-select", Select).value = str(second)
+            await pilot.pause()
+
+            self.assertEqual(app.directory, second)
+            self.assertEqual(prompt.text, "")
+            self.assertFalse(prompt.read_only)
+
     async def test_cursor_disables_model_and_reasoning_controls(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:
