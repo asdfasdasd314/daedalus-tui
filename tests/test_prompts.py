@@ -60,6 +60,8 @@ class PromptTests(unittest.TestCase):
         self.assertIn("implementation plan", plan)
         self.assertIn("BEGIN_DAEDALUS_PLAN", plan)
         self.assertIn("no_more_questions", plan)
+        self.assertIn('(Recommended)', plan)
+        self.assertIn("exactly one option as the recommended default", plan)
         self.assertIn("Do not modify files", ask)
         self.assertIn("Do not modify files", plan)
 

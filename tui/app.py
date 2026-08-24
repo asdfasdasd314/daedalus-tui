@@ -336,7 +336,6 @@ class CodingStatisticsScreen(ModalScreen[None]):
         recent = self.stats.last_hour_tasks if is_tasks else self.stats.last_hour_tokens
         seven_day = self.stats.seven_day_expected_tasks if is_tasks else self.stats.seven_day_expected_tokens
         thirty_day = self.stats.thirty_day_expected_tasks if is_tasks else self.stats.thirty_day_expected_tokens
-        average = self.stats.average_tasks_per_prompt if is_tasks else self.stats.average_tokens_per_prompt
         self.query_one("#coding-statistics-subtitle", Static).update(
             f"{suffix.capitalize()} from recorded local tasks"
         )
@@ -349,9 +348,7 @@ class CodingStatisticsScreen(ModalScreen[None]):
         self.query_one("#thirty-day-metric", Static).update(
             f"{self.settings.thirty_day_forecast_days}-day expected {suffix}\n{_format_count(thirty_day)}"
         )
-        self.query_one("#average-metric", Static).update(
-            f"Average {suffix} per prompt\n{average:,.0f}"
-        )
+        self.query_one("#average-metric", Static).update(self._average_per_prompt_text())
         self.query_one("#recent-metric", Static).update(
             f"Last hour {suffix} usage\n{_format_count(recent)}"
         )
@@ -393,16 +390,29 @@ class CodingStatisticsScreen(ModalScreen[None]):
     def action_close_statistics(self) -> None:
         self.dismiss(None)
 
+    def _average_per_prompt_text(self) -> str:
+        suffix = "tasks" if self.unit == "tasks" else "tokens"
+        lines = [f"Average {suffix} per prompt"]
+        averages = self.stats.average_per_prompt(self.unit)
+        if not averages:
+            lines.append(f"No {suffix} recorded")
+        else:
+            lines.extend(
+                f"{provider}: {average:,.0f}"
+                for provider, average in averages
+            )
+        return "\n".join(lines)
+
     def _provider_split_text(self) -> str:
-        lines = ["Provider split"]
+        lines = ["Provider usage"]
         split = self.stats.provider_split(self.unit)
         suffix = "tasks" if self.unit == "tasks" else "tokens"
         if not split:
             lines.append(f"No {suffix} recorded")
         else:
             lines.extend(
-                f"{provider}: {percentage:.1f}% ({_format_count(count)} {suffix})"
-                for provider, count, percentage in split
+                f"{provider}: {_format_count(count)} {suffix}"
+                for provider, count in split
             )
         return "\n".join(lines)
 

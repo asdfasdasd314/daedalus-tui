@@ -68,6 +68,7 @@ class PlanTests(unittest.TestCase):
         implementation = build_implementation_prompt("Build it", "Use a store.", {"q1": "b"})
 
         self.assertIn("JSON", followup)
+        self.assertIn('(Recommended)', followup)
         self.assertIn("Approved implementation plan", implementation)
         self.assertIn("q1: b", implementation)
 

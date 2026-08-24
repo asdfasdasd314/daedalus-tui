@@ -149,8 +149,9 @@ def build_plan_followup_prompt(
     return (
         "Re-evaluate the plan using the user's answers below. Preserve the original request and "
         "return the exact structured plan format from your planning instructions. Ask another "
-        "multiple-choice question if any decision is still required. Set no_more_questions to "
-        "true only when you have no remaining questions that could change the implementation. "
+        "multiple-choice question if any decision is still required. Every question must still mark "
+        "exactly one option with \" (Recommended)\" as the suggested default. Set no_more_questions "
+        "to true only when you have no remaining questions that could change the implementation. "
         "Do not modify files.\n\n"
         f"Original request:\n{original_prompt}\n\n"
         f"Current plan:\n{plan}\n\n"

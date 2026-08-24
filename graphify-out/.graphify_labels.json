@@ -43,6 +43,11 @@
   "41": "KeyboardShortcutsScreen",
   "42": "orchestrator.py",
   "43": "DaedalusProject",
+  "44": "orchestrator.py",
   "45": "discover_projects",
-  "46": "CodingStatisticsScreen"
+  "46": "CodingStatisticsScreen",
+  "47": "update_repository",
+  "48": "load_project_worktree_settings",
+  "49": "PlanQuestion",
+  "50": "._usage_entries"
 }
