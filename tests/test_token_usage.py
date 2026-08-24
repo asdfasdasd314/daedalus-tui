@@ -23,18 +23,25 @@ class TokenUsageTests(unittest.TestCase):
         self.assertEqual(stats.daily_tasks, 1)
         self.assertEqual(stats.last_hour_tokens, 100)
         self.assertEqual(stats.last_hour_tasks, 1)
-        self.assertEqual(stats.average_tokens_per_prompt, 200)
-        self.assertEqual(stats.average_tasks_per_prompt, 1.0)
+        self.assertEqual(
+            stats.average_tokens_per_prompt_by_provider,
+            (("cursor", 300.0), ("codex", 100.0)),
+        )
+        self.assertEqual(
+            stats.average_tasks_per_prompt_by_provider,
+            (("codex", 1.0), ("cursor", 1.0)),
+        )
         self.assertEqual(stats.seven_day_expected_tokens, 1400)
         self.assertEqual(stats.seven_day_expected_tasks, 7)
         self.assertEqual(stats.thirty_day_expected_tokens, 6000)
         self.assertEqual(stats.thirty_day_expected_tasks, 30)
         self.assertEqual(stats.provider_tokens, (("cursor", 300), ("codex", 100)))
         self.assertEqual(stats.provider_tasks, (("codex", 1), ("cursor", 1)))
-        self.assertEqual(dict(stats.provider_percentages), {"cursor": 75.0, "codex": 25.0})
+        self.assertEqual(stats.provider_split("tokens"), (("cursor", 300), ("codex", 100)))
+        self.assertEqual(stats.provider_split("tasks"), (("codex", 1), ("cursor", 1)))
         self.assertEqual(
-            stats.provider_split("tasks"),
-            (("codex", 1, 50.0), ("cursor", 1, 50.0)),
+            stats.average_per_prompt("tokens"),
+            (("cursor", 300.0), ("codex", 100.0)),
         )
 
     def test_reads_task_usage_from_persisted_memory(self):

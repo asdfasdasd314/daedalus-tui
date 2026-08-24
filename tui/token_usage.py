@@ -41,8 +41,8 @@ class TokenUsageStats:
     daily_tokens: int
     cumulative_tasks: int
     daily_tasks: int
-    average_tokens_per_prompt: float
-    average_tasks_per_prompt: float
+    average_tokens_per_prompt_by_provider: tuple[tuple[str, float], ...]
+    average_tasks_per_prompt_by_provider: tuple[tuple[str, float], ...]
     last_hour_tokens: int
     last_hour_tasks: int
     seven_day_expected_tokens: int
@@ -51,18 +51,20 @@ class TokenUsageStats:
     thirty_day_expected_tasks: int
     provider_tokens: tuple[tuple[str, int], ...]
     provider_tasks: tuple[tuple[str, int], ...]
-    provider_percentages: tuple[tuple[str, float], ...]
 
-    def provider_split(self, unit: str = "tokens") -> tuple[tuple[str, int, float], ...]:
-        """Return provider, count, and percentage triples for the selected unit."""
+    def provider_split(self, unit: str = "tokens") -> tuple[tuple[str, int], ...]:
+        """Return provider and absolute usage pairs for the selected unit."""
         if unit not in {"tokens", "tasks"}:
             raise ValueError("unit must be 'tokens' or 'tasks'")
-        totals = self.provider_tokens if unit == "tokens" else self.provider_tasks
-        total = sum(count for _, count in totals)
-        return tuple(
-            (provider, count, (count / total * 100) if total else 0.0)
-            for provider, count in totals
-        )
+        return self.provider_tokens if unit == "tokens" else self.provider_tasks
+
+    def average_per_prompt(self, unit: str = "tokens") -> tuple[tuple[str, float], ...]:
+        """Return per-provider average usage per prompt for the selected unit."""
+        if unit not in {"tokens", "tasks"}:
+            raise ValueError("unit must be 'tokens' or 'tasks'")
+        if unit == "tokens":
+            return self.average_tokens_per_prompt_by_provider
+        return self.average_tasks_per_prompt_by_provider
 
 
 def calculate_token_usage(
@@ -73,10 +75,12 @@ def calculate_token_usage(
     forecast_days: int = 7,
     thirty_day_forecast_days: int = 30,
 ) -> TokenUsageStats:
-    """Calculate token and task totals, windows, and provider percentages.
+    """Calculate token and task totals, windows, and per-provider usage.
 
     Daily usage uses the user's local calendar day. The forecast projects the
     average daily usage across the recorded history into ``forecast_days``.
+    Average tokens per prompt are computed separately for each provider so
+    providers with different token scales are not merged into one figure.
     """
     if recent_window_hours < 1:
         raise ValueError("recent_window_hours must be positive")
@@ -112,8 +116,6 @@ def calculate_token_usage(
     )
     recent = sum(entry.tokens for entry in normalized if recent_start <= entry.timestamp <= current)
     recent_tasks = sum(1 for entry in normalized if recent_start <= entry.timestamp <= current)
-    average = cumulative / len(normalized) if normalized else 0.0
-    average_tasks = 1.0 if normalized else 0.0
 
     if normalized:
         first_day = normalized[-1].timestamp.astimezone(current_local.tzinfo).date()
@@ -134,9 +136,12 @@ def calculate_token_usage(
     provider_task_items = tuple(
         sorted(provider_task_totals.items(), key=lambda item: (-item[1], item[0]))
     )
-    provider_percentages = tuple(
-        (provider, (tokens / cumulative * 100) if cumulative else 0.0)
-        for provider, tokens in provider_items
+    average_tokens_by_provider = tuple(
+        (provider, provider_totals[provider] / provider_task_totals[provider])
+        for provider, _ in provider_items
+    )
+    average_tasks_by_provider = tuple(
+        (provider, 1.0) for provider, _ in provider_task_items
     )
     return TokenUsageStats(
         entries=normalized,
@@ -144,8 +149,8 @@ def calculate_token_usage(
         daily_tokens=daily,
         cumulative_tasks=cumulative_tasks,
         daily_tasks=daily_tasks,
-        average_tokens_per_prompt=average,
-        average_tasks_per_prompt=average_tasks,
+        average_tokens_per_prompt_by_provider=average_tokens_by_provider,
+        average_tasks_per_prompt_by_provider=average_tasks_by_provider,
         last_hour_tokens=recent,
         last_hour_tasks=recent_tasks,
         seven_day_expected_tokens=expected,
@@ -154,7 +159,6 @@ def calculate_token_usage(
         thirty_day_expected_tasks=round(average_daily_tasks * thirty_day_forecast_days),
         provider_tokens=provider_items,
         provider_tasks=provider_task_items,
-        provider_percentages=provider_percentages,
     )
 
 
