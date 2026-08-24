@@ -7,6 +7,7 @@ from tui.plan import (
     PlanOption,
     PlanQuestion,
     build_implementation_prompt,
+    build_plan_clarification_prompt,
     build_plan_followup_prompt,
     custom_answer_text,
     encode_custom_answer,
@@ -88,6 +89,32 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(custom_answer_text(encoded), "A store selected by the user")
         self.assertIn("Custom answer: A store selected by the user", followup)
         self.assertIn("q1: A store selected by the user", implementation)
+
+    def test_clarification_prompt_includes_plan_prompt_and_one_question(self):
+        question = PlanQuestion(
+            "q1",
+            "Which store?",
+            (PlanOption("a", "SQLite (Recommended)"), PlanOption("b", "JSON")),
+        )
+        other = PlanQuestion(
+            "q2",
+            "Which format?",
+            (PlanOption("a", "Compact"), PlanOption("b", "Readable")),
+        )
+        clarification = build_plan_clarification_prompt(
+            "Build a cache",
+            "Add a local store.",
+            question,
+            "What does store mean here?",
+        )
+
+        self.assertIn("Original request:\nBuild a cache", clarification)
+        self.assertIn("Current plan:\nAdd a local store.", clarification)
+        self.assertIn("Which store?", clarification)
+        self.assertIn("SQLite (Recommended)", clarification)
+        self.assertIn("What does store mean here?", clarification)
+        self.assertNotIn(other.text, clarification)
+        self.assertNotIn("Which format?", clarification)
 
 
 if __name__ == "__main__":

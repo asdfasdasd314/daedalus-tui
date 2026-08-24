@@ -111,6 +111,24 @@ class FakeCoordinator:
         record.plan_implemented = True
         return self.submit("Approved implementation", record.provider, record.model, record.reasoning)
 
+    def clarify_plan_question(self, task_id, question_id, user_question):
+        record = self.get(task_id)
+        if record is None:
+            return False
+        from tui.plan import PlanClarification
+
+        clarification = PlanClarification(
+            clarification_id=f"c{len(record.plan_clarifications.get(question_id, [])) + 1}",
+            question_id=question_id,
+            user_question=user_question,
+            status="completed",
+            answer=f"Clarified: {user_question}",
+        )
+        record.plan_clarifications.setdefault(question_id, []).append(clarification)
+        self.plan_actions.append(("clarify", task_id, question_id, user_question))
+        self.emit(record, "clarification", clarification.answer, "status")
+        return True
+
 
 def settings():
     return TuiSettings(
@@ -1220,6 +1238,79 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 [Select.NULL, Select.NULL],
             )
             self.assertEqual(app.query_one("#phase", Static).render().plain, "Phase: Questions")
+
+    async def test_plan_question_clarification_button_and_viewer(self):
+        from tui.app import PlanClarificationScreen
+        from tui.plan import PlanClarification
+
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Choose a storage layer")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = "Use the selected storage layer."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "Which storage layer?",
+                    (PlanOption("a", "SQLite"), PlanOption("b", "JSON")),
+                ),
+            )
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+            await pilot.pause()
+
+            clarify_button = app.query_one("#plan-clarify-0", Button)
+            self.assertEqual(str(clarify_button.label), "?")
+
+            with patch.object(app, "push_screen") as push_screen:
+                clarify_button.press()
+                await pilot.pause()
+                self.assertEqual(push_screen.call_count, 1)
+                screen = push_screen.call_args.args[0]
+                self.assertIsInstance(screen, PlanClarificationScreen)
+                callback = push_screen.call_args.args[1]
+                callback("What does storage layer mean?")
+
+            self.assertEqual(
+                coordinator.plan_actions[-1],
+                ("clarify", record.task_id, "q1", "What does storage layer mean?"),
+            )
+            await pilot.pause()
+            await pilot.pause()
+
+            self.assertEqual(
+                app.query_one("#plan-clarification-select-0", Select).value,
+                record.plan_clarifications["q1"][-1].clarification_id,
+            )
+            self.assertIn(
+                "Clarified: What does storage layer mean?",
+                app.query_one("#plan-clarification-answer-0", Static).render().plain,
+            )
+
+            record.plan_clarifications["q1"].append(
+                PlanClarification(
+                    clarification_id="c2",
+                    question_id="q1",
+                    user_question="Is JSON for config only?",
+                    status="completed",
+                    answer="Yes, keep JSON for config.",
+                )
+            )
+            coordinator.emit(record, "clarification", "Yes, keep JSON for config.", "status")
+            await pilot.pause()
+            await pilot.pause()
+
+            select = app.query_one("#plan-clarification-select-0", Select)
+            select.value = "c2"
+            await pilot.pause()
+            self.assertIn(
+                "Yes, keep JSON for config.",
+                app.query_one("#plan-clarification-answer-0", Static).render().plain,
+            )
 
     async def test_plan_review_render_error_does_not_exit_tui(self):
         app, _coordinator = self.make_app()

@@ -142,7 +142,20 @@ Screen {
 .plan-question {
     color: $text;
     height: auto;
+    width: 1fr;
+    margin-top: 0;
+}
+
+.plan-question-header {
+    height: auto;
+    align: left middle;
     margin-top: 1;
+}
+
+.plan-clarify-button {
+    width: 5;
+    min-width: 5;
+    margin-left: 1;
 }
 
 #plan-questions Select {
@@ -155,6 +168,18 @@ Screen {
     height: 3;
     margin-top: 1;
     display: none;
+}
+
+#plan-questions .plan-clarification-select {
+    width: 1fr;
+    margin-top: 1;
+}
+
+#plan-questions .plan-clarification-answer {
+    width: 1fr;
+    height: auto;
+    margin-top: 1;
+    color: $text-muted;
 }
 
 #plan-actions {
@@ -277,6 +302,42 @@ ProjectInitializerScreen {
 }
 
 #project-initializer-actions {
+    height: 3;
+    align: left middle;
+}
+
+#plan-clarification-dialog {
+    width: 72;
+    height: auto;
+    border: round $primary;
+    background: $surface;
+    padding: 1 2;
+}
+
+#plan-clarification-title {
+    color: $text-accent;
+    text-style: bold;
+    height: 2;
+}
+
+#plan-clarification-question {
+    color: $text;
+    height: auto;
+    margin-bottom: 1;
+}
+
+#plan-clarification-subtitle {
+    color: $text-muted;
+    height: auto;
+    margin-bottom: 1;
+}
+
+#plan-clarification-input {
+    height: 6;
+    margin-bottom: 1;
+}
+
+#plan-clarification-actions {
     height: 3;
     align: left middle;
 }

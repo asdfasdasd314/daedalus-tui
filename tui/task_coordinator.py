@@ -17,8 +17,10 @@ from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .orchestrator import LocalOrchestrator, OrchestrationResult, OrchestrationSettings
 from .plan import (
+    PlanClarification,
     PlanQuestion,
     build_implementation_prompt,
+    build_plan_clarification_prompt,
     build_plan_followup_prompt,
     custom_answer_text,
     is_valid_plan_answer,
@@ -132,6 +134,7 @@ class TaskRecord:
     plan_questions: tuple[PlanQuestion, ...] = ()
     plan_answers: dict[str, str] = field(default_factory=dict)
     plan_answer_details: dict[str, str] = field(default_factory=dict)
+    plan_clarifications: dict[str, list[PlanClarification]] = field(default_factory=dict)
     plan_confirmed: bool = False
     plan_implemented: bool = False
     plan_error: str | None = None
@@ -278,6 +281,44 @@ class TaskCoordinator:
             record.future = self.executor.submit(self._run, record)
             LOGGER.info("Plan answers queued task=%s answer_ids=%s", record.task_id, sorted(valid_answers))
         self._notify(record, "queued", "Plan answers queued for agent confirmation.", "status")
+        return True
+
+    def clarify_plan_question(self, task_id: str, question_id: str, user_question: str) -> bool:
+        """Ask a side-channel clarification about one plan question without plan follow-up."""
+        cleaned = user_question.strip()
+        if not cleaned:
+            return False
+        with self._lock:
+            if self._closed:
+                return False
+            record = self._tasks.get(task_id)
+            if (
+                record is None
+                or record.mode != "plan"
+                or record.status not in {"awaiting_answers", "completed", "questioning"}
+            ):
+                return False
+            question = next(
+                (item for item in record.plan_questions if item.question_id == question_id),
+                None,
+            )
+            if question is None:
+                return False
+            clarification = PlanClarification(
+                clarification_id=uuid.uuid4().hex[:10],
+                question_id=question_id,
+                user_question=cleaned,
+                status="queued",
+            )
+            record.plan_clarifications.setdefault(question_id, []).append(clarification)
+            self.executor.submit(self._run_clarification, record.task_id, clarification.clarification_id)
+            LOGGER.info(
+                "Plan clarification queued task=%s question=%s clarification=%s",
+                record.task_id,
+                question_id,
+                clarification.clarification_id,
+            )
+        self._notify(record, "clarification", "Clarification queued.", "status")
         return True
 
     def implement_plan(self, task_id: str) -> TaskRecord | None:
@@ -518,6 +559,113 @@ class TaskCoordinator:
         self._notify(record, "cancelling", "Stopping the active agent and removing its worktree.", "status")
         return True
 
+    def _run_clarification(self, task_id: str, clarification_id: str) -> None:
+        """Run an ask-mode clarification that does not mutate plan conversation state."""
+        with self._lock:
+            record = self._tasks.get(task_id)
+            if record is None or self._closed:
+                return
+            clarification = self._find_clarification(record, clarification_id)
+            if clarification is None:
+                return
+            question = next(
+                (item for item in record.plan_questions if item.question_id == clarification.question_id),
+                None,
+            )
+            if question is None:
+                clarification.status = "failed"
+                clarification.error = "That plan question is no longer available."
+                self._notify(record, "clarification", clarification.error, "error")
+                return
+            clarification.status = "running"
+            clarification.error = None
+            prompt = build_plan_clarification_prompt(
+                record.prompt,
+                record.plan_text,
+                question,
+                clarification.user_question,
+            )
+            provider = record.provider
+            model = record.model
+            reasoning = record.reasoning
+        self._notify(record, "clarification", "Asking for clarification.", "status")
+
+        answer_chunks: list[str] = []
+
+        def on_event(_phase: str, message: str, kind: str = "status") -> None:
+            # Clarifications stay off the plan transcript and do not change task status.
+            if kind == "message" and message:
+                answer_chunks.append(message)
+
+        orchestrator = LocalOrchestrator(
+            self.repository,
+            self.runner,
+            self.settings,
+            on_event,
+            integration_gate=self.integration.run_when_ready,
+        )
+        try:
+            result = orchestrator.run(
+                prompt,
+                provider,
+                model,
+                reasoning,
+                task_id=f"{task_id}-clarify-{clarification_id}",
+                mode="ask",
+            )
+        except Exception as error:  # Keep clarification failures isolated from the plan task.
+            log_exception(
+                f"Plan clarification crashed task={task_id} clarification={clarification_id}",
+                error,
+            )
+            with self._lock:
+                clarification = self._find_clarification(record, clarification_id)
+                if clarification is None:
+                    return
+                clarification.status = "failed"
+                clarification.error = str(error)
+            self._notify(record, "clarification", str(error), "error")
+            return
+
+        with self._lock:
+            clarification = self._find_clarification(record, clarification_id)
+            if clarification is None:
+                return
+            if result.succeeded:
+                clarification.status = "completed"
+                clarification.answer = "\n\n".join(
+                    chunk.strip() for chunk in answer_chunks if chunk.strip()
+                )
+                clarification.error = None
+                if result.tokens_consumed:
+                    record.tokens_consumed += result.tokens_consumed
+            else:
+                clarification.status = "failed"
+                clarification.error = result.error or "Clarification failed."
+            self._persist_task(record)
+            notify_kind = "status" if clarification.status == "completed" else "error"
+            notify_message = (
+                clarification.answer
+                if clarification.status == "completed"
+                else (clarification.error or "")
+            )
+            clarification_status = clarification.status
+        self._notify(record, "clarification", notify_message, notify_kind)
+        LOGGER.info(
+            "Plan clarification finished task=%s clarification=%s status=%s",
+            task_id,
+            clarification_id,
+            clarification_status,
+        )
+
+    @staticmethod
+    def _find_clarification(record: TaskRecord, clarification_id: str) -> PlanClarification | None:
+        for items in record.plan_clarifications.values():
+            for clarification in items:
+                if clarification.clarification_id == clarification_id:
+                    return clarification
+        return None
+
     def _run(self, record: TaskRecord) -> None:
         LOGGER.info("Task worker started task=%s mode=%s", record.task_id, record.mode)
         record.started_at = time.time()
@@ -673,6 +821,12 @@ class TaskCoordinator:
             if answer_id is not None and not is_valid_plan_answer(question, answer_id):
                 record.plan_answers.pop(question.question_id, None)
                 record.plan_answer_details.pop(question.question_id, None)
+        valid_question_ids = {question.question_id for question in parsed.questions}
+        record.plan_clarifications = {
+            question_id: clarifications
+            for question_id, clarifications in record.plan_clarifications.items()
+            if question_id in valid_question_ids
+        }
         return True
 
     def _discard_plan_worktree(self, record: TaskRecord) -> None:

@@ -13,6 +13,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Concurrent task inbox**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript; the left-side inbox promotes tasks with unseen updates.
 - **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
 - **Plan custom answers**: Plan review renders a software-owned custom-answer choice alongside the agent's reasonable options and collects free text only when that choice is selected; the agent protocol remains unchanged.
+- **Plan question clarifications**: Each plan question exposes a `?` control that opens a side-channel ask about that question alone; answers stay off the plan follow-up transcript and are browsable from a per-question dropdown on the review page.
 - **Literal plan review text**: `#plan-display` and dynamic plan-question Static widgets render agent-generated text with `markup=False` so brackets and scientific notation cannot trigger Textual/Rich markup parsing.
 - **Plan recommended defaults**: Plan and follow-up prompts require every multiple-choice question to mark exactly one option with ` (Recommended)` so a safe default is always visible when the user does not care which answer to pick.
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
@@ -26,10 +27,10 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 ## Relevant Files
 - `tui/app.py`: Textual layout, selectors, task list, transcript replay, and task controls.
 - `tui/prompts.py`: Task, repair, and resolver prompt wrappers, including plan-mode recommended-option instructions.
-- `tui/plan.py`: Agent plan parsing plus UI-owned custom-answer encoding and prompt formatting.
+- `tui/plan.py`: Agent plan parsing plus UI-owned custom-answer encoding, clarification prompts, and prompt formatting.
 - `tui/vim_text_area.py`: Incremental modal Vim prompt adapter and system clipboard integration.
 - `tui/agent_runner.py`: Independent Codex and Cursor subprocess adapter.
-- `tui/task_coordinator.py`: Concurrent task executor and serialized integration gate.
+- `tui/task_coordinator.py`: Concurrent task executor, serialized integration gate, and plan-question clarification workers.
 - `parameter_files/daedalus-tui.toml`: Provider, model, reasoning, and default UI settings.
 - `feature_files/daedalus-tui-orchestration.md`: Local orchestration ownership boundary.
 - `feature_files/daedalus-tui-project-initialization.md`: Launch-root project scaffolding.
@@ -39,6 +40,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-08-24: Added per-question plan clarifications with a `?` button, side-channel ask runs, and an on-page dropdown for answers that stay separate from plan follow-up.
 - 2026-08-23: Added a settings-bar Branch Select that remembers each project's operating branch in launch-root memory and applies it to new task worktrees only.
 - 2026-08-14: Moved the TUI feature ownership into the standalone project boundary and expanded provider/model/reasoning controls for local orchestration.
 - 2026-08-14: Added concurrent task snapshots, assistant-message filtering, selectable transcript replay, and copy-all output for independent worktrees.

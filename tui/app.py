@@ -29,6 +29,7 @@ from .project_initializer import initialize_project, load_initializer_settings, 
 from .projects import DaedalusProject, discover_projects
 from .plan import (
     CUSTOM_ANSWER_OPTION_ID,
+    PlanClarification,
     PlanQuestion,
     custom_answer_text,
     encode_custom_answer,
@@ -155,6 +156,49 @@ class PlanAnswerSelect(Select):
         if self.is_attached and not self._closing:
             self._setup_options_renderables()
             self._init_selected_option(self._value)
+
+
+class PlanClarificationScreen(ModalScreen[str | None]):
+    """Collect a clarification about one plan question."""
+
+    BINDINGS = [
+        ("escape", "cancel_clarification", "Cancel"),
+    ]
+
+    def __init__(self, question_text: str) -> None:
+        super().__init__()
+        self.question_text = question_text
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="plan-clarification-dialog"):
+            yield Static("Clarify this plan question", id="plan-clarification-title")
+            yield Static(self.question_text, id="plan-clarification-question", markup=False)
+            yield Static(
+                "Ask what the agent means. This stays separate from plan answers.",
+                id="plan-clarification-subtitle",
+            )
+            yield TextArea(
+                id="plan-clarification-input",
+                placeholder="What do you mean by this question?",
+            )
+            with Horizontal(id="plan-clarification-actions"):
+                yield Button("Ask", id="ask-clarification-button", variant="primary")
+                yield Button("Cancel", id="cancel-clarification-button")
+
+    def on_mount(self) -> None:
+        self.query_one("#plan-clarification-input", TextArea).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "ask-clarification-button":
+            text = self.query_one("#plan-clarification-input", TextArea).text.strip()
+            if not text:
+                return
+            self.dismiss(text)
+        elif event.button.id == "cancel-clarification-button":
+            self.dismiss(None)
+
+    def action_cancel_clarification(self) -> None:
+        self.dismiss(None)
 
 
 class KeyboardShortcutsScreen(ModalScreen[None]):
@@ -751,6 +795,10 @@ class DaedalusTuiApp(App[None]):
             self._answer_plan()
         elif event.button.id == "implement-button":
             self._implement_plan()
+        elif event.button.id and event.button.id.startswith("plan-clarify-"):
+            index_text = event.button.id.removeprefix("plan-clarify-")
+            if index_text.isdigit():
+                self._open_plan_clarification(int(index_text))
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.select.id == "project-select":
@@ -766,6 +814,9 @@ class DaedalusTuiApp(App[None]):
         if event.select.id and event.select.id.startswith("plan-question-"):
             self._update_plan_custom_answer_visibility(event.select.id, event.value)
             self._update_plan_action_buttons()
+            return
+        if event.select.id and event.select.id.startswith("plan-clarification-select-"):
+            self._update_plan_clarification_answer(event.select.id, event.value)
             return
         if event.select.id != "provider-select":
             return
@@ -903,7 +954,7 @@ class DaedalusTuiApp(App[None]):
         normalized_phase = phase.lower()
         if normalized_phase in {"completed", "failed"}:
             return True
-        return record.mode == "plan" and normalized_phase == "questions"
+        return record.mode == "plan" and normalized_phase in {"questions", "clarification"}
 
     def _coordinator_for(self, project_path: Path) -> TaskCoordinator:
         project_path = project_path.resolve()
@@ -1297,7 +1348,20 @@ class DaedalusTuiApp(App[None]):
         plan_display = self.query_one("#plan-display", Static)
         plan_display.update(record.plan_text or "Waiting for the agent to return a structured plan.")
         questions = tuple(record.plan_questions)
-        answers = dict(record.plan_answers)
+        answers = self._live_plan_answers(record, dict(record.plan_answers))
+        clarifications = {
+            question_id: tuple(
+                (
+                    item.clarification_id,
+                    item.user_question,
+                    item.status,
+                    item.answer,
+                    item.error,
+                )
+                for item in items
+            )
+            for question_id, items in record.plan_clarifications.items()
+        }
         question_signature = (
             record.task_id,
             tuple(
@@ -1305,6 +1369,7 @@ class DaedalusTuiApp(App[None]):
                     question.question_id,
                     question.text,
                     tuple((option.option_id, option.label) for option in question.options),
+                    clarifications.get(question.question_id, ()),
                 )
                 for question in questions
             ),
@@ -1334,6 +1399,23 @@ class DaedalusTuiApp(App[None]):
         # mounted, so a fast click cannot query widgets that do not exist yet.
         answer_button.disabled = True
         self._update_plan_action_buttons()
+
+    def _live_plan_answers(self, record: TaskRecord, fallback: dict[str, str]) -> dict[str, str]:
+        """Prefer mounted selector values so clarification refreshes keep choices."""
+        answers = dict(fallback)
+        for index, question in enumerate(record.plan_questions):
+            nodes = self.query(f"#plan-question-{index}").nodes
+            if not nodes:
+                continue
+            selection = nodes[0].value
+            custom_text = self._plan_custom_answer_text(index)
+            if self._has_plan_answer(selection, custom_text):
+                answers[question.question_id] = (
+                    encode_custom_answer(custom_text)
+                    if selection == CUSTOM_ANSWER_OPTION_ID
+                    else str(selection)
+                )
+        return answers
 
     def _update_plan_action_buttons(self) -> None:
         record = self.coordinator.get(self._selected_task_id or "")
@@ -1380,6 +1462,71 @@ class DaedalusTuiApp(App[None]):
         if nodes:
             nodes[0].styles.display = "block" if value == CUSTOM_ANSWER_OPTION_ID else "none"
 
+    def _update_plan_clarification_answer(self, select_id: str, value) -> None:
+        index = select_id.removeprefix("plan-clarification-select-")
+        answer_nodes = self.query(f"#plan-clarification-answer-{index}").nodes
+        if not answer_nodes:
+            return
+        record = self.coordinator.get(self._selected_task_id or "")
+        if record is None or not index.isdigit():
+            answer_nodes[0].update("")
+            return
+        question_index = int(index)
+        if question_index < 0 or question_index >= len(record.plan_questions):
+            answer_nodes[0].update("")
+            return
+        question = record.plan_questions[question_index]
+        clarifications = record.plan_clarifications.get(question.question_id, [])
+        selected = next(
+            (item for item in clarifications if item.clarification_id == value),
+            None,
+        )
+        answer_nodes[0].update(self._clarification_display_text(selected) if selected else "")
+
+    @staticmethod
+    def _clarification_display_text(clarification: PlanClarification | None) -> str:
+        if clarification is None:
+            return ""
+        if clarification.status in {"queued", "running"}:
+            return f"Q: {clarification.user_question}\n\nAsking…"
+        if clarification.status == "failed":
+            return (
+                f"Q: {clarification.user_question}\n\n"
+                f"Clarification failed: {clarification.error or 'Unknown error.'}"
+            )
+        return f"Q: {clarification.user_question}\n\n{clarification.answer or '(No answer returned.)'}"
+
+    @staticmethod
+    def _clarification_option_label(clarification: PlanClarification) -> str:
+        preview = clarification.user_question.replace("\n", " ").strip()
+        if len(preview) > 48:
+            preview = f"{preview[:45]}..."
+        if clarification.status in {"queued", "running"}:
+            return f"Asking: {preview}"
+        if clarification.status == "failed":
+            return f"Failed: {preview}"
+        return preview
+
+    def _open_plan_clarification(self, index: int) -> None:
+        record = self.coordinator.get(self._selected_task_id or "")
+        if record is None or record.mode != "plan":
+            return
+        if index < 0 or index >= len(record.plan_questions):
+            return
+        question = record.plan_questions[index]
+
+        def on_dismiss(user_question: str | None) -> None:
+            if not user_question:
+                return
+            clarify = getattr(self.coordinator, "clarify_plan_question", None)
+            if clarify is None or not clarify(record.task_id, question.question_id, user_question):
+                self._set_status("Clarification could not be sent")
+                return
+            self._mark_task_current_session(record)
+            self._set_status("Asking clarification")
+
+        self.push_screen(PlanClarificationScreen(question.text), on_dismiss)
+
     async def _rebuild_plan_questions(
         self,
         record: TaskRecord,
@@ -1403,9 +1550,14 @@ class DaedalusTuiApp(App[None]):
                 saved_answer = answers.get(question.question_id)
                 saved_custom_text = custom_answer_text(saved_answer)
                 selected_value = CUSTOM_ANSWER_OPTION_ID if saved_custom_text else saved_answer or Select.NULL
+                clarifications = list(record.plan_clarifications.get(question.question_id, []))
                 widgets.extend(
                     (
-                        Static(question.text, classes="plan-question", markup=False),
+                        Horizontal(
+                            Static(question.text, classes="plan-question", markup=False),
+                            Button("?", id=f"plan-clarify-{index}", classes="plan-clarify-button"),
+                            classes="plan-question-header",
+                        ),
                         PlanAnswerSelect(
                             [(option.label, option.option_id) for option in plan_answer_options(question)],
                             value=selected_value,
@@ -1419,6 +1571,28 @@ class DaedalusTuiApp(App[None]):
                         ),
                     )
                 )
+                if clarifications:
+                    latest = clarifications[-1]
+                    widgets.extend(
+                        (
+                            PlanAnswerSelect(
+                                [
+                                    (self._clarification_option_label(item), item.clarification_id)
+                                    for item in clarifications
+                                ],
+                                value=latest.clarification_id,
+                                allow_blank=False,
+                                id=f"plan-clarification-select-{index}",
+                                classes="plan-clarification-select",
+                            ),
+                            Static(
+                                self._clarification_display_text(latest),
+                                id=f"plan-clarification-answer-{index}",
+                                classes="plan-clarification-answer",
+                                markup=False,
+                            ),
+                        )
+                    )
             await question_container.mount(*widgets)
             for index, question in enumerate(questions):
                 saved_answer = answers.get(question.question_id)

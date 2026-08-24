@@ -28,6 +28,18 @@ class PlanQuestion:
     required: bool = True
 
 
+@dataclass
+class PlanClarification:
+    """A side-channel clarification about one plan question (not plan follow-up)."""
+
+    clarification_id: str
+    question_id: str
+    user_question: str
+    answer: str = ""
+    status: str = "queued"
+    error: str | None = None
+
+
 @dataclass(frozen=True)
 class PlanResult:
     plan: str
@@ -123,6 +135,27 @@ def parse_plan_response(response: str) -> PlanResult:
             error="A confirmed plan cannot include unanswered questions.",
         )
     return PlanResult(plan.strip(), tuple(questions), no_more_questions)
+
+
+def build_plan_clarification_prompt(
+    original_prompt: str,
+    plan: str,
+    question: PlanQuestion,
+    clarification: str,
+) -> str:
+    """Build a read-only ask prompt for one plan question, without other questions."""
+    options = "\n".join(f"- {option.option_id}: {option.label}" for option in question.options)
+    return (
+        "The user is reviewing an implementation plan and needs clarification about one "
+        "multiple-choice question before answering it. Explain what the question means and "
+        "how the options differ in this context. Do not revise the plan, do not ask new "
+        "planning questions, and do not modify files. Answer only the clarification request.\n\n"
+        f"Original request:\n{original_prompt}\n\n"
+        f"Current plan:\n{plan}\n\n"
+        f"Question under review:\n{question.text}\n"
+        f"Options:\n{options}\n\n"
+        f"User clarification request:\n{clarification.strip()}"
+    )
 
 
 def build_plan_followup_prompt(

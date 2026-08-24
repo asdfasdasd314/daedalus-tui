@@ -736,6 +736,59 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertIsNone(record.worktree_path)
             coordinator.shutdown()
 
+    def test_plan_clarification_is_separate_from_plan_conversation(self):
+        class ClarificationOrchestrator:
+            prompts = []
+            modes = []
+
+            def __init__(self, _repository, _runner, _settings, on_event, integration_gate=None):
+                self.on_event = on_event
+
+            def run(self, prompt, _provider, _model, _reasoning, task_id=None, mode="coding", **_kwargs):
+                type(self).prompts.append(prompt)
+                type(self).modes.append(mode)
+                if mode == "ask":
+                    self.on_event("agent", "SQLite means a local file-backed store.", "message")
+                    return OrchestrationResult(True, task_id, tokens_consumed=12)
+                self.on_event(
+                    "agent",
+                    '{"plan":"Add the selected store.","questions":[{"id":"q1",'
+                    '"question":"Which store?","options":[{"id":"a","label":"SQLite"},'
+                    '{"id":"b","label":"JSON"}]}],"no_more_questions":false}',
+                    "message",
+                )
+                return OrchestrationResult(True, task_id, awaiting_plan=True)
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", ClarificationOrchestrator):
+                record = coordinator.submit("Choose a store", "codex", "luna", "medium", mode="plan")
+                record.future.result(timeout=5)
+                plan_messages = list(record.messages)
+                plan_status = record.status
+
+                self.assertTrue(
+                    coordinator.clarify_plan_question(record.task_id, "q1", "What does store mean?")
+                )
+                deadline = time.time() + 2
+                while time.time() < deadline:
+                    clarifications = record.plan_clarifications.get("q1", [])
+                    if clarifications and clarifications[-1].status == "completed":
+                        break
+                    time.sleep(0.01)
+
+            clarification = record.plan_clarifications["q1"][-1]
+            self.assertEqual(clarification.status, "completed")
+            self.assertEqual(clarification.answer, "SQLite means a local file-backed store.")
+            self.assertEqual(record.status, plan_status)
+            self.assertEqual(record.messages, plan_messages)
+            self.assertEqual(ClarificationOrchestrator.modes[-1], "ask")
+            self.assertIn("What does store mean?", ClarificationOrchestrator.prompts[-1])
+            self.assertIn("Which store?", ClarificationOrchestrator.prompts[-1])
+            self.assertIn("Add the selected store.", ClarificationOrchestrator.prompts[-1])
+            self.assertEqual(record.tokens_consumed, 12)
+            coordinator.shutdown()
+
 
 if __name__ == "__main__":
     unittest.main()
