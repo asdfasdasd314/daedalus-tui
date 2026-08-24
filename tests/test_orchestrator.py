@@ -283,6 +283,89 @@ class OrchestratorTests(unittest.TestCase):
         self.assertIn("CODING_PROFILE_FOR_INITIAL_AND_REPAIR", runner.run.call_args_list[0].args[0].prompt)
         self.assertIn("CODING_PROFILE_FOR_REPAIR", runner.run.call_args_list[1].args[0].prompt)
 
+    def test_exhausted_verification_logs_each_failure_reason(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.side_effect = [
+                AgentResult("codex", 0, "done"),
+                AgentResult("codex", 0, "repair-1"),
+                AgentResult("codex", 0, "repair-2"),
+            ]
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            manager.create.return_value = context
+            manager.head.return_value = "changed"
+            events = []
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(verification_commands=(("true",),), task_verification_attempt_limit=3),
+                lambda phase, message, channel: events.append((phase, message, channel)),
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch(
+                    "tui.orchestrator.run_verification",
+                    side_effect=[
+                        VerificationResult(False, "first suite failed"),
+                        VerificationResult(False, "second suite failed"),
+                        VerificationResult(False, "third suite failed"),
+                    ],
+                ),
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-5.6-luna", "medium")
+
+        self.assertFalse(result.succeeded)
+        self.assertIn("first suite failed", result.error)
+        self.assertIn("second suite failed", result.error)
+        self.assertIn("third suite failed", result.error)
+        verification_errors = [
+            message for phase, message, channel in events if phase == "verification" and channel == "error"
+        ]
+        self.assertEqual(len(verification_errors), 3)
+        self.assertTrue(any("first suite failed" in message for message in verification_errors))
+        failed_events = [message for phase, message, channel in events if phase == "failed" and channel == "error"]
+        self.assertEqual(len(failed_events), 1)
+        self.assertIn("Verification failed after 3 attempts", failed_events[0])
+        self.assertIn("third suite failed", failed_events[0])
+        manager.remove_successful.assert_not_called()
+
+    def test_integration_resume_skips_coding_agent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            events = []
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(verification_commands=(("true",),)),
+                lambda phase, message, channel: events.append((phase, message, channel)),
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")) as verify,
+            ):
+                result = orchestrator.run(
+                    "Build it",
+                    "codex",
+                    "gpt-5.6-luna",
+                    "medium",
+                    existing_context=context,
+                    resume_from="integration",
+                )
+
+        self.assertTrue(result.succeeded)
+        runner.run.assert_not_called()
+        manager.commit_changes.assert_not_called()
+        manager.merge_primary_into_task.assert_called_once_with(context)
+        verify.assert_called_once()
+        manager.promote.assert_called_once()
+        manager.remove_successful.assert_called_once()
+        self.assertTrue(any("retrying from integration" in message for phase, message, _ in events if phase == "ready"))
+
     def test_cancelled_agent_removes_unintegrated_worktree(self):
         with tempfile.TemporaryDirectory() as directory:
             repository = Path(directory)

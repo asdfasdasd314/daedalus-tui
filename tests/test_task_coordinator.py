@@ -25,7 +25,7 @@ class FakeOrchestrator:
         self.on_event = on_event
         self.integration_gate = integration_gate
 
-    def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=()):
+    def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=(), resume_from=None):
         with self.lock:
             type(self).active += 1
             type(self).maximum = max(type(self).maximum, type(self).active)
@@ -180,7 +180,7 @@ class TaskCoordinatorTests(unittest.TestCase):
 
     def test_failed_task_does_not_block_later_task(self):
         class FailingOrchestrator(FakeOrchestrator):
-            def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=()):
+            def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=(), resume_from=None):
                 if prompt == "bad":
                     self.on_event("failed", "Task failed but worktree is preserved.", "error")
                     return OrchestrationResult(False, task_id, f"agent/task-{task_id}", Path(f"/tmp/{task_id}"), "preserved")
@@ -450,8 +450,8 @@ class TaskCoordinatorTests(unittest.TestCase):
             def __init__(self, repository, _runner, _settings, _on_event, integration_gate=None):
                 self.repository = repository
 
-            def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=()):
-                type(self).calls.append((existing_context, resume_notes))
+            def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=(), resume_from=None):
+                type(self).calls.append((existing_context, resume_notes, resume_from))
                 type(self).started.set()
                 context = existing_context or WorktreeContext(
                     self.repository,
@@ -483,6 +483,66 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertEqual(record.status, "completed")
             self.assertIs(PausableOrchestrator.calls[1][0], preserved_context)
             self.assertEqual(PausableOrchestrator.calls[1][1], ("The API already exists here.",))
+            self.assertIsNone(PausableOrchestrator.calls[1][2])
+            coordinator.shutdown()
+
+    def test_retry_after_integration_failure_resumes_from_integration(self):
+        class IntegrationRetryOrchestrator:
+            calls = []
+            attempts = 0
+
+            def __init__(self, repository, _runner, _settings, on_event, integration_gate=None):
+                self.repository = repository
+                self.on_event = on_event
+
+            def run(
+                self,
+                prompt,
+                _provider,
+                _model,
+                _reasoning,
+                task_id=None,
+                existing_context=None,
+                resume_from=None,
+                **_kwargs,
+            ):
+                type(self).attempts += 1
+                type(self).calls.append(resume_from)
+                context = existing_context or WorktreeContext(
+                    self.repository,
+                    task_id,
+                    "base",
+                    f"agent/task-{task_id}",
+                    self.repository / "worktree",
+                )
+                if type(self).attempts == 1:
+                    self.on_event("ready", "Task is ready for serialized integration.", "status")
+                    self.on_event("failed", "Integration failed after 3 resolver attempts.\n\nmerge conflict", "error")
+                    return OrchestrationResult(
+                        False,
+                        task_id,
+                        context.branch_name,
+                        context.path,
+                        "Integration failed after 3 resolver attempts.\n\nmerge conflict",
+                        context=context,
+                    )
+                return OrchestrationResult(True, task_id, context.branch_name, context.path, context=context)
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", IntegrationRetryOrchestrator):
+                record = coordinator.submit("promote me", "codex", "luna", "medium")
+                record.future.result(timeout=5)
+                self.assertEqual(record.status, "failed")
+                self.assertEqual(record.resume_from, "integration")
+                self.assertIn("merge conflict", record.error)
+
+                self.assertTrue(coordinator.retry(record.task_id))
+                record.future.result(timeout=5)
+
+            self.assertEqual(record.status, "completed")
+            self.assertEqual(IntegrationRetryOrchestrator.calls, [None, "integration"])
+            self.assertIsNone(record.resume_from)
             coordinator.shutdown()
 
     def test_cancel_paused_task_removes_preserved_worktree(self):

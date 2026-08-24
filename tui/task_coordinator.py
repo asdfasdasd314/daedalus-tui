@@ -139,6 +139,8 @@ class TaskRecord:
     plan_followup_prompt: str | None = field(default=None, repr=False, compare=False)
     retry_prompt: str | None = field(default=None, repr=False, compare=False)
     retry_output_context: str | None = field(default=None, repr=False, compare=False)
+    # When coding and verification already succeeded, retries resume at integration.
+    resume_from: str | None = None
 
 
 class IntegrationCoordinator:
@@ -551,6 +553,7 @@ class TaskCoordinator:
                 control=record.control,
                 existing_context=record.context,
                 resume_notes=resume_notes,
+                resume_from=record.resume_from,
             )
         except Exception as error:  # Keep one unexpected task failure isolated from the pool.
             log_exception(f"Task worker crashed task={record.task_id}", error)
@@ -626,6 +629,7 @@ class TaskCoordinator:
             else:
                 record.status = "completed"
                 record.phase = "Completed"
+                record.resume_from = None
         else:
             record.status = "failed"
             record.phase = "Failed"
@@ -718,6 +722,8 @@ class TaskCoordinator:
                 record.messages.append(message)
         if kind == "error" and message:
             record.error = message
+        if phase in {"ready", "integration", "resolving"}:
+            record.resume_from = "integration"
         if phase == "worktree" and message.startswith("Created "):
             branch, _, worktree = message.removeprefix("Created ").rstrip(".").partition(" at ")
             if branch and worktree:
@@ -749,6 +755,7 @@ class TaskCoordinator:
                 branch_name=record.context.branch_name if record.context is not None else None,
                 worktree_path=record.context.path if record.context is not None else None,
                 base_commit=record.context.base_commit if record.context is not None else None,
+                resume_from=record.resume_from,
             )
         except (OSError, ValueError) as error:
             # Persistent task history must never change orchestration behavior.
@@ -781,6 +788,11 @@ class TaskCoordinator:
                 continue
             status = str(state)
             error = snapshot.get("error") if isinstance(snapshot.get("error"), str) else None
+            resume_from = snapshot.get("resume_from") if isinstance(snapshot.get("resume_from"), str) else None
+            if resume_from not in {None, "integration"}:
+                resume_from = None
+            if status in {"ready", "integrating", "resolving"}:
+                resume_from = "integration"
             if status in INTERRUPTIBLE_STATUSES:
                 status = "paused"
                 error = error or "Daedalus was closed while this task was active; resume to continue."
@@ -828,6 +840,7 @@ class TaskCoordinator:
                 context=context,
                 memory_task_id=memory_task_id,
                 prompt_history=_string_list(snapshot.get("prompt_history")) or [prompt],
+                resume_from=resume_from,
             )
             self._tasks[task_id] = record
         self._next_sequence = max(self._next_sequence, maximum_sequence + 1)

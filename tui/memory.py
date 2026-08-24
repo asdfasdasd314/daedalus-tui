@@ -96,6 +96,7 @@ class TaskMemoryStore:
         worktree_path: Path | None = None,
         base_commit: str | None = None,
         submission_sequence: int | None = None,
+        resume_from: str | None = None,
     ) -> None:
         """Upsert a task snapshot keyed by the task worktree's directory name."""
         task = {
@@ -127,6 +128,8 @@ class TaskMemoryStore:
             task["base_commit"] = base_commit
         if submission_sequence is not None:
             task["submission_sequence"] = int(submission_sequence)
+        if resume_from is not None:
+            task["resume_from"] = resume_from
         with self._lock:
             entries = self._read_entries()
             updated_entries: list[dict[str, object]] = []

@@ -8,6 +8,8 @@ The standalone TUI orchestration layer creates isolated Git worktrees from a con
 - **Project worktree provisioning**: An optional target-project `.daedalus` file can run one install command inside each task worktree and symlink declared repository-relative shared paths from the primary checkout.
 - **Restart recovery**: Persisted failed tasks are restored with Retry available, while tasks active during shutdown are restored as paused tasks with their existing worktree context.
 - **Verification repair**: Failed task checks launch repair attempts in the same worktree up to the configured limit.
+- **Verification diagnostics**: When every verification attempt fails, each attempt's failure output is written to the task error panel and included in the final failure message.
+- **Integration-stage retry**: After coding and verification succeed, failed integration or resolver retries resume at the integration gate instead of re-running the coding agent.
 - **Resolver fallback**: Merge conflicts and post-merge verification failures launch the selected provider as a resolver with the latest failure details.
 - **Configurable target branch**: `target_branch` (default `main`, alias `primary_branch`) is the local branch every task worktree is based on and that successful tasks promote into; the operator does not need it checked out.
 - **Safe promotion**: The target branch tip must remain unchanged during integration; when it is checked out the working tree must stay clean for merge-based promotion, otherwise promotion fast-forwards the target ref in place; failed worktrees remain available for inspection.
@@ -33,6 +35,7 @@ The standalone TUI orchestration layer creates isolated Git worktrees from a con
 HACKING
 
 ## State Log
+- 2026-08-23: Logged every exhausted verification failure reason into the task error panel and resumed retries from integration once coding had already succeeded.
 - 2026-08-23: Allowed any configured target branch (default main) as the worktree base and promotion destination without requiring that branch to be checked out.
 - 2026-08-14: Added independent worktree, verification, merge, and resolver orchestration without daemon or cloud communication dependencies.
 - 2026-08-14: Added bounded multi-task execution with first-ready serialized promotion and explicit orchestration ownership of all Git operations.

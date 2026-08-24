@@ -88,9 +88,16 @@ class LocalOrchestrator:
         control: AgentControl | None = None,
         existing_context: WorktreeContext | None = None,
         resume_notes: tuple[str, ...] = (),
+        resume_from: str | None = None,
     ) -> OrchestrationResult:
         task_id = task_id or uuid.uuid4().hex[:12]
-        LOGGER.info("Orchestration started task=%s mode=%s provider=%s", task_id, mode, provider)
+        LOGGER.info(
+            "Orchestration started task=%s mode=%s provider=%s resume_from=%s",
+            task_id,
+            mode,
+            provider,
+            resume_from or "start",
+        )
         context: WorktreeContext | None = existing_context
         manager = GitWorktreeManager(
             self.repository,
@@ -110,61 +117,69 @@ class LocalOrchestrator:
             self._raise_if_stopped(control)
 
             selection = (provider, model, reasoning)
-            self.emit(
-                "planning" if mode == "plan" else "agent",
-                f"Planning with {provider} in the isolated worktree."
-                if mode == "plan"
-                else f"Running {provider} in the isolated worktree.",
+            skip_to_integration = (
+                mode not in {"ask", "plan"}
+                and resume_from == "integration"
+                and existing_context is not None
             )
-            profile_text = self.load_profile(context.path, mode)
-            result = self.run_agent(
-                manager,
-                context,
-                selection,
-                build_task_prompt(
-                    prompt,
-                    mode,
-                    resume_notes,
-                    resumed=existing_context is not None,
-                    profile_text=profile_text,
-                ),
-                control,
-                event_phase="planning" if mode == "plan" else "agent",
-            )
-            if not result.succeeded:
-                raise RuntimeError(result.error or "Agent execution failed.")
+            if not skip_to_integration:
+                self.emit(
+                    "planning" if mode == "plan" else "agent",
+                    f"Planning with {provider} in the isolated worktree."
+                    if mode == "plan"
+                    else f"Running {provider} in the isolated worktree.",
+                )
+                profile_text = self.load_profile(context.path, mode)
+                result = self.run_agent(
+                    manager,
+                    context,
+                    selection,
+                    build_task_prompt(
+                        prompt,
+                        mode,
+                        resume_notes,
+                        resumed=existing_context is not None,
+                        profile_text=profile_text,
+                    ),
+                    control,
+                    event_phase="planning" if mode == "plan" else "agent",
+                )
+                if not result.succeeded:
+                    raise RuntimeError(result.error or "Agent execution failed.")
 
-            if mode in {"ask", "plan"}:
+                if mode in {"ask", "plan"}:
+                    manager.discard_graphify_changes(context.path)
+                if mode == "plan":
+                    manager.reset_task_to_base(context)
+                    self.emit("questioning", "Plan ready. Review it, answer questions, or start coding.")
+                    return OrchestrationResult(
+                        True,
+                        task_id,
+                        context.branch_name,
+                        context.path,
+                        context=context,
+                        awaiting_plan=True,
+                        tokens_consumed=self._completed_tokens(),
+                    )
+                if mode == "ask":
+                    manager.remove_successful(context)
+                    self.emit("completed", f"Completed {mode} task.")
+                    return OrchestrationResult(
+                        True,
+                        task_id,
+                        context.branch_name,
+                        context.path,
+                        context=context,
+                        tokens_consumed=self._completed_tokens(),
+                    )
+
                 manager.discard_graphify_changes(context.path)
-            if mode == "plan":
-                manager.reset_task_to_base(context)
-                self.emit("questioning", "Plan ready. Review it, answer questions, or start coding.")
-                return OrchestrationResult(
-                    True,
-                    task_id,
-                    context.branch_name,
-                    context.path,
-                    context=context,
-                    awaiting_plan=True,
-                    tokens_consumed=self._completed_tokens(),
-                )
-            if mode == "ask":
-                manager.remove_successful(context)
-                self.emit("completed", f"Completed {mode} task.")
-                return OrchestrationResult(
-                    True,
-                    task_id,
-                    context.branch_name,
-                    context.path,
-                    context=context,
-                    tokens_consumed=self._completed_tokens(),
-                )
-
-            manager.discard_graphify_changes(context.path)
-            manager.commit_changes(context.path, f"Daedalus task {task_id}")
-            if manager.head(context.path) == context.base_commit:
-                raise RuntimeError("Agent finished without creating a commit.")
-            self.verify_with_repairs(manager, context, selection, prompt, control)
+                manager.commit_changes(context.path, f"Daedalus task {task_id}")
+                if manager.head(context.path) == context.base_commit:
+                    raise RuntimeError("Agent finished without creating a commit.")
+                self.verify_with_repairs(manager, context, selection, prompt, control)
+            else:
+                self.emit("ready", "Coding already complete; retrying from integration.")
 
             def integrate_and_promote() -> None:
                 self._raise_if_stopped(control)
@@ -269,6 +284,8 @@ class LocalOrchestrator:
             [list(command) for command in self.settings.verification_commands],
         )
         attempts = 0
+        failure_log: list[str] = []
+        limit = self.settings.task_verification_attempt_limit
         while True:
             self.emit("verification", "Running verification checks.")
             self._raise_if_stopped(control)
@@ -277,12 +294,16 @@ class LocalOrchestrator:
             if result.succeeded:
                 return
             attempts += 1
-            if attempts >= self.settings.task_verification_attempt_limit:
+            reason = result.output.strip() or "Verification produced no diagnostic output."
+            attempt_summary = f"Verification attempt {attempts}/{limit} failed.\n\n{reason}"
+            failure_log.append(attempt_summary)
+            self.emit("verification", attempt_summary, "error")
+            if attempts >= limit:
                 raise RuntimeError(
-                    f"Verification failed after {self.settings.task_verification_attempt_limit} attempts.\n\n"
-                    f"{result.output}"
+                    f"Verification failed after {limit} attempts.\n\n"
+                    + "\n\n".join(failure_log)
                 )
-            self.emit("repairing", f"Launching task repair attempt {attempts}/{self.settings.task_verification_attempt_limit}.")
+            self.emit("repairing", f"Launching task repair attempt {attempts}/{limit}.")
             profile_text = self.load_profile(context.path, "coding")
             repair = self.run_agent(
                 manager,
@@ -290,9 +311,9 @@ class LocalOrchestrator:
                 selection,
                 build_repair_prompt(
                     original,
-                    result.output,
+                    reason,
                     attempts,
-                    self.settings.task_verification_attempt_limit,
+                    limit,
                     profile_text=profile_text,
                 ),
                 control,
