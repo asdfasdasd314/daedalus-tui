@@ -20,7 +20,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Readable streamed output**: Assistant messages are separated by a blank line, and transcript lines are reflowed to the output pane width so long responses remain visible.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project selection**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the task toolbar selects the project for new submissions, editable prompt drafts survive project switches, and focusing an inbox row synchronizes the active project without mixing transcripts or worktrees. Each project's remembered operating branch is restored independently when focus returns.
-- **Project initialization**: New Project materializes bundled Daedalus templates under the launch root, runs Graphify/Git setup, optionally creates a private GitHub repo, then refreshes discovery onto the new project.
+- **Project initialization**: New Project materializes bundled Daedalus templates (including a scaffold `.daedalus` TOML) under the launch root, runs Graphify/Git setup, optionally creates a private GitHub repo, then refreshes discovery onto the new project.
 - **Actionable task history**: The task inbox keeps every failed task, active or paused work, and all tasks from the current TUI session while hiding older completed, blocked, and cancelled tasks.
 - **Retryable failures**: Failed agent tasks expose their diagnostics and a Retry action so transient connectivity or service failures can be recovered in place.
 
@@ -40,6 +40,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-08-24: New Project scaffolding now includes a `.daedalus` TOML worktree config template alongside the other initializer assets.
 - 2026-08-24: Added per-question plan clarifications with a `?` button, side-channel ask runs, and an on-page dropdown for answers that stay separate from plan follow-up.
 - 2026-08-23: Added a settings-bar Branch Select that remembers each project's operating branch in launch-root memory and applies it to new task worktrees only.
 - 2026-08-14: Moved the TUI feature ownership into the standalone project boundary and expanded provider/model/reasoning controls for local orchestration.

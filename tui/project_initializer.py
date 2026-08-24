@@ -136,6 +136,7 @@ def materialize_templates(destination: Path, project_name: str, settings: dict) 
     shutil.copytree(TEMPLATE_ROOT, destination)
     readme = destination / "README.md"
     gitignore = destination / ".gitignore"
+    daedalus = destination / ".daedalus"
     if settings["generate_readme"]:
         readme.write_text(
             readme.read_text(encoding="utf-8").replace("{{PROJECT_NAME}}", project_name),
@@ -145,6 +146,8 @@ def materialize_templates(destination: Path, project_name: str, settings: dict) 
         readme.unlink()
     if not settings["generate_gitignore"] and gitignore.exists():
         gitignore.unlink()
+    if not settings["generate_daedalus"] and daedalus.exists():
+        daedalus.unlink()
 
 
 def find_github_url(stdout: str, destination: Path, run_process) -> str | None:

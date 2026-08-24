@@ -1,0 +1,10 @@
+# Optional worktree provisioning for Daedalus task isolation.
+# install_command runs inside each task worktree before the agent starts.
+# readonly_paths are repository-relative paths symlinked from the primary checkout.
+#
+# Example:
+#   install_command = ["npm", "ci"]
+#   readonly_paths = ["shared-data"]
+[worktree]
+install_command = []
+readonly_paths = []

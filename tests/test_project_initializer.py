@@ -4,6 +4,7 @@ import uuid
 from pathlib import Path
 from types import SimpleNamespace
 
+from tui.project_config import load_project_worktree_settings
 from tui.project_initializer import (
     REQUEST_MARKER,
     initialize_project,
@@ -81,6 +82,12 @@ class ProjectInitializerTests(unittest.TestCase):
             self.assertTrue((destination / ".agents" / "profiles" / "coding.md").is_file())
             self.assertEqual((destination / "README.md").read_text().splitlines()[0],
                              "# example-project")
+            daedalus = destination / ".daedalus"
+            self.assertTrue(daedalus.is_file())
+            self.assertIn("[worktree]", daedalus.read_text(encoding="utf-8"))
+            settings = load_project_worktree_settings(destination)
+            self.assertEqual(settings.install_command, ())
+            self.assertEqual(settings.readonly_paths, ())
             self.assertEqual(
                 (destination / ".git" / REQUEST_MARKER).read_text(encoding="utf-8"),
                 request_id,
