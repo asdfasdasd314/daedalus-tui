@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "tests/test_app.py": {
-    "mtime": 1787625669.7156022,
-    "ast_hash": "da63de44f58234ad2240d474d09df3cb",
+    "mtime": 1787694928.6961482,
+    "ast_hash": "31a2a06af1f97bcf29d8721f7569fa8b",
     "semantic_hash": ""
   },
   "tests/test_config.py": {
@@ -45,8 +45,8 @@
     "semantic_hash": "f3f0aa612fd7444e7dc966423d52efbb"
   },
   "tests/test_prompts.py": {
-    "mtime": 1787624569.49298,
-    "ast_hash": "66a67c6022214f15fb6f4ad21a530c10",
+    "mtime": 1787694928.6981244,
+    "ast_hash": "72882d44e69ece83020c5b0796d51f40",
     "semantic_hash": ""
   },
   "tests/test_task_coordinator.py": {
@@ -75,8 +75,8 @@
     "semantic_hash": ""
   },
   "tui/app.py": {
-    "mtime": 1787625669.7194676,
-    "ast_hash": "59f618b9d13693cba6e63ef89ed9d2bd",
+    "mtime": 1787694928.701939,
+    "ast_hash": "ee316d4538d8b59255787e2487417743",
     "semantic_hash": ""
   },
   "tui/clipboard.py": {
@@ -115,8 +115,8 @@
     "semantic_hash": "40f7f904c7d73af9db17b18283a17103"
   },
   "tui/prompts.py": {
-    "mtime": 1787624569.4962423,
-    "ast_hash": "034867ea919c44ab2f2f11e481727812",
+    "mtime": 1787694928.7044938,
+    "ast_hash": "52b8a215f5a6bd19606b10c779a37fb3",
     "semantic_hash": ""
   },
   "tui/task_coordinator.py": {
@@ -290,18 +290,18 @@
     "semantic_hash": ""
   },
   "tests/test_topics.py": {
-    "mtime": 1787624569.4940612,
-    "ast_hash": "c73247f2ffad22bb38d15cefe212b394",
+    "mtime": 1787694928.6993904,
+    "ast_hash": "1e6b18dc07d17a81bcd1537bf2f05cce",
     "semantic_hash": ""
   },
   "tui/topics.py": {
-    "mtime": 1787624569.499998,
-    "ast_hash": "726f799ece5971293388b779a00fc966",
+    "mtime": 1787694928.7048268,
+    "ast_hash": "67e93d9cb64d1b2470fb63484a71db40",
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-topics.md": {
-    "mtime": 1787624569.4689777,
-    "ast_hash": "745580ae9d4a70f3956f02c24d8f3331",
+    "mtime": 1787694928.6926446,
+    "ast_hash": "7287dabade8dd5ae30377e2c26e3ceb6",
     "semantic_hash": ""
   }
 }
