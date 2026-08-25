@@ -84,7 +84,9 @@ class TranscriptLog(Log):
 
             tone = "final" if final else "generic"
             for source_line in message.split("\n"):
-                wrapped_lines = self._wrap_line(source_line, width)
+                wrapped_lines = self._wrap_line(
+                    source_line, width, allow_right_edge_buffer=False
+                )
                 rendered_lines.extend(wrapped_lines)
                 tones.extend([tone] * len(wrapped_lines))
 
@@ -127,7 +129,9 @@ class TranscriptLog(Log):
             width = self.size.width - self.styles.gutter.width
         return max(0, width)
 
-    def _wrap_line(self, line: str, width: int) -> list[str]:
+    def _wrap_line(
+        self, line: str, width: int, *, allow_right_edge_buffer: bool = True
+    ) -> list[str]:
         """Wrap one logical line at word boundaries when the width permits."""
         processed_line = self._process_line(line)
         if not processed_line or width <= 0 or cell_len(processed_line) <= width:
@@ -137,13 +141,18 @@ class TranscriptLog(Log):
 
         wrapped: list[str] = []
         current = ""
-        for token in re.findall(r"\s+|\S+", processed_line):
+        tokens = re.findall(r"\s+|\S+", processed_line)
+        for token_index, token in enumerate(tokens):
             if token.isspace():
                 current += token
                 continue
 
             candidate = current + token
-            if current and cell_len(candidate.rstrip()) > width:
+            is_last_word = not any(
+                not following.isspace() for following in tokens[token_index + 1:]
+            )
+            word_width = width + 1 if allow_right_edge_buffer and is_last_word else width
+            if current and cell_len(candidate.rstrip()) > word_width:
                 if current.strip():
                     wrapped.append(current.rstrip())
                 current = ""
