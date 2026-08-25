@@ -185,7 +185,36 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#continue-plan-button", Button), Button)
             self.assertIsInstance(app.query_one("#start-coding-button", Button), Button)
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
+            self.assertIsInstance(app.query_one("#output-toggle-button", Button), Button)
             await pilot.pause()
+
+    async def test_output_and_error_logs_toggle_as_full_size_selectable_views(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            output = app.query_one("#output", Log)
+            error = app.query_one("#task-error", Log)
+            toggle = app.query_one("#output-toggle-button", Button)
+
+            self.assertEqual(output.styles.display, "block")
+            self.assertEqual(error.styles.display, "none")
+            self.assertEqual(str(toggle.label), "Show errors")
+
+            toggle.press()
+            await pilot.pause()
+
+            self.assertEqual(output.styles.display, "none")
+            self.assertEqual(error.styles.display, "block")
+            self.assertEqual(str(toggle.label), "Show agent output")
+            self.assertIs(app.focused, error)
+            app._handle_vim_key("j")
+            self.assertIs(app.focused, error)
+
+            toggle.press()
+            await pilot.pause()
+
+            self.assertEqual(output.styles.display, "block")
+            self.assertEqual(error.styles.display, "none")
+            self.assertIs(app.focused, output)
 
     async def test_task_list_keeps_failures_active_work_and_current_session_tasks(self):
         app, coordinator = self.make_app()
