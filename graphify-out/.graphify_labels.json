@@ -46,8 +46,5 @@
   "44": "orchestrator.py",
   "46": ".emit",
   "47": "discover_projects",
-  "48": "._usage_entries",
-  "49": "TokenUsageStats",
-  "50": ".enter_insert_mode",
-  "51": ".nav_word_end"
+  "48": "._usage_entries"
 }
