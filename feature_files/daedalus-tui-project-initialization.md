@@ -1,7 +1,7 @@
 # Daedalus TUI Project Initialization
 
 ## Summary
-The TUI can initialize a new Daedalus-compatible project under the launch root by materializing bundled templates (AGENTS.md, agent profiles, feature/parameter directories, README, gitignore, and `.daedalus`), installing Graphify hooks, creating the initial Git commit, and optionally creating a private GitHub repository.
+The TUI can initialize a new Daedalus-compatible project under the launch root by materializing bundled templates (AGENTS.md, agent profiles, feature/parameter/topic directories, README, gitignore, and `.daedalus`), installing Graphify hooks, creating the initial Git commit, and optionally creating a private GitHub repository.
 
 ## Key Points
 - **Launch-root destination**: The user supplies only a project slug and optional GitHub opt-in; the destination is always a direct child of the TUI launch root.
@@ -23,5 +23,6 @@ The TUI can initialize a new Daedalus-compatible project under the launch root b
 HACKING
 
 ## State Log
+- 2026-08-24: New Project templates now include an empty `topic_files/` directory for optional Topics.
 - 2026-08-24: New Project template materialization now includes a scaffold `.daedalus` TOML with empty worktree install/readonly settings.
 - 2026-08-23: Ported daemon project initialization into the standalone TUI with bundled templates and a New Project modal under the launch root.

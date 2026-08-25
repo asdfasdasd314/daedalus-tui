@@ -17,6 +17,9 @@
   graph refreshes.
 - Feature files and parameter files describe the currently integrated project
   state; do not use integration mode to invent new feature requirements.
+- Concurrent topic State Log appends can race like concurrent feature-file
+  edits; prefer preserving both relevant topic entries when resolving
+  conflicts.
 
 # Parameter Files
 

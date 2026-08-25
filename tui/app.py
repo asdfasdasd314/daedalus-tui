@@ -36,6 +36,7 @@ from .plan import (
     plan_answer_options,
 )
 from .task_coordinator import TaskCoordinator, TaskRecord
+from .topics import TOPIC_NONE_VALUE, topic_select_options
 from .transcript import TranscriptLog
 from .token_usage import calculate_token_usage, merge_usage_entries, task_usage_entry, usage_entries_from_memory
 from .vim_text_area import DaedalusVimTextArea
@@ -580,6 +581,11 @@ class DaedalusTuiApp(App[None]):
                             value=self.orchestration_settings.primary_branch,
                             id="target-branch-select",
                         )
+                        yield Select(
+                            [("(None)", TOPIC_NONE_VALUE)],
+                            value=TOPIC_NONE_VALUE,
+                            id="topic-select",
+                        )
                     yield Static(self._directory_text(), id="directory")
                     yield Static("Phase: Idle", id="phase")
                     yield Static("Task branch: —    Worktree: —", id="task-context")
@@ -626,6 +632,7 @@ class DaedalusTuiApp(App[None]):
         self._install_exit_diagnostics()
         self._accept_task_events = True
         self._refresh_target_branch_select()
+        self._refresh_topic_select()
         self._refresh_task_list()
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
         prompt.enter_insert_mode()
@@ -874,8 +881,12 @@ class DaedalusTuiApp(App[None]):
         reasoning_value = self.query_one("#reasoning-select", Select).value
         reasoning = "" if reasoning_value is Select.BLANK else str(reasoning_value)
         mode = str(self.query_one("#mode-select", Select).value)
+        topic_value = self.query_one("#topic-select", Select).value
+        topic: str | None = None
+        if topic_value not in (Select.BLANK, "", TOPIC_NONE_VALUE, getattr(Select, "NULL", None)):
+            topic = str(topic_value)
         try:
-            record = self.coordinator.submit(prompt, provider, model, reasoning, mode)
+            record = self.coordinator.submit(prompt, provider, model, reasoning, mode, topic=topic)
         except (RuntimeError, ValueError) as error:
             self._set_error(str(error))
             self._set_status("Error")
@@ -1046,6 +1057,20 @@ class DaedalusTuiApp(App[None]):
             self._suppress_target_branch_change = False
         self._apply_primary_branch(project_path, effective)
 
+    def _refresh_topic_select(self, *, reset_to_none: bool = False) -> None:
+        """Refresh Topic Select options for the active project; default remains (None)."""
+        options = topic_select_options(self._active_project_path)
+        topic_select = self.query_one("#topic-select", Select)
+        current = topic_select.value
+        topic_select.set_options(options)
+        valid_values = {value for _, value in options}
+        if reset_to_none or current in (Select.BLANK, "", getattr(Select, "NULL", None)):
+            topic_select.value = TOPIC_NONE_VALUE
+        elif current in valid_values:
+            topic_select.value = current
+        else:
+            topic_select.value = TOPIC_NONE_VALUE
+
     def _usage_entries(self):
         try:
             persisted = usage_entries_from_memory(self.memory)
@@ -1101,6 +1126,7 @@ class DaedalusTuiApp(App[None]):
         }
         self.query_one("#directory", Static).update(self._directory_text())
         self._refresh_target_branch_select()
+        self._refresh_topic_select(reset_to_none=True)
         self._refresh_task_list()
         self._render_selected_task_safely("project switch")
         if draft is not None:
@@ -1665,6 +1691,7 @@ class DaedalusTuiApp(App[None]):
         """Clear the selected task and unlock a fresh prompt editor."""
         self._selected_task_id = None
         self._new_task_mode = True
+        self._refresh_topic_select(reset_to_none=True)
         self._refresh_task_list()
         self._render_selected_task_safely("new task")
         self._set_status("New task")

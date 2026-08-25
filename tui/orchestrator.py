@@ -13,6 +13,7 @@ from .graphify import update_repository
 from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
 from .project_config import load_project_worktree_settings
 from .prompts import build_repair_prompt, build_resolver_prompt, build_task_prompt
+from .topics import load_topic_text, topic_path
 from .verification import discover_commands, run_verification
 
 
@@ -89,14 +90,16 @@ class LocalOrchestrator:
         existing_context: WorktreeContext | None = None,
         resume_notes: tuple[str, ...] = (),
         resume_from: str | None = None,
+        topic_slug: str | None = None,
     ) -> OrchestrationResult:
         task_id = task_id or uuid.uuid4().hex[:12]
         LOGGER.info(
-            "Orchestration started task=%s mode=%s provider=%s resume_from=%s",
+            "Orchestration started task=%s mode=%s provider=%s resume_from=%s topic=%s",
             task_id,
             mode,
             provider,
             resume_from or "start",
+            topic_slug or "-",
         )
         context: WorktreeContext | None = existing_context
         manager = GitWorktreeManager(
@@ -130,6 +133,7 @@ class LocalOrchestrator:
                     else f"Running {provider} in the isolated worktree.",
                 )
                 profile_text = self.load_profile(context.path, mode)
+                topic_text = self.load_topic(context.path, topic_slug)
                 result = self.run_agent(
                     manager,
                     context,
@@ -140,6 +144,7 @@ class LocalOrchestrator:
                         resume_notes,
                         resumed=existing_context is not None,
                         profile_text=profile_text,
+                        topic_text=topic_text,
                     ),
                     control,
                     event_phase="planning" if mode == "plan" else "agent",
@@ -177,14 +182,18 @@ class LocalOrchestrator:
                 manager.commit_changes(context.path, f"Daedalus task {task_id}")
                 if manager.head(context.path) == context.base_commit:
                     raise RuntimeError("Agent finished without creating a commit.")
-                self.verify_with_repairs(manager, context, selection, prompt, control)
+                self.verify_with_repairs(
+                    manager, context, selection, prompt, control, topic_slug=topic_slug
+                )
             else:
                 self.emit("ready", "Coding already complete; retrying from integration.")
 
             def integrate_and_promote() -> None:
                 self._raise_if_stopped(control)
                 integration_base = manager.capture_primary()
-                self.integrate(manager, context, selection, prompt, control)
+                self.integrate(
+                    manager, context, selection, prompt, control, topic_slug=topic_slug
+                )
                 manager.promote(context, integration_base)
                 self.refresh_graphify(manager, task_id)
 
@@ -278,6 +287,7 @@ class LocalOrchestrator:
         selection: tuple[str, str, str],
         original: str,
         control: AgentControl | None = None,
+        topic_slug: str | None = None,
     ) -> None:
         commands = discover_commands(
             context.path,
@@ -305,6 +315,7 @@ class LocalOrchestrator:
                 )
             self.emit("repairing", f"Launching task repair attempt {attempts}/{limit}.")
             profile_text = self.load_profile(context.path, "coding")
+            topic_text = self.load_topic(context.path, topic_slug)
             repair = self.run_agent(
                 manager,
                 context,
@@ -315,6 +326,7 @@ class LocalOrchestrator:
                     attempts,
                     limit,
                     profile_text=profile_text,
+                    topic_text=topic_text,
                 ),
                 control,
             )
@@ -329,6 +341,7 @@ class LocalOrchestrator:
         selection: tuple[str, str, str],
         original: str,
         control: AgentControl | None = None,
+        topic_slug: str | None = None,
     ) -> None:
         failure = ""
         try:
@@ -339,7 +352,9 @@ class LocalOrchestrator:
             failure = str(error)
 
         if failure:
-            self.resolve_integration(manager, context, selection, original, failure, control)
+            self.resolve_integration(
+                manager, context, selection, original, failure, control, topic_slug=topic_slug
+            )
 
         commands = discover_commands(
             context.path,
@@ -348,7 +363,15 @@ class LocalOrchestrator:
         result = run_verification(context.path, commands)
         self._raise_if_stopped(control)
         if not result.succeeded:
-            self.resolve_integration(manager, context, selection, original, result.output, control)
+            self.resolve_integration(
+                manager,
+                context,
+                selection,
+                original,
+                result.output,
+                control,
+                topic_slug=topic_slug,
+            )
 
     def resolve_integration(
         self,
@@ -358,11 +381,13 @@ class LocalOrchestrator:
         original: str,
         failure: str,
         control: AgentControl | None = None,
+        topic_slug: str | None = None,
     ) -> None:
         for attempt in range(1, self.settings.resolver_attempt_limit + 1):
             self._raise_if_stopped(control)
             self.emit("resolving", f"Launching resolver attempt {attempt}/{self.settings.resolver_attempt_limit}.")
             profile_text = self.load_profile(context.path, "integrating")
+            topic_text = self.load_topic(context.path, topic_slug)
             result = self.run_agent(
                 manager,
                 context,
@@ -373,6 +398,7 @@ class LocalOrchestrator:
                     attempt,
                     self.settings.resolver_attempt_limit,
                     profile_text=profile_text,
+                    topic_text=topic_text,
                 ),
                 control,
             )
@@ -411,6 +437,19 @@ class LocalOrchestrator:
             LOGGER.warning(message)
             self.emit("profile", message, "error")
             return None
+
+    def load_topic(self, worktree: Path, topic_slug: str | None) -> str | None:
+        """Load a tagged topic from the task worktree immediately before a prompt."""
+        if not topic_slug:
+            return None
+        text = load_topic_text(worktree, topic_slug)
+        if text is not None:
+            return text
+        path = topic_path(worktree, topic_slug)
+        message = f"Could not load topic '{topic_slug}' from {path}"
+        LOGGER.warning(message)
+        self.emit("topic", message, "error")
+        return None
 
     def refresh_graphify(self, manager: GitWorktreeManager, task_id: str) -> None:
         """Refresh graph metadata after promotion without blocking the task."""

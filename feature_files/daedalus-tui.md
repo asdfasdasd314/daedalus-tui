@@ -9,6 +9,9 @@ The standalone Daedalus TUI is an installable Textual application that runs from
   high, and extra-high reasoning; Cursor CLI is a provider-only choice with
   model and reasoning disabled. The settings bar also exposes a per-project
   Branch Select for the operating branch used by new task worktrees.
+- **Optional Topics**: A Topic Select lists `(None)` plus `topic_files/*.md`
+  stems so related tasks can share goal/status/state-log memory without
+  requiring a topic on every submission.
 - **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, a database, or a remote push.
 - **Concurrent task inbox**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript; the left-side inbox promotes tasks with unseen updates.
 - **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
@@ -27,12 +30,14 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 ## Relevant Files
 - `tui/app.py`: Textual layout, selectors, task list, transcript replay, and task controls.
 - `tui/prompts.py`: Task, repair, and resolver prompt wrappers, including plan-mode recommended-option instructions.
+- `tui/topics.py`: Optional topic discovery, load, and prompt embedding.
 - `tui/plan.py`: Agent plan parsing plus UI-owned custom-answer encoding, clarification prompts, and prompt formatting.
 - `tui/vim_text_area.py`: Incremental modal Vim prompt adapter and system clipboard integration.
 - `tui/agent_runner.py`: Independent Codex and Cursor subprocess adapter.
 - `tui/task_coordinator.py`: Concurrent task executor, serialized integration gate, and plan-question clarification workers.
 - `parameter_files/daedalus-tui.toml`: Provider, model, reasoning, and default UI settings.
 - `feature_files/daedalus-tui-orchestration.md`: Local orchestration ownership boundary.
+- `feature_files/daedalus-tui-topics.md`: Optional topic umbrellas and shared State Log memory.
 - `feature_files/daedalus-tui-project-initialization.md`: Launch-root project scaffolding.
 - `tests/test_plan.py`, `tests/test_app.py`, `tests/test_task_coordinator.py`: Coverage for custom-answer rendering, validation, and follow-up handoff.
 
@@ -40,6 +45,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-08-24: Added optional Topics with a settings-bar Select and prompt embeds for tagged tasks.
 - 2026-08-24: New Project scaffolding now includes a `.daedalus` TOML worktree config template alongside the other initializer assets.
 - 2026-08-24: Added per-question plan clarifications with a `?` button, side-channel ask runs, and an on-page dropdown for answers that stay separate from plan follow-up.
 - 2026-08-23: Added a settings-bar Branch Select that remembers each project's operating branch in launch-root memory and applies it to new task worktrees only.

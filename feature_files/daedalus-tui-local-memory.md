@@ -14,7 +14,8 @@ daemon, a remote service, or a database server.
   reasoning, mode, current state, assistant outputs, non-negative token usage,
   resolved project path, error, and (when available) branch/worktree identity.
   The entry is upserted as the task progresses, including for planning,
-  questioning, failed, paused, and cancelled tasks.
+  questioning, failed, paused, and cancelled tasks. An optional `topic` slug
+  is stored when the task was tagged; absent or null means untagged.
 - **Restart recovery**: Each project coordinator rehydrates its persisted task
   snapshots at startup. Failed tasks retain Retry, while active snapshots are
   normalized to paused so their preserved worktrees can be resumed safely.
@@ -69,6 +70,7 @@ daemon, a remote service, or a database server.
 HACKING
 
 ## State Log
+- 2026-08-24: Persisted optional task `topic` slugs so tagged topics survive restart and rehydration.
 - 2026-08-23: Added a per-project `project_target_branches` map so Branch Select choices persist in launch-root memory without rewriting the orchestration parameter default.
 - 2026-08-16: Documented the existing local JSON token-usage store, its completion-only recording boundary, and its atomic write and validation behavior.
 - 2026-08-16: Added an updatable launch-root project marker so startup restores the last available project and falls back to the first discovered project.

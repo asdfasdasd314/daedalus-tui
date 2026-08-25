@@ -112,6 +112,13 @@ task from the approved plan. Pause preserves the task worktree and allows
 resume later; Cancel stops the agent and removes that task's worktree and
 branch.
 
+Optional Topics group closely related tasks under shared markdown in
+`topic_files/` (Topic Goal, Topic Status, State Log). Create or edit those
+files outside the TUI; the settings-bar Topic Select lists existing stems and
+defaults to `(None)`. When tagged, coding/plan/ask prompts embed the topic
+plus usage instructions; coding tasks may append the topic State Log the same
+way they update feature files.
+
 When resuming, the optional notes field is sent to the agent only when it has
 content. The resume prompt tells the agent to preserve existing work, inspect
 `git status` and `git diff`, and continue from the current worktree.

@@ -36,6 +36,11 @@
 - YOU must append a 1-sentence engineering log to the State Log before marking tasks complete.
 - When debugging, use the relevant feature files as another tool to reduce lookups because the summaries and key points can give you a good macro-understanding without reading thousands of lines
 
+# Topics (when tagged)
+- Optional `topic_files/{slug}.md` umbrellas group closely related tasks with shared memory (Topic Goal, Topic Status, State Log).
+- When a topic is embedded in the prompt, follow those instructions: Topic Goal is immutable unless the user explicitly asks to change it; Topic Status stays `open` or `complete`; append one concise topic-scoped State Log entry after completing a coding task.
+- Concurrent State Log appends on the same topic can race like concurrent feature-file edits.
+
 # Parameter File Centralization
 Each feature file must have a corresponding parameter file (`.toml`) located in a sibling directory named `parameter_files`. Create the `parameter_files` directory if it does not already exist.
 
