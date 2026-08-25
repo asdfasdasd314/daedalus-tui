@@ -143,11 +143,12 @@ Screen {
     color: $text;
     height: auto;
     width: 1fr;
-    margin-top: 0;
+    margin-top: 1;
 }
 
-.plan-question-header {
+.plan-answer-row {
     height: auto;
+    width: 1fr;
     align: left middle;
     margin-top: 1;
 }
@@ -155,12 +156,16 @@ Screen {
 .plan-clarify-button {
     width: 5;
     min-width: 5;
+    height: 3;
     margin-left: 1;
+}
+
+#plan-questions .plan-answer-select {
+    width: 1fr;
 }
 
 #plan-questions Select {
     width: 1fr;
-    margin-top: 1;
 }
 
 #plan-questions .plan-custom-answer {

@@ -1553,16 +1553,20 @@ class DaedalusTuiApp(App[None]):
                 clarifications = list(record.plan_clarifications.get(question.question_id, []))
                 widgets.extend(
                     (
+                        Static(question.text, classes="plan-question", markup=False),
                         Horizontal(
-                            Static(question.text, classes="plan-question", markup=False),
+                            PlanAnswerSelect(
+                                [
+                                    (option.label, option.option_id)
+                                    for option in plan_answer_options(question)
+                                ],
+                                value=selected_value,
+                                allow_blank=True,
+                                id=f"plan-question-{index}",
+                                classes="plan-answer-select",
+                            ),
                             Button("?", id=f"plan-clarify-{index}", classes="plan-clarify-button"),
-                            classes="plan-question-header",
-                        ),
-                        PlanAnswerSelect(
-                            [(option.label, option.option_id) for option in plan_answer_options(question)],
-                            value=selected_value,
-                            allow_blank=True,
-                            id=f"plan-question-{index}",
+                            classes="plan-answer-row",
                         ),
                         TextArea(
                             saved_custom_text or "",
