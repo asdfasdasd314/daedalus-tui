@@ -109,6 +109,8 @@ Screen {
 
 #output {
     height: 1fr;
+    /* Leave a small buffer so the readable transcript does not run into the edge. */
+    width: 98%;
     border: round $primary;
     padding: 1;
     /* Keep progress narration quiet until the agent's final summary. */

@@ -35,6 +35,7 @@ class TuiSettings:
         ModelOption("Ask", "ask"),
         ModelOption("Plan", "plan"),
     )
+    output_width: str = "98%"
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,8 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
     cursor_values = values.get("cursor", {})
     cursor_model = ModelOption(str(cursor_values.get("label", "Cursor CLI")), str(cursor_values.get("value", "cursor")))
     modes = tuple(_options(values.get("modes", []), "mode")) or TuiSettings.modes
+    output = values.get("output", {})
+    output_width = str(output.get("width", "98%"))
 
     default_provider = str(defaults.get("provider", "codex"))
     default_model = str(defaults.get("model", "gpt-5.6-luna"))
@@ -71,6 +74,7 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
         codex_reasoning,
         cursor_model,
         modes,
+        output_width,
     )
 
 

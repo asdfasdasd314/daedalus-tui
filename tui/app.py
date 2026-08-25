@@ -625,6 +625,7 @@ class DaedalusTuiApp(App[None]):
         self._fault_log_file = install_fault_handler(self.debug_log_path)
         self._install_exit_diagnostics()
         self._accept_task_events = True
+        self.query_one("#output", TranscriptLog).styles.width = self.settings.output_width
         self._refresh_target_branch_select()
         self._refresh_task_list()
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)

@@ -1495,6 +1495,20 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertGreater(len(output._lines), 5)
             self.assertTrue(all(len(line) <= output.size.width for line in output._lines))
 
+    async def test_output_wraps_at_words_and_hyphenates_overlong_words(self):
+        app, _ = self.make_app()
+        async with app.run_test():
+            output = app.query_one("#output", Log)
+
+            self.assertEqual(
+                output._wrap_line("Keep complete words together", 13),
+                ["Keep complete", "words together"],
+            )
+            self.assertEqual(
+                output._wrap_line("abcdefghijk", 6),
+                ["abcde-", "fghij-", "k"],
+            )
+
     async def test_output_rewraps_messages_when_the_content_width_changes(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:

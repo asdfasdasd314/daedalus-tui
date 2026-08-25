@@ -17,7 +17,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Literal plan review text**: `#plan-display` and dynamic plan-question Static widgets render agent-generated text with `markup=False` so brackets and scientific notation cannot trigger Textual/Rich markup parsing.
 - **Plan recommended defaults**: Plan and follow-up prompts require every multiple-choice question to mark exactly one option with ` (Recommended)` so a safe default is always visible when the user does not care which answer to pick.
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
-- **Readable streamed output**: Assistant messages are separated by a blank line, and transcript lines are reflowed to the output pane width so long responses remain visible.
+- **Readable streamed output**: Assistant messages are separated by a blank line, transcript lines reflow at word boundaries with hyphenation only for overlong words, and the output pane keeps a small width buffer so long responses remain visible.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
 - **Project selection**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the task toolbar selects the project for new submissions, editable prompt drafts survive project switches, and focusing an inbox row synchronizes the active project without mixing transcripts or worktrees. Each project's remembered operating branch is restored independently when focus returns.
 - **Project initialization**: New Project materializes bundled Daedalus templates (including a scaffold `.daedalus` TOML) under the launch root, runs Graphify/Git setup, optionally creates a private GitHub repo, then refreshes discovery onto the new project.
@@ -40,6 +40,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-08-24: Wrapped transcript messages at word boundaries, hyphenated words that exceed the available cell width, and narrowed the output pane through the parameterized UI width setting.
 - 2026-08-24: Moved the plan-question `?` clarification button onto the answer-select row so it shares the dropdown's y-level without a header gap.
 - 2026-08-24: New Project scaffolding now includes a `.daedalus` TOML worktree config template alongside the other initializer assets.
 - 2026-08-24: Added per-question plan clarifications with a `?` button, side-channel ask runs, and an on-page dropdown for answers that stay separate from plan follow-up.

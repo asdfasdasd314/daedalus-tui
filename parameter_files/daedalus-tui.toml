@@ -30,3 +30,6 @@ reasoning = "high"
 [cursor]
 label = "Cursor CLI"
 value = "cursor"
+
+[output]
+width = "98%"

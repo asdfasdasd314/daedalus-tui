@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from rich.style import Style
 from rich.text import Text
 from rich.cells import cell_len, chop_cells
@@ -123,11 +125,49 @@ class TranscriptLog(Log):
         return max(0, width)
 
     def _wrap_line(self, line: str, width: int) -> list[str]:
-        """Wrap one logical line without changing its selectable text."""
+        """Wrap one logical line at word boundaries when the width permits."""
         processed_line = self._process_line(line)
         if not processed_line or width <= 0 or cell_len(processed_line) <= width:
             return [processed_line]
-        return chop_cells(processed_line, width) or [""]
+        if not processed_line.strip():
+            return chop_cells(processed_line, width) or [""]
+
+        wrapped: list[str] = []
+        current = ""
+        for token in re.findall(r"\s+|\S+", processed_line):
+            if token.isspace():
+                current += token
+                continue
+
+            candidate = current + token
+            if current and cell_len(candidate.rstrip()) > width:
+                if current.strip():
+                    wrapped.append(current.rstrip())
+                current = ""
+
+            if cell_len(token) > width:
+                pieces = self._hyphenate_word(token, width)
+                wrapped.extend(pieces[:-1])
+                current = pieces[-1]
+            else:
+                current += token
+
+        if current or not wrapped:
+            wrapped.append(current.rstrip())
+        return wrapped
+
+    @staticmethod
+    def _hyphenate_word(word: str, width: int) -> list[str]:
+        """Split an overlong word with visible hyphens at cell boundaries."""
+        if width <= 1:
+            return chop_cells(word, width) or [""]
+
+        pieces = chop_cells(word, width - 1) or [word]
+        if any(cell_len(piece) + 1 > width for piece in pieces[:-1]):
+            # A wide glyph may fill the whole line by itself, leaving no room
+            # for a hyphen. Preserve that glyph rather than overflowing it.
+            return chop_cells(word, width) or [word]
+        return [f"{piece}-" for piece in pieces[:-1]] + [pieces[-1]]
 
     def _render_line_strip(self, y: int, rich_style: Style) -> Strip:
         """Render a line with the final-message color before selection styling."""
