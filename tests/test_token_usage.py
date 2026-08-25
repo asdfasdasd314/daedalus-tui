@@ -31,10 +31,10 @@ class TokenUsageTests(unittest.TestCase):
             stats.average_tasks_per_prompt_by_provider,
             (("codex", 1.0), ("cursor", 1.0)),
         )
-        self.assertEqual(stats.seven_day_expected_tokens, 1400)
+        self.assertEqual(stats.seven_day_expected_tokens, 700)
         self.assertEqual(stats.seven_day_expected_tasks, 7)
-        self.assertEqual(stats.thirty_day_expected_tokens, 6000)
-        self.assertEqual(stats.thirty_day_expected_tasks, 30)
+        self.assertEqual(stats.thirty_day_expected_tokens, 729)
+        self.assertEqual(stats.thirty_day_expected_tasks, 4)
         self.assertEqual(stats.provider_tokens, (("cursor", 300), ("codex", 100)))
         self.assertEqual(stats.provider_tasks, (("codex", 1), ("cursor", 1)))
         self.assertEqual(stats.provider_split("tokens"), (("cursor", 300), ("codex", 100)))
@@ -107,6 +107,25 @@ class TokenUsageTests(unittest.TestCase):
         stats = calculate_token_usage(entries)
 
         self.assertEqual(stats.cumulative_tokens, 25)
+
+    def test_projects_current_week_and_month_to_date_only(self):
+        now = datetime(2026, 8, 11, 12, 0, tzinfo=timezone.utc)
+        entries = (
+            TokenUsageEntry(
+                "today", datetime(2026, 8, 11, 11, 0, tzinfo=timezone.utc), "codex", 30_000_000
+            ),
+            TokenUsageEntry(
+                "last-week", datetime(2026, 7, 26, 12, 0, tzinfo=timezone.utc), "codex", 50_000_000
+            ),
+            TokenUsageEntry(
+                "last-month", datetime(2026, 7, 31, 12, 0, tzinfo=timezone.utc), "codex", 75_000_000
+            ),
+        )
+
+        stats = calculate_token_usage(entries, now=now)
+
+        self.assertEqual(stats.seven_day_expected_tokens, 105_000_000)
+        self.assertEqual(stats.thirty_day_expected_tokens, round(30_000_000 * 31 / 11))
 
     def test_rejects_invalid_window_settings(self):
         with self.assertRaises(ValueError):

@@ -485,17 +485,17 @@ class CodingStatisticsScreen(ModalScreen[None]):
             f"Today's {suffix}\n{_format_count(daily)}"
         )
         self.query_one("#thirty-day-metric", Static).update(
-            f"{self.settings.thirty_day_forecast_days}-day expected {suffix}\n{_format_count(thirty_day)}"
+            f"Monthly projected {suffix}\n{_format_count(thirty_day)}"
         )
         self.query_one("#average-metric", Static).update(self._average_per_prompt_text())
         self.query_one("#recent-metric", Static).update(
             f"Last hour {suffix} usage\n{_format_count(recent)}"
         )
         self.query_one("#seven-day-metric", Static).update(
-            f"{self.settings.forecast_days}-day expected {suffix}\n{_format_count(seven_day)}"
+            f"Weekly projected {suffix}\n{_format_count(seven_day)}"
         )
         self.query_one("#thirty-day-statistic", Static).update(
-            f"{self.settings.thirty_day_forecast_days}-day expected {suffix}\n{_format_count(thirty_day)}"
+            f"Monthly projected {suffix}\n{_format_count(thirty_day)}"
         )
         self.query_one("#provider-split", Static).update(self._provider_split_text())
 

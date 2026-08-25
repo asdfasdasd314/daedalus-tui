@@ -6,9 +6,9 @@ The coding statistics tracker presents local task token usage and derived provid
 ## Key Points
 - `Ctrl+T` opens a modal coding statistics view and is listed in the keyboard shortcuts menu.
 - The left panel lists each task timestamp, provider, and recorded token total.
-- The top metrics show cumulative usage, current-local-day usage, and a 30-day projection based on recorded average daily usage.
+- The top metrics show cumulative usage, current-local-day usage, and a monthly projection extrapolated from current-month-to-date usage.
 - The view toggles between token and task units; task counts use the same completed-task records as token accounting.
-- The right panel shows per-provider average usage per prompt, recent-hour usage, seven- and 30-day projections, and absolute provider usage totals in the selected unit.
+- The right panel shows per-provider average usage per prompt, recent-hour usage, current-week and current-month projections, and absolute provider usage totals in the selected unit.
 - Average tokens per prompt are computed separately for each provider; providers are not merged into a single cross-provider average.
 - Provider usage lists absolute token or task counts only; share-of-total percentages are not shown.
 - The tracker reads the existing local task memory and overlays live task snapshots so current-session totals stay accurate.
@@ -32,3 +32,4 @@ HACKING
 - 2026-08-20: Sized usage-history columns before row insertion to prevent initial clipped values that only repainted after mouse movement.
 - 2026-08-20: Corrected the statistics layout regression fixture to mark its submitted task completed so it exercises real usage-row sizing.
 - 2026-08-23: Replaced cross-provider average and percentage splits with per-provider averages and absolute usage totals.
+- 2026-08-25: Changed weekly and monthly projections to extrapolate current calendar week/month-to-date usage so volatile daily usage is reflected without older history dilution.

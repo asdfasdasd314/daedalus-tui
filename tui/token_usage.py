@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from calendar import monthrange
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Iterable
@@ -77,8 +78,11 @@ def calculate_token_usage(
 ) -> TokenUsageStats:
     """Calculate token and task totals, windows, and per-provider usage.
 
-    Daily usage uses the user's local calendar day. The forecast projects the
-    average daily usage across the recorded history into ``forecast_days``.
+    Daily usage uses the user's local calendar day. Weekly and monthly
+    forecasts annualize usage from the current local calendar week or month
+    to the target period length, so older history does not dilute the
+    current-period projection. The monthly forecast uses the actual number
+    of days in the current calendar month.
     Average tokens per prompt are computed separately for each provider so
     providers with different token scales are not merged into one figure.
     """
@@ -117,15 +121,31 @@ def calculate_token_usage(
     recent = sum(entry.tokens for entry in normalized if recent_start <= entry.timestamp <= current)
     recent_tasks = sum(1 for entry in normalized if recent_start <= entry.timestamp <= current)
 
-    if normalized:
-        first_day = normalized[-1].timestamp.astimezone(current_local.tzinfo).date()
-        history_days = max(1, (today - first_day).days + 1)
-        average_daily = cumulative / history_days
-    else:
-        average_daily = 0.0
-    expected = round(average_daily * forecast_days)
-    expected_thirty_day = round(average_daily * thirty_day_forecast_days)
-    average_daily_tasks = cumulative_tasks / history_days if normalized else 0.0
+    week_start = today - timedelta(days=current_local.weekday())
+    localized_entries = tuple(
+        (entry, entry.timestamp.astimezone(current_local.tzinfo))
+        for entry in normalized
+        if entry.timestamp <= current
+    )
+    period_entries = tuple(
+        entry
+        for entry, local_timestamp in localized_entries
+        if week_start <= local_timestamp.date() <= today
+    )
+    month_entries = tuple(
+        entry
+        for entry, local_timestamp in localized_entries
+        if local_timestamp.year == current_local.year
+        and local_timestamp.month == current_local.month
+    )
+    week_days_passed = current_local.weekday() + 1
+    month_days = monthrange(current_local.year, current_local.month)[1]
+    week_tokens = sum(entry.tokens for entry in period_entries)
+    month_tokens = sum(entry.tokens for entry in month_entries)
+    week_tasks = len(period_entries)
+    month_tasks = len(month_entries)
+    expected = round(week_tokens * forecast_days / week_days_passed)
+    expected_thirty_day = round(month_tokens * month_days / current_local.day)
 
     provider_totals: dict[str, int] = {}
     provider_task_totals: dict[str, int] = {}
@@ -154,9 +174,9 @@ def calculate_token_usage(
         last_hour_tokens=recent,
         last_hour_tasks=recent_tasks,
         seven_day_expected_tokens=expected,
-        seven_day_expected_tasks=round(average_daily_tasks * forecast_days),
+        seven_day_expected_tasks=round(week_tasks * forecast_days / week_days_passed),
         thirty_day_expected_tokens=expected_thirty_day,
-        thirty_day_expected_tasks=round(average_daily_tasks * thirty_day_forecast_days),
+        thirty_day_expected_tasks=round(month_tasks * month_days / current_local.day),
         provider_tokens=provider_items,
         provider_tasks=provider_task_items,
     )

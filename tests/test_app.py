@@ -659,8 +659,9 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 str(widget.render()) for widget in app.screen.query(".statistics-value")
             )
             self.assertIn("Cumulative tokens", summary_text)
+            self.assertIn("Weekly projected tokens", statistics_text)
             self.assertIn("Average tokens per prompt", statistics_text)
-            self.assertIn("30-day expected tokens", summary_text)
+            self.assertIn("Monthly projected tokens", summary_text)
 
             app.screen.query_one("#statistics-unit-select", Select).value = "tasks"
             await pilot.pause()
@@ -671,7 +672,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 str(widget.render()) for widget in app.screen.query(".statistics-value")
             )
             self.assertIn("Cumulative tasks", task_summary)
-            self.assertIn("30-day expected tasks", task_summary)
+            self.assertIn("Monthly projected tasks", task_summary)
             self.assertIn("Average tasks per prompt", task_statistics)
             self.assertEqual(
                 [column.label.plain for column in app.screen.query_one("#usage-table", DataTable).columns.values()],
