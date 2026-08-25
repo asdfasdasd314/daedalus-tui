@@ -40,6 +40,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-08-24: Repaired transcript boundary fitting and reserved a one-cell right-edge buffer so resized output reflows without clipping the final glyph.
 - 2026-08-24: Wrapped transcript messages at word boundaries, hyphenated words that exceed the available cell width, and narrowed the output pane through the parameterized UI width setting.
 - 2026-08-24: Moved the plan-question `?` clarification button onto the answer-select row so it shares the dropdown's y-level without a header gap.
 - 2026-08-24: New Project scaffolding now includes a `.daedalus` TOML worktree config template alongside the other initializer assets.

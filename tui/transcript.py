@@ -70,7 +70,10 @@ class TranscriptLog(Log):
 
     def _rebuild_lines(self, *, scroll_end: bool) -> None:
         """Render logical messages as wrapped, selectable Log lines."""
-        width = self._content_width()
+        content_width = self._content_width()
+        # Keep one cell clear at the right edge so the last visible glyph does
+        # not sit against the border or trigger a horizontal scroll.
+        width = max(0, content_width - 2)
         rendered_lines: list[str] = []
         tones: list[str] = []
         for message_index, (message, final) in enumerate(self._messages):
@@ -95,7 +98,7 @@ class TranscriptLog(Log):
         self._line_tones = {
             line_number: tone for line_number, tone in enumerate(tones)
         }
-        self._wrapped_width = width
+        self._wrapped_width = content_width
         self._render_line_cache.clear()
 
     def _content_width(self) -> int:
@@ -134,13 +137,17 @@ class TranscriptLog(Log):
 
         wrapped: list[str] = []
         current = ""
+        # A complete word is preferable to an exact-width break. Rebuilds
+        # reserve the safety cell above, so the rendered line still remains
+        # inside the Log content region.
+        word_fit_width = width + 1
         for token in re.findall(r"\s+|\S+", processed_line):
             if token.isspace():
                 current += token
                 continue
 
             candidate = current + token
-            if current and cell_len(candidate.rstrip()) > width:
+            if current and cell_len(candidate.rstrip()) > word_fit_width:
                 if current.strip():
                     wrapped.append(current.rstrip())
                 current = ""
