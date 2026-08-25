@@ -32,4 +32,4 @@ label = "Cursor CLI"
 value = "cursor"
 
 [output]
-width = "98%"
+width = "95%"

@@ -73,7 +73,7 @@ class TranscriptLog(Log):
         content_width = self._content_width()
         # Keep one cell clear at the right edge so the last visible glyph does
         # not sit against the border or trigger a horizontal scroll.
-        width = max(0, content_width - 2)
+        width = max(0, content_width - 1)
         rendered_lines: list[str] = []
         tones: list[str] = []
         for message_index, (message, final) in enumerate(self._messages):
@@ -124,7 +124,7 @@ class TranscriptLog(Log):
             # Messages can arrive before the first layout pass. Keep them
             # temporarily unwrapped; the first resize/layout event will
             # rebuild them using the content region.
-            width = self.size.width
+            width = self.size.width - self.styles.gutter.width
         return max(0, width)
 
     def _wrap_line(self, line: str, width: int) -> list[str]:
@@ -137,17 +137,13 @@ class TranscriptLog(Log):
 
         wrapped: list[str] = []
         current = ""
-        # A complete word is preferable to an exact-width break. Rebuilds
-        # reserve the safety cell above, so the rendered line still remains
-        # inside the Log content region.
-        word_fit_width = width + 1
         for token in re.findall(r"\s+|\S+", processed_line):
             if token.isspace():
                 current += token
                 continue
 
             candidate = current + token
-            if current and cell_len(candidate.rstrip()) > word_fit_width:
+            if current and cell_len(candidate.rstrip()) > width:
                 if current.strip():
                     wrapped.append(current.rstrip())
                 current = ""
