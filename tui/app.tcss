@@ -79,6 +79,11 @@ Screen {
     width: 14;
 }
 
+#new-project-button, #create-topic-button {
+    width: 16;
+    margin-right: 1;
+}
+
 #settings Select {
     width: 1fr;
     margin-right: 1;
@@ -306,6 +311,49 @@ CodingStatisticsScreen {
 
 ProjectInitializerScreen {
     align: center middle;
+}
+
+CreateTopicScreen {
+    align: center middle;
+}
+
+#create-topic-dialog {
+    width: 82;
+    height: auto;
+    border: round $primary;
+    background: $surface;
+    padding: 1 2;
+}
+
+#create-topic-title {
+    color: $text-accent;
+    text-style: bold;
+    height: 2;
+}
+
+#create-topic-subtitle, #topic-name-label, #topic-goal-label, #create-topic-status {
+    color: $text-muted;
+    height: auto;
+    margin-bottom: 1;
+}
+
+#topic-name-input {
+    margin-bottom: 1;
+}
+
+#topic-goal-input {
+    height: 10;
+    margin-bottom: 1;
+}
+
+#create-topic-actions {
+    height: 3;
+    align: left middle;
+}
+
+#create-topic-button, #cancel-topic-button {
+    width: 20;
+    margin-right: 1;
 }
 
 #project-initializer-dialog {

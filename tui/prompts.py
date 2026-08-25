@@ -5,6 +5,30 @@ from collections.abc import Sequence
 from .topics import embed_topic
 
 
+def build_topic_population_prompt(
+    topic_name: str,
+    topic_slug: str,
+    topic_goal: str,
+    template: str,
+) -> str:
+    """Tell a coding agent to create and flesh out a new topic file."""
+    return (
+        f"Create and populate the new Daedalus topic `{topic_name}`.\n\n"
+        f"Write the file `topic_files/{topic_slug}.md` using this initialized template:\n\n"
+        "```markdown\n"
+        f"{template.rstrip()}\n"
+        "```\n\n"
+        "The operator's description and desired end state is:\n"
+        f"{topic_goal.strip()}\n\n"
+        "Expand the template with the durable context an agent needs to work on this topic. "
+        "Keep the H1 name and the Topic Goal aligned with the operator's request. "
+        "Use `open` for Topic Status unless the requested outcome is already complete. "
+        "Replace the initialization placeholder in State Log with a concise first entry that "
+        "captures the starting state, important constraints, and the intended end state. "
+        "Do not create unrelated files or change application code."
+    )
+
+
 def build_task_prompt(
     prompt: str,
     mode: str = "coding",

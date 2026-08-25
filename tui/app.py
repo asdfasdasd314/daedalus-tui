@@ -35,8 +35,17 @@ from .plan import (
     encode_custom_answer,
     plan_answer_options,
 )
+from .prompts import build_topic_population_prompt
 from .task_coordinator import TaskCoordinator, TaskRecord
-from .topics import TOPIC_NONE_VALUE, topic_select_options
+from .topics import (
+    TOPIC_NONE_VALUE,
+    build_topic_template,
+    load_topic_settings,
+    topic_path,
+    topic_select_options,
+    topic_slug_from_name,
+    validate_topic_name,
+)
 from .transcript import TranscriptLog
 from .token_usage import calculate_token_usage, merge_usage_entries, task_usage_entry, usage_entries_from_memory
 from .vim_text_area import DaedalusVimTextArea
@@ -311,6 +320,91 @@ class ProjectInitializerScreen(ModalScreen[dict | None]):
         status.update(str(result.get("error") or "Initialization failed."))
 
 
+class CreateTopicScreen(ModalScreen[dict | None]):
+    """Collect the context needed to initialize and populate a topic file."""
+
+    BINDINGS = [
+        ("escape", "cancel_topic_creation", "Cancel"),
+    ]
+
+    def __init__(self, project_root: Path) -> None:
+        super().__init__()
+        self.project_root = project_root.resolve()
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="create-topic-dialog"):
+            yield Static("Create Topic", id="create-topic-title")
+            yield Static(
+                "Describe the shared context and desired end state; a coding agent will finish the markdown.",
+                id="create-topic-subtitle",
+            )
+            yield Static("Topic name", id="topic-name-label")
+            yield Input(placeholder="Example: Trading strategy MVP", id="topic-name-input")
+            yield Static("Topic context and desired end state", id="topic-goal-label")
+            yield TextArea(
+                id="topic-goal-input",
+                placeholder=(
+                    "What is this topic about? What should be true when it is complete? "
+                    "Include constraints, decisions, and useful starting context."
+                ),
+            )
+            yield Static("", id="create-topic-status")
+            with Horizontal(id="create-topic-actions"):
+                yield Button("Create and Populate", id="create-topic-button", variant="primary")
+                yield Button("Cancel", id="cancel-topic-button")
+
+    def on_mount(self) -> None:
+        self.query_one("#topic-name-input", Input).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "cancel-topic-button":
+            self.dismiss(None)
+        elif event.button.id == "create-topic-button":
+            self._create_topic()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "topic-name-input":
+            self.query_one("#topic-goal-input", TextArea).focus()
+
+    def action_cancel_topic_creation(self) -> None:
+        self.dismiss(None)
+
+    def _create_topic(self) -> None:
+        name_input = self.query_one("#topic-name-input", Input)
+        goal_input = self.query_one("#topic-goal-input", TextArea)
+        status = self.query_one("#create-topic-status", Static)
+        try:
+            settings = load_topic_settings()
+            name = validate_topic_name(
+                name_input.value,
+                int(settings["maximum_topic_name_length"]),
+            )
+            goal = goal_input.text.strip()
+            if not goal:
+                raise ValueError("Topic context and desired end state are required.")
+            if len(goal) > int(settings["maximum_topic_goal_length"]):
+                raise ValueError(
+                    "Topic context and desired end state must be at most "
+                    f"{settings['maximum_topic_goal_length']} characters."
+                )
+            slug = topic_slug_from_name(name, int(settings["maximum_topic_slug_length"]))
+            if topic_path(self.project_root, slug).exists():
+                raise ValueError(f"Topic already exists: {slug}")
+        except (KeyError, TypeError, ValueError) as error:
+            status.update(str(error))
+            name_input.focus()
+            return
+
+        self.dismiss(
+            {
+                "name": name,
+                "slug": slug,
+                "goal": goal,
+                "template": build_topic_template(name, goal),
+            }
+        )
+
+
 class CodingStatisticsScreen(ModalScreen[None]):
     """Show token or task usage history and derived coding statistics."""
 
@@ -550,6 +644,7 @@ class DaedalusTuiApp(App[None]):
                             id="project-select",
                         )
                         yield Button("New Project", id="new-project-button")
+                        yield Button("Create Topic", id="create-topic-button", variant="primary")
                         yield Button("New Task", id="new-task-button", variant="primary")
                     with Horizontal(id="settings"):
                         yield Select(
@@ -785,6 +880,9 @@ class DaedalusTuiApp(App[None]):
     def action_show_new_project(self) -> None:
         self.push_screen(ProjectInitializerScreen(self.launch_root), self._on_project_initialized)
 
+    def action_show_create_topic(self) -> None:
+        self.push_screen(CreateTopicScreen(self._active_project_path), self._on_topic_created)
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "send-button":
             self._submit_prompt()
@@ -792,6 +890,8 @@ class DaedalusTuiApp(App[None]):
             self._start_new_task()
         elif event.button.id == "new-project-button":
             self.action_show_new_project()
+        elif event.button.id == "create-topic-button":
+            self.action_show_create_topic()
         elif event.button.id == "continue-plan-button":
             self._continue_plan()
         elif event.button.id == "start-coding-button":
@@ -906,6 +1006,40 @@ class DaedalusTuiApp(App[None]):
         self._refresh_task_list()
         self._render_selected_task_safely("prompt submission")
 
+    def _on_topic_created(self, topic: dict | None) -> None:
+        """Queue a coding task that writes and expands the requested topic file."""
+        if topic is None:
+            return
+        try:
+            provider = str(self.query_one("#provider-select", Select).value)
+            model = str(self.query_one("#model-select", Select).value)
+            reasoning_value = self.query_one("#reasoning-select", Select).value
+            reasoning = "" if reasoning_value is Select.BLANK else str(reasoning_value)
+            prompt = build_topic_population_prompt(
+                topic["name"],
+                topic["slug"],
+                topic["goal"],
+                topic["template"],
+            )
+            record = self.coordinator.submit(
+                prompt,
+                provider,
+                model,
+                reasoning,
+                "coding",
+            )
+        except (KeyError, RuntimeError, ValueError) as error:
+            self._set_error(str(error))
+            self._set_status("Error")
+            return
+        self._session_task_rows.add(self._task_row_key(self._active_project_path, record.task_id))
+        self._selected_task_id = record.task_id
+        self._new_task_mode = False
+        self._clear_task_update(self._task_row_key(self._active_project_path, record.task_id))
+        self._refresh_task_list()
+        self._render_selected_task_safely("topic creation submission")
+        self._set_status(f"Creating topic: {topic['slug']}")
+
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         """Focus a task from the cross-project update inbox."""
         row_key = str(event.row_key.value)
@@ -954,6 +1088,7 @@ class DaedalusTuiApp(App[None]):
             elif is_selected:
                 self._updated_task_rows.discard(row_key)
             self._refresh_project_selector()
+            self._refresh_topic_select()
             self._refresh_task_list()
             if is_selected:
                 self._render_selected_task_safely(f"task event phase={phase}")

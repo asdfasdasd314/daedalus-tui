@@ -3,15 +3,21 @@
 ## Summary
 Optional Topics group closely related tasks and features under a shared
 git-tracked markdown umbrella (`topic_files/{slug}.md`) so agents can carry
-concise recurrent memory without replaying full conversations.
+concise recurrent memory without replaying full conversations. The TUI can now
+collect the topic context and queue an agent to initialize and populate the
+markdown.
 
 ## Key Points
 - **Optional attachment**: Tasks may omit a topic. The settings-bar Topic
   Select defaults to `(None)` and does not persist the last selection in
   launch-root memory; New Task and project switches reset to `(None)`.
-- **External authorship**: Operators create and edit topic markdown outside
-  the TUI (or via a later coding task). The TUI only lists existing
-  `topic_files/*.md` stems from the active project checkout.
+- **Create Topic flow**: The project toolbar opens a modal for a topic name and
+  the desired end state. It queues a coding task with the initialized template
+  and asks the agent to expand the durable context in
+  `topic_files/{slug}.md`.
+- **Safe handoff**: The creation task writes the new file in its isolated
+  worktree, allowing normal orchestration promotion to add it to the project
+  without leaving an uncommitted primary-worktree file behind.
 - **Schema**: Each topic file has an H1 name plus `## Topic Goal`,
   `## Topic Status` (`open` | `complete`), and `## State Log`.
 - **Prompt embed**: When tagged, the orchestrator loads the topic from the
@@ -25,13 +31,13 @@ concise recurrent memory without replaying full conversations.
   same way concurrent feature-file edits can.
 
 ## Relevant Files
-- `tui/topics.py`: Discovery, load, validation helpers, and prompt embed.
-- `tui/prompts.py`: Optional topic blocks on task, repair, and resolver prompts.
+- `tui/topics.py`: Discovery, creation validation/template helpers, load, and prompt embed.
+- `tui/prompts.py`: Topic creation handoff plus optional topic blocks on task, repair, and resolver prompts.
 - `tui/orchestrator.py`: Loads tagged topics from the task worktree before prompts.
 - `tui/task_coordinator.py`: Optional `topic` on `TaskRecord` / submit and inheritance.
 - `tui/memory.py`: Optional `topic` on persisted task snapshots.
-- `tui/app.py`: Topic Select beside Mode / Branch.
-- `parameter_files/daedalus-tui-topics.toml`: Paired parameter file (no tunables in v1).
+- `tui/app.py`: Create Topic modal, task handoff, and Topic Select beside Mode / Branch.
+- `parameter_files/daedalus-tui-topics.toml`: Topic creation length limits and paired settings.
 - `tests/test_topics.py`, `tests/test_prompts.py`, `tests/test_app.py`,
   `tests/test_memory.py`, `tests/test_task_coordinator.py`: Coverage for
   discovery, embeds, UI, persistence, and inheritance.
@@ -42,3 +48,5 @@ HACKING
 ## State Log
 - 2026-08-24: Introduced optional Topics with markdown schema, prompt embeds,
   settings-bar Select, memory persistence, and coding State Log updates.
+- 2026-08-25: Added a Create Topic modal that queues an isolated coding task to
+  initialize the schema and populate a new topic from the operator's desired end state.

@@ -188,6 +188,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#continue-plan-button", Button), Button)
             self.assertIsInstance(app.query_one("#start-coding-button", Button), Button)
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
+            self.assertIsInstance(app.query_one("#create-topic-button", Button), Button)
             self.assertIsInstance(app.query_one("#output-toggle-button", Button), Button)
             await pilot.pause()
 

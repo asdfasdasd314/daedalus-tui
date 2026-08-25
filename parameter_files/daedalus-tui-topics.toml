@@ -1,2 +1,5 @@
-# Topics have no tunable parameters in v1.
-# Status vocabulary (open | complete) and schema live in code/instructions.
+# Topic creation limits. The schema (Topic Goal, Topic Status, State Log) lives
+# in code and the agent instructions.
+maximum_topic_name_length = 100
+maximum_topic_slug_length = 100
+maximum_topic_goal_length = 12000

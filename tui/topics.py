@@ -1,16 +1,63 @@
-"""Topic file discovery, loading, and prompt embedding."""
+"""Topic file discovery, creation, loading, and prompt embedding."""
 
 from __future__ import annotations
 
 from pathlib import Path
+import re
+import tomllib
 
 TOPIC_DIR = "topic_files"
 TOPIC_START = "BEGIN_DAEDALUS_TOPIC"
 TOPIC_END = "END_DAEDALUS_TOPIC"
 # Select value for no topic; empty string can collide with Textual Select.BLANK.
 TOPIC_NONE_VALUE = "__none__"
+PARAMETER_PATH = Path(__file__).resolve().parents[1] / "parameter_files" / "daedalus-tui-topics.toml"
 
 REQUIRED_HEADINGS = ("## Topic Goal", "## Topic Status", "## State Log")
+TOPIC_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 -]*$")
+
+
+def load_topic_settings() -> dict:
+    """Load tunable limits for topic creation from the paired parameter file."""
+    with PARAMETER_PATH.open("rb") as source:
+        return tomllib.load(source)
+
+
+def validate_topic_name(topic_name: object, maximum_length: int) -> str:
+    """Return a display name suitable for an H1 and a filesystem slug."""
+    if not isinstance(topic_name, str):
+        raise ValueError("Topic name must be a string.")
+    normalized = " ".join(topic_name.strip().split())
+    if not normalized:
+        raise ValueError("Topic name is required.")
+    if len(normalized) > maximum_length:
+        raise ValueError(f"Topic name must be at most {maximum_length} characters.")
+    if not TOPIC_NAME_PATTERN.fullmatch(normalized):
+        raise ValueError("Use letters, numbers, spaces, and hyphens only for the topic name.")
+    return normalized
+
+
+def topic_slug_from_name(topic_name: str, maximum_length: int) -> str:
+    """Convert a validated topic name to the filename stem used by the TUI."""
+    slug = re.sub(r"[^a-z0-9]+", "-", topic_name.lower()).strip("-")
+    if not slug:
+        raise ValueError("Topic name must contain at least one letter or number.")
+    if len(slug) > maximum_length:
+        raise ValueError(f"Topic name produces a slug longer than {maximum_length} characters.")
+    return slug
+
+
+def build_topic_template(topic_name: str, topic_goal: str) -> str:
+    """Build the initial markdown shape that the population agent will complete."""
+    return (
+        f"# {topic_name}\n\n"
+        "## Topic Goal\n"
+        f"{topic_goal.strip()}\n\n"
+        "## Topic Status\n"
+        "open\n\n"
+        "## State Log\n"
+        "- Topic initialized; the population agent should record the starting context and next steps.\n"
+    )
 
 
 def list_topic_slugs(project_root: Path) -> list[str]:

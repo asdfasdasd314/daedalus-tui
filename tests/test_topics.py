@@ -5,10 +5,13 @@ from pathlib import Path
 from tui.topics import (
     TOPIC_NONE_VALUE,
     TOPIC_START,
+    build_topic_template,
     embed_topic,
     list_topic_slugs,
     load_topic_text,
+    topic_slug_from_name,
     topic_select_options,
+    validate_topic_name,
     validate_topic_markdown,
 )
 
@@ -27,6 +30,19 @@ open
 
 
 class TopicsTests(unittest.TestCase):
+    def test_topic_name_and_slug_are_safe_for_topic_files(self):
+        self.assertEqual(validate_topic_name("  Kalman BTC Strategy  ", 100), "Kalman BTC Strategy")
+        self.assertEqual(topic_slug_from_name("Kalman BTC Strategy", 100), "kalman-btc-strategy")
+        with self.assertRaises(ValueError):
+            validate_topic_name("topic/with/path", 100)
+
+    def test_topic_template_contains_the_shared_schema(self):
+        template = build_topic_template("Kalman BTC Strategy", "Build the MVP and document its end state.")
+        self.assertIn("# Kalman BTC Strategy", template)
+        self.assertIn("## Topic Goal\nBuild the MVP", template)
+        self.assertIn("## Topic Status\nopen", template)
+        self.assertIn("## State Log", template)
+
     def test_list_and_load_topics_from_project_checkout(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

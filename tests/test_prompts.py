@@ -1,9 +1,26 @@
 import unittest
 
-from tui.prompts import build_repair_prompt, build_resolver_prompt, build_task_prompt
+from tui.prompts import (
+    build_repair_prompt,
+    build_resolver_prompt,
+    build_task_prompt,
+    build_topic_population_prompt,
+)
 
 
 class PromptTests(unittest.TestCase):
+    def test_topic_population_prompt_includes_template_and_end_state(self):
+        prompt = build_topic_population_prompt(
+            "Kalman BTC Strategy",
+            "kalman-btc-strategy",
+            "Build an MVP that reaches a documented backtest result.",
+            "# Kalman BTC Strategy\n\n## Topic Goal\nBuild an MVP.",
+        )
+        self.assertIn("topic_files/kalman-btc-strategy.md", prompt)
+        self.assertIn("## Topic Goal", prompt)
+        self.assertIn("documented backtest result", prompt)
+        self.assertIn("Replace the initialization placeholder", prompt)
+
     def test_task_prompt_assigns_git_ownership_to_orchestrator(self):
         prompt = build_task_prompt("Build the feature")
         self.assertIn("leave them in the worktree", prompt)
