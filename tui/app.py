@@ -1313,7 +1313,7 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#output-panel", Vertical).styles.display = (
             "none" if record.mode == "plan" else "block"
         )
-        self._set_output_view(self._showing_error_output)
+        self._set_output_view(self._showing_error_output, visible=record.mode != "plan")
         if record.mode == "plan":
             self._render_plan_review(record, plan_review_generation)
         else:
@@ -1743,13 +1743,19 @@ class DaedalusTuiApp(App[None]):
             scroll_methods[direction](animate=False, immediate=True)
         self._set_status(f"Output {direction.replace('_', ' ')}")
 
-    def _set_output_view(self, show_errors: bool, *, focus: bool = False) -> None:
+    def _set_output_view(
+        self,
+        show_errors: bool,
+        *,
+        focus: bool = False,
+        visible: bool = True,
+    ) -> None:
         """Show either the full-size transcript or the full-size diagnostics log."""
         self._showing_error_output = show_errors
         error_widget = self.query_one("#task-error", Log)
         output_widget = self.query_one("#output", TranscriptLog)
-        error_widget.styles.display = "block" if show_errors else "none"
-        output_widget.styles.display = "none" if show_errors else "block"
+        error_widget.styles.display = "block" if visible and show_errors else "none"
+        output_widget.styles.display = "block" if visible and not show_errors else "none"
         self.query_one("#output-view-label", Static).update(
             "Error output" if show_errors else "Agent output"
         )

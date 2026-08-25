@@ -42,6 +42,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-08-24: Kept both output logs hidden while the plan review replaces the output panel, preserving the toggle state for normal task views.
 - 2026-08-24: Added a full-size toggle between agent transcript and task diagnostics so long errors can be read and copied without competing with the console for vertical space.
 - 2026-08-24: Moved the plan-question `?` clarification button onto the answer-select row so it shares the dropdown's y-level without a header gap.
 - 2026-08-24: New Project scaffolding now includes a `.daedalus` TOML worktree config template alongside the other initializer assets.
