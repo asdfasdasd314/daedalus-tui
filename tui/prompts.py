@@ -2,6 +2,8 @@
 
 from collections.abc import Sequence
 
+from .topics import embed_topic
+
 
 def build_task_prompt(
     prompt: str,
@@ -9,6 +11,7 @@ def build_task_prompt(
     resume_notes: Sequence[str] = (),
     resumed: bool = False,
     profile_text: str | None = None,
+    topic_text: str | None = None,
 ) -> str:
     if mode == "ask":
         instructions = (
@@ -38,7 +41,11 @@ def build_task_prompt(
     else:
         raise ValueError(f"Unsupported task mode: {mode}")
     embedded_profile = _embedded_profile(profile_text)
-    profile_prefix = f"\n\n{embedded_profile}" if embedded_profile else ""
+    embedded_topic = _embedded_topic(topic_text, mode)
+    extras = "".join(
+        part for part in (embedded_profile, embedded_topic) if part
+    )
+    profile_prefix = f"\n\n{extras}" if extras else ""
     task_prompt = (
         f"TASK_MODE: {mode}\n\n"
         f"{prompt}{profile_prefix}\n\n"
@@ -68,10 +75,12 @@ def build_repair_prompt(
     attempt: int,
     limit: int,
     profile_text: str | None = None,
+    topic_text: str | None = None,
 ) -> str:
     return (
         "TASK_MODE: coding\n\n"
         f"{_embedded_profile(profile_text)}"
+        f"{_embedded_topic(topic_text, 'repair')}"
         "Repair the failing verification suite in this existing isolated Git worktree. "
         "Preserve the original task intent and make the smallest compatible fix. "
         "Do not run git add, git commit, git merge, git push, or switch branches. "
@@ -89,10 +98,12 @@ def build_resolver_prompt(
     attempt: int,
     limit: int,
     profile_text: str | None = None,
+    topic_text: str | None = None,
 ) -> str:
     return (
         "TASK_MODE: integrating\n\n"
         f"{_embedded_profile(profile_text)}"
+        f"{_embedded_topic(topic_text, 'integrating')}"
         "Resolve the current integration failure in this existing Git worktree. "
         "Preserve the task intent, resolve conflicts or repair the failing checks, and run relevant checks. "
         "Do not run git add, git commit, git merge, git push, or switch branches. "
@@ -116,3 +127,9 @@ def _embedded_profile(profile_text: str | None) -> str:
         "--- PROFILE CONTENT END ---\n"
         "END_DAEDALUS_PROFILE\n"
     )
+
+
+def _embedded_topic(topic_text: str | None, mode: str) -> str:
+    if topic_text is None:
+        return ""
+    return embed_topic(topic_text, mode)

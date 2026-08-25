@@ -392,6 +392,73 @@ class OrchestratorTests(unittest.TestCase):
         manager.remove_cancelled.assert_called_once_with(context)
         self.assertTrue(any(phase == "cancelled" for phase, _, _ in events))
 
+    def test_tagged_topic_is_embedded_from_worktree(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "answer")
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            topic_dir = context.path / "topic_files"
+            topic_dir.mkdir(parents=True)
+            (topic_dir / "mvp.md").write_text(
+                "# MVP\n\n## Topic Goal\nShip it.\n\n## Topic Status\nopen\n\n## State Log\n",
+                encoding="utf-8",
+            )
+            manager = Mock()
+            manager.create.return_value = context
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(),
+                lambda _phase, _message, _channel: None,
+            )
+
+            with patch("tui.orchestrator.GitWorktreeManager", return_value=manager):
+                result = orchestrator.run(
+                    "Explain the MVP",
+                    "codex",
+                    "luna",
+                    "high",
+                    mode="ask",
+                    topic_slug="mvp",
+                )
+
+        self.assertTrue(result.succeeded)
+        prompt = runner.run.call_args.args[0].prompt
+        self.assertIn("BEGIN_DAEDALUS_TOPIC", prompt)
+        self.assertIn("Ship it.", prompt)
+        self.assertIn("read-only for topic files", prompt)
+
+    def test_missing_topic_is_reported_without_embedding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "answer")
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            manager.create.return_value = context
+            events = []
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(),
+                lambda phase, message, channel: events.append((phase, message, channel)),
+            )
+
+            with patch("tui.orchestrator.GitWorktreeManager", return_value=manager):
+                result = orchestrator.run(
+                    "Explain",
+                    "codex",
+                    "luna",
+                    "high",
+                    mode="ask",
+                    topic_slug="missing",
+                )
+
+        self.assertTrue(result.succeeded)
+        self.assertTrue(any(phase == "topic" and channel == "error" for phase, _, channel in events))
+        self.assertNotIn("BEGIN_DAEDALUS_TOPIC", runner.run.call_args.args[0].prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

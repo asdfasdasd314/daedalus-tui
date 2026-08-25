@@ -25,7 +25,7 @@ class FakeOrchestrator:
         self.on_event = on_event
         self.integration_gate = integration_gate
 
-    def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=(), resume_from=None):
+    def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=(), resume_from=None, topic_slug=None):
         with self.lock:
             type(self).active += 1
             type(self).maximum = max(type(self).maximum, type(self).active)
@@ -180,7 +180,7 @@ class TaskCoordinatorTests(unittest.TestCase):
 
     def test_failed_task_does_not_block_later_task(self):
         class FailingOrchestrator(FakeOrchestrator):
-            def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=(), resume_from=None):
+            def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=(), resume_from=None, topic_slug=None):
                 if prompt == "bad":
                     self.on_event("failed", "Task failed but worktree is preserved.", "error")
                     return OrchestrationResult(False, task_id, f"agent/task-{task_id}", Path(f"/tmp/{task_id}"), "preserved")
@@ -450,7 +450,7 @@ class TaskCoordinatorTests(unittest.TestCase):
             def __init__(self, repository, _runner, _settings, _on_event, integration_gate=None):
                 self.repository = repository
 
-            def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=(), resume_from=None):
+            def run(self, prompt, provider, model, reasoning, task_id=None, submission_sequence=0, mode="coding", control=None, existing_context=None, resume_notes=(), resume_from=None, topic_slug=None):
                 type(self).calls.append((existing_context, resume_notes, resume_from))
                 type(self).started.set()
                 context = existing_context or WorktreeContext(
@@ -787,6 +787,106 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertIn("Which store?", ClarificationOrchestrator.prompts[-1])
             self.assertIn("Add the selected store.", ClarificationOrchestrator.prompts[-1])
             self.assertEqual(record.tokens_consumed, 12)
+            coordinator.shutdown()
+
+    def test_submit_persists_and_restores_topic(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            memory_path = repository / ".daedalus-memory.json"
+            coordinator = TaskCoordinator(
+                repository,
+                object(),
+                OrchestrationSettings(max_concurrent_tasks=1),
+                memory_path=memory_path,
+            )
+            with patch("tui.task_coordinator.LocalOrchestrator", FakeOrchestrator):
+                FakeOrchestrator.release.set()
+                record = coordinator.submit(
+                    "Build MVP piece",
+                    "codex",
+                    "luna",
+                    "medium",
+                    topic="mvp",
+                )
+                record.future.result(timeout=5)
+            self.assertEqual(record.topic, "mvp")
+            snapshot = coordinator.memory.get_tasks()[record.memory_task_id]
+            self.assertEqual(snapshot["topic"], "mvp")
+            coordinator.shutdown()
+
+            restored = TaskCoordinator(
+                repository,
+                object(),
+                OrchestrationSettings(max_concurrent_tasks=1),
+                memory_path=memory_path,
+            )
+            rehydrated = restored.get(record.task_id)
+            self.assertIsNotNone(rehydrated)
+            self.assertEqual(rehydrated.topic, "mvp")
+            restored.shutdown()
+
+    def test_implement_plan_and_clarification_inherit_topic(self):
+        class TrackingOrchestrator:
+            topic_slugs = []
+
+            def __init__(self, _repository, _runner, _settings, on_event, integration_gate=None):
+                self.on_event = on_event
+
+            def run(self, prompt, _provider, _model, _reasoning, task_id=None, mode="coding", **kwargs):
+                type(self).topic_slugs.append(kwargs.get("topic_slug"))
+                if mode == "ask":
+                    self.on_event("agent", "Clarification answer.", "message")
+                    return OrchestrationResult(True, task_id, tokens_consumed=3)
+                if mode == "plan":
+                    self.on_event(
+                        "agent",
+                        '{"plan":"Ship the MVP.","questions":[{"id":"q1",'
+                        '"question":"Scope?","options":[{"id":"a","label":"Small"},'
+                        '{"id":"b","label":"Large"}]}],"no_more_questions":false}',
+                        "message",
+                    )
+                    return OrchestrationResult(True, task_id, awaiting_plan=True)
+                self.on_event("agent", "Implemented.", "message")
+                return OrchestrationResult(True, task_id)
+
+        with tempfile.TemporaryDirectory() as directory:
+            coordinator = TaskCoordinator(Path(directory), object(), OrchestrationSettings(max_concurrent_tasks=1))
+            with patch("tui.task_coordinator.LocalOrchestrator", TrackingOrchestrator):
+                plan_record = coordinator.submit(
+                    "Plan the MVP",
+                    "codex",
+                    "luna",
+                    "medium",
+                    mode="plan",
+                    topic="mvp",
+                )
+                plan_record.future.result(timeout=5)
+                self.assertEqual(plan_record.topic, "mvp")
+                self.assertEqual(TrackingOrchestrator.topic_slugs[-1], "mvp")
+
+                self.assertTrue(
+                    coordinator.clarify_plan_question(plan_record.task_id, "q1", "What is Small?")
+                )
+                deadline = time.time() + 2
+                while time.time() < deadline:
+                    clarifications = plan_record.plan_clarifications.get("q1", [])
+                    if clarifications and clarifications[-1].status == "completed":
+                        break
+                    time.sleep(0.01)
+                self.assertEqual(TrackingOrchestrator.topic_slugs[-1], "mvp")
+
+                plan_record.plan_confirmed = True
+                plan_record.plan_questions = ()
+                plan_record.plan_answers = {"q1": "a"}
+                plan_record.plan_answer_details = {"q1": "Scope?: Small"}
+                plan_record.plan_text = "Ship the MVP."
+                plan_record.status = "completed"
+                plan_record.plan_implemented = False
+                coding_record = coordinator.implement_plan(plan_record.task_id)
+                self.assertIsNotNone(coding_record)
+                self.assertEqual(coding_record.topic, "mvp")
+                coding_record.future.result(timeout=5)
+                self.assertEqual(TrackingOrchestrator.topic_slugs[-1], "mvp")
             coordinator.shutdown()
 
 

@@ -16,6 +16,7 @@ from tui.config import ModelOption, TuiSettings
 from tui.projects import DaedalusProject
 from tui.plan import CUSTOM_ANSWER_OPTION_ID, PlanOption, PlanQuestion, encode_custom_answer
 from tui.task_coordinator import TaskRecord
+from tui.topics import TOPIC_NONE_VALUE
 from tui.vim_text_area import DaedalusVimTextArea
 
 
@@ -35,7 +36,7 @@ class FakeCoordinator:
     def set_event_callback(self, callback):
         self.callback = callback
 
-    def submit(self, prompt, provider, model, reasoning, mode="coding"):
+    def submit(self, prompt, provider, model, reasoning, mode="coding", topic=None):
         record = TaskRecord(
             f"task-{len(self.records) + 1}",
             len(self.records) + 1,
@@ -44,6 +45,7 @@ class FakeCoordinator:
             model,
             reasoning,
             mode=mode,
+            topic=topic,
             status="running",
             phase="Agent",
             branch_name=f"agent/task-{len(self.records) + 1}",
@@ -170,6 +172,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(app.query_one("#reasoning-select", Select).value, "medium")
             self.assertEqual(app.query_one("#mode-select", Select).value, "coding")
             self.assertEqual(app.query_one("#target-branch-select", Select).value, "main")
+            self.assertEqual(app.query_one("#topic-select", Select).value, TOPIC_NONE_VALUE)
             self.assertIn("/workspace/project", str(app.query_one("#directory", Static).render()))
             self.assertIsInstance(app.query_one("#task-list", DataTable), DataTable)
             self.assertIsInstance(app.query_one("#prompt-input", TextArea), DaedalusVimTextArea)
@@ -185,7 +188,36 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#continue-plan-button", Button), Button)
             self.assertIsInstance(app.query_one("#start-coding-button", Button), Button)
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
+            self.assertIsInstance(app.query_one("#output-toggle-button", Button), Button)
             await pilot.pause()
+
+    async def test_output_and_error_logs_toggle_as_full_size_selectable_views(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            output = app.query_one("#output", Log)
+            error = app.query_one("#task-error", Log)
+            toggle = app.query_one("#output-toggle-button", Button)
+
+            self.assertEqual(output.styles.display, "block")
+            self.assertEqual(error.styles.display, "none")
+            self.assertEqual(str(toggle.label), "Show errors")
+
+            toggle.press()
+            await pilot.pause()
+
+            self.assertEqual(output.styles.display, "none")
+            self.assertEqual(error.styles.display, "block")
+            self.assertEqual(str(toggle.label), "Show agent output")
+            self.assertIs(app.focused, error)
+            app._handle_vim_key("j")
+            self.assertIs(app.focused, error)
+
+            toggle.press()
+            await pilot.pause()
+
+            self.assertEqual(output.styles.display, "block")
+            self.assertEqual(error.styles.display, "none")
+            self.assertIs(app.focused, output)
 
     async def test_task_list_keeps_failures_active_work_and_current_session_tasks(self):
         app, coordinator = self.make_app()
@@ -280,6 +312,60 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 [call.args[2].primary_branch for call in coordinator_class.call_args_list],
                 ["main", "main"],
             )
+
+    @patch("tui.app.TaskCoordinator")
+    @patch("tui.app.list_local_branches")
+    @patch("tui.app.discover_projects")
+    async def test_topic_select_refreshes_and_resets_on_new_task(
+        self, discover, list_branches, coordinator_class
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "alpha"
+            second = root / "beta"
+            first.mkdir()
+            second.mkdir()
+            (first / "topic_files").mkdir()
+            (first / "topic_files" / "mvp.md").write_text(
+                "# MVP\n\n## Topic Goal\nx\n\n## Topic Status\nopen\n\n## State Log\n",
+                encoding="utf-8",
+            )
+            discover.return_value = (
+                DaedalusProject(first, root),
+                DaedalusProject(second, root),
+            )
+            list_branches.return_value = ["main"]
+            coordinator = FakeCoordinator()
+            coordinator_class.return_value = coordinator
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+            )
+            async with app.run_test() as pilot:
+                await pilot.pause()
+                topic_select = app.query_one("#topic-select", Select)
+                self.assertEqual(topic_select.value, TOPIC_NONE_VALUE)
+                values = {value for _, value in topic_select._options}
+                self.assertIn("mvp", values)
+
+                topic_select.value = "mvp"
+                app.query_one("#prompt-input", TextArea).insert("Build part of MVP")
+                app.action_submit_prompt()
+                self.assertEqual(coordinator.records[-1].topic, "mvp")
+
+                app.action_new_task()
+                await pilot.pause()
+                self.assertEqual(app.query_one("#topic-select", Select).value, TOPIC_NONE_VALUE)
+
+                app.query_one("#project-select", Select).value = str(second)
+                await pilot.pause()
+                refreshed = app.query_one("#topic-select", Select)
+                self.assertEqual(refreshed.value, TOPIC_NONE_VALUE)
+                refreshed_values = {value for _, value in refreshed._options}
+                self.assertIn(TOPIC_NONE_VALUE, refreshed_values)
+                self.assertNotIn("mvp", refreshed_values)
 
     @patch("tui.app.TaskCoordinator")
     @patch("tui.app.list_local_branches")

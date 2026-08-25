@@ -36,6 +36,7 @@ from .plan import (
     plan_answer_options,
 )
 from .task_coordinator import TaskCoordinator, TaskRecord
+from .topics import TOPIC_NONE_VALUE, topic_select_options
 from .transcript import TranscriptLog
 from .token_usage import calculate_token_usage, merge_usage_entries, task_usage_entry, usage_entries_from_memory
 from .vim_text_area import DaedalusVimTextArea
@@ -522,6 +523,7 @@ class DaedalusTuiApp(App[None]):
         self._updated_task_rows: set[str] = set()
         self._new_task_mode = True
         self._vim_pending_g = False
+        self._showing_error_output = False
         self._plan_review_generation = 0
         self._accept_task_events = False
         self._shutdown_lock = threading.Lock()
@@ -580,15 +582,24 @@ class DaedalusTuiApp(App[None]):
                             value=self.orchestration_settings.primary_branch,
                             id="target-branch-select",
                         )
+                        yield Select(
+                            [("(None)", TOPIC_NONE_VALUE)],
+                            value=TOPIC_NONE_VALUE,
+                            id="topic-select",
+                        )
                     yield Static(self._directory_text(), id="directory")
                     yield Static("Phase: Idle", id="phase")
                     yield Static("Task branch: —    Worktree: —", id="task-context")
-                    # Keep diagnostics on the same selectable Log surface as
-                    # the transcript so mouse selection, y, and Ctrl+C all
-                    # use Textual's screen-selection clipboard path.
-                    yield Log(id="task-error", auto_scroll=False)
-                    # Log supports Textual click-drag selection; RichLog does not.
-                    yield TranscriptLog(id="output", auto_scroll=True)
+                    with Vertical(id="output-panel"):
+                        with Horizontal(id="output-toolbar"):
+                            yield Static("Agent output", id="output-view-label")
+                            yield Button("Show errors", id="output-toggle-button")
+                        # Keep diagnostics on the same selectable Log surface
+                        # as the transcript so mouse selection, y, and Ctrl+C
+                        # all use Textual's screen-selection clipboard path.
+                        yield Log(id="task-error", auto_scroll=False)
+                        # Log supports Textual click-drag selection; RichLog does not.
+                        yield TranscriptLog(id="output", auto_scroll=True)
                     with Vertical(id="plan-review"):
                         # Agent plan text is literal; brackets and scientific
                         # notation must not be parsed as Textual/Rich markup.
@@ -627,6 +638,7 @@ class DaedalusTuiApp(App[None]):
         self._accept_task_events = True
         self.query_one("#output", TranscriptLog).styles.width = self.settings.output_width
         self._refresh_target_branch_select()
+        self._refresh_topic_select()
         self._refresh_task_list()
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
         prompt.enter_insert_mode()
@@ -792,6 +804,8 @@ class DaedalusTuiApp(App[None]):
             self._cancel_task()
         elif event.button.id == "retry-button":
             self._retry_task()
+        elif event.button.id == "output-toggle-button":
+            self._set_output_view(not self._showing_error_output, focus=True)
         elif event.button.id == "answer-plan-button":
             self._answer_plan()
         elif event.button.id == "implement-button":
@@ -875,8 +889,12 @@ class DaedalusTuiApp(App[None]):
         reasoning_value = self.query_one("#reasoning-select", Select).value
         reasoning = "" if reasoning_value is Select.BLANK else str(reasoning_value)
         mode = str(self.query_one("#mode-select", Select).value)
+        topic_value = self.query_one("#topic-select", Select).value
+        topic: str | None = None
+        if topic_value not in (Select.BLANK, "", TOPIC_NONE_VALUE, getattr(Select, "NULL", None)):
+            topic = str(topic_value)
         try:
-            record = self.coordinator.submit(prompt, provider, model, reasoning, mode)
+            record = self.coordinator.submit(prompt, provider, model, reasoning, mode, topic=topic)
         except (RuntimeError, ValueError) as error:
             self._set_error(str(error))
             self._set_status("Error")
@@ -1047,6 +1065,20 @@ class DaedalusTuiApp(App[None]):
             self._suppress_target_branch_change = False
         self._apply_primary_branch(project_path, effective)
 
+    def _refresh_topic_select(self, *, reset_to_none: bool = False) -> None:
+        """Refresh Topic Select options for the active project; default remains (None)."""
+        options = topic_select_options(self._active_project_path)
+        topic_select = self.query_one("#topic-select", Select)
+        current = topic_select.value
+        topic_select.set_options(options)
+        valid_values = {value for _, value in options}
+        if reset_to_none or current in (Select.BLANK, "", getattr(Select, "NULL", None)):
+            topic_select.value = TOPIC_NONE_VALUE
+        elif current in valid_values:
+            topic_select.value = current
+        else:
+            topic_select.value = TOPIC_NONE_VALUE
+
     def _usage_entries(self):
         try:
             persisted = usage_entries_from_memory(self.memory)
@@ -1102,6 +1134,7 @@ class DaedalusTuiApp(App[None]):
         }
         self.query_one("#directory", Static).update(self._directory_text())
         self._refresh_target_branch_select()
+        self._refresh_topic_select(reset_to_none=True)
         self._refresh_task_list()
         self._render_selected_task_safely("project switch")
         if draft is not None:
@@ -1282,7 +1315,8 @@ class DaedalusTuiApp(App[None]):
         if record is None:
             self._rendered_plan_question_signature = None
             self._set_prompt_text("", editable=True)
-            self.query_one("#output", TranscriptLog).styles.display = "block"
+            self.query_one("#output-panel", Vertical).styles.display = "block"
+            self._set_output_view(self._showing_error_output)
             self.query_one("#task-context", Static).update("Task branch: —    Worktree: —")
             self.query_one("#phase", Static).update("Phase: Idle")
             self._set_error("")
@@ -1303,7 +1337,10 @@ class DaedalusTuiApp(App[None]):
         self._set_prompt_text(record.prompt, editable=False)
         plan_review = self.query_one("#plan-review", Vertical)
         plan_review.styles.display = "block" if record.mode == "plan" else "none"
-        output.styles.display = "none" if record.mode == "plan" else "block"
+        self.query_one("#output-panel", Vertical).styles.display = (
+            "none" if record.mode == "plan" else "block"
+        )
+        self._set_output_view(self._showing_error_output, visible=record.mode != "plan")
         if record.mode == "plan":
             self._render_plan_review(record, plan_review_generation)
         else:
@@ -1670,6 +1707,7 @@ class DaedalusTuiApp(App[None]):
         """Clear the selected task and unlock a fresh prompt editor."""
         self._selected_task_id = None
         self._new_task_mode = True
+        self._refresh_topic_select(reset_to_none=True)
         self._refresh_task_list()
         self._render_selected_task_safely("new task")
         self._set_status("New task")
@@ -1717,7 +1755,7 @@ class DaedalusTuiApp(App[None]):
             self._set_status("Insert")
 
     def _scroll_output(self, direction: str) -> None:
-        output = self.query_one("#output", Log)
+        output = self.query_one("#task-error" if self._showing_error_output else "#output", Log)
         output.focus()
         scroll_methods = {
             "up": output.scroll_up,
@@ -1732,6 +1770,28 @@ class DaedalusTuiApp(App[None]):
         else:
             scroll_methods[direction](animate=False, immediate=True)
         self._set_status(f"Output {direction.replace('_', ' ')}")
+
+    def _set_output_view(
+        self,
+        show_errors: bool,
+        *,
+        focus: bool = False,
+        visible: bool = True,
+    ) -> None:
+        """Show either the full-size transcript or the full-size diagnostics log."""
+        self._showing_error_output = show_errors
+        error_widget = self.query_one("#task-error", Log)
+        output_widget = self.query_one("#output", TranscriptLog)
+        error_widget.styles.display = "block" if visible and show_errors else "none"
+        output_widget.styles.display = "block" if visible and not show_errors else "none"
+        self.query_one("#output-view-label", Static).update(
+            "Error output" if show_errors else "Agent output"
+        )
+        self.query_one("#output-toggle-button", Button).label = (
+            "Show agent output" if show_errors else "Show errors"
+        )
+        if focus:
+            (error_widget if show_errors else output_widget).focus()
 
     def _paste_into_prompt(self) -> None:
         text = paste_from_system_clipboard()

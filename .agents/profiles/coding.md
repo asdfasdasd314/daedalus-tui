@@ -25,6 +25,19 @@
 - Append a one-sentence engineering log to the `State Log` before marking a
   task complete.
 
+# Topics (when tagged)
+
+- Topics under `topic_files/` are optional umbrellas for closely related
+  tasks. Feature files remain the per-feature "why"; topics hold cross-feature
+  shared memory.
+- When a topic is embedded in the prompt, follow the injected topic
+  instructions: keep **Topic Goal** immutable unless the user explicitly asks
+  to change it; keep **Topic Status** minimal (`open` | `complete`); append
+  one concise, topic-scoped **State Log** entry after completing a coding
+  task.
+- Concurrent tasks on the same topic may race on State Log appends the same
+  way concurrent feature-file edits can.
+
 # Parameter File Centralization
 
 Each feature file must have a corresponding parameter file (`.toml`) in the
