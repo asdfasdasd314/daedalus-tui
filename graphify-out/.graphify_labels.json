@@ -34,20 +34,12 @@
   "32": "discover_projects",
   "33": "CodingStatisticsScreen",
   "34": "._render_line_strip",
-  "35": ".on_data_table_row_selected",
   "36": "architecture.md",
   "37": "integrating.md",
-  "38": "._start_new_task",
   "39": "Daedalus Project Instructions",
   "40": "README.md",
   "41": "KeyboardShortcutsScreen",
   "42": "CodingStatisticsScreen",
   "43": "._rebuild_plan_questions",
-  "44": "orchestrator.py",
-  "46": ".emit",
-  "47": "discover_projects",
-  "48": "._usage_entries",
-  "49": "TokenUsageStats",
-  "50": ".enter_insert_mode",
-  "51": ".nav_word_end"
+  "44": "orchestrator.py"
 }
