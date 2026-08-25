@@ -145,8 +145,8 @@
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui.md": {
-    "mtime": 1787606412.0163743,
-    "ast_hash": "4524cf835ab7daba4a367f5a6b1d4c35",
+    "mtime": 1787608750.4871747,
+    "ast_hash": "0f93c076e3077aa9cd1407ca78f9de64",
     "semantic_hash": ""
   },
   "requirements.txt": {
@@ -245,18 +245,18 @@
     "semantic_hash": ""
   },
   "tests/test_project_initializer.py": {
-    "mtime": 1787519368.639702,
-    "ast_hash": "85b775a6ed9208a820011d91aa2f33ce",
+    "mtime": 1787608750.4882014,
+    "ast_hash": "ab0ea1129e840cd7db3df0d6f707d96a",
     "semantic_hash": ""
   },
   "tui/project_initializer.py": {
-    "mtime": 1787519368.6414864,
-    "ast_hash": "34b6188c15f66e4e975b319aa5cd3f57",
+    "mtime": 1787608750.4886081,
+    "ast_hash": "2bb8ee0aac844ca5583225e0f4b8f76a",
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-project-initialization.md": {
-    "mtime": 1787519368.6382918,
-    "ast_hash": "f9e5bf2d8dd606a6e6745b93ad5ef475",
+    "mtime": 1787608750.4865928,
+    "ast_hash": "9481bcfd64918fde2c92e942b7af40dd",
     "semantic_hash": ""
   },
   "tui/templates/project-initializer/.agents/profiles/architecture.md": {
@@ -285,8 +285,8 @@
     "semantic_hash": ""
   },
   "tui/templates/project-initializer/README.md": {
-    "mtime": 1787519368.6432166,
-    "ast_hash": "ab87be6ca16ed03532045180ee3e3bf8",
+    "mtime": 1787608750.4892395,
+    "ast_hash": "bac7d4c670ad7defb58362b3ac695eec",
     "semantic_hash": ""
   }
 }
