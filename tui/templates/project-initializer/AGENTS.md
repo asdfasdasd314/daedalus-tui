@@ -21,6 +21,13 @@ Do not read unrelated profiles.
 
 Do not automatically read every file under `.agents/`.
 
+## Topics
+
+Optional topic umbrellas live in `topic_files/`. Not every task needs a topic.
+When a task is tagged with a topic, follow the topic markdown and any
+inline topic instructions supplied in the prompt (State Log as shared memory,
+immutable Topic Goal unless the user asks otherwise, minimal Topic Status).
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

@@ -11,6 +11,7 @@
     - Files, scripts, modules, or features that are merely called, launched, imported, orchestrated, or referenced are dependencies, not part of the feature itself.
     - Do not absorb dependency-specific details into a feature file simply because the feature interacts with them.
     - Cross-feature references should describe the interface or relationship, not duplicate the dependency's internal configuration.
+- Concurrent topic State Log appends can race like concurrent feature-file edits; prefer preserving both relevant topic entries when resolving conflicts.
 
 # Parameter File Centralization
 Parameter files are used to centralize feature-level configuration values that may need to be tuned, experimented with, or adjusted without modifying source code. Features should load these values from their parameter file rather than defining them directly in the implementation.

@@ -348,6 +348,40 @@ class TaskMemoryStoreTests(unittest.TestCase):
                 [{"last_opened_project": str(project.resolve())}],
             )
 
+    def test_records_optional_topic_and_omits_when_untagged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / ".daedalus-memory.json"
+            store = TaskMemoryStore(path)
+            project = Path(directory) / "project"
+
+            store.record_task(
+                "task-tagged",
+                "Work on MVP",
+                "codex",
+                "gpt-5.6-luna",
+                "medium",
+                "coding",
+                "queued",
+                submitted_at=0,
+                project=project,
+                topic="mvp",
+            )
+            store.record_task(
+                "task-plain",
+                "Unrelated fix",
+                "codex",
+                "gpt-5.6-luna",
+                "medium",
+                "coding",
+                "queued",
+                submitted_at=1,
+                project=project,
+            )
+
+            tasks = store.get_tasks()
+            self.assertEqual(tasks["task-tagged"]["topic"], "mvp")
+            self.assertNotIn("topic", tasks["task-plain"])
+
 
 if __name__ == "__main__":
     unittest.main()

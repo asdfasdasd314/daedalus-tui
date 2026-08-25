@@ -36,6 +36,10 @@
 - YOU must append a 1-sentence engineering log to the State Log before marking tasks complete.
 - When debugging, use the relevant feature files as another tool to reduce lookups because the summaries and key points can give you a good macro-understanding without reading thousands of lines
 
+# Topics (when tagged)
+- Optional `topic_files/` markdown provides shared umbrella context across related features.
+- Planning is read-only for topic files; use an embedded topic for context only and do not modify Topic Goal, Status, or State Log.
+
 # Parameter File Centralization
 Each feature file must have a corresponding parameter file (`.toml`) located in a sibling directory named `parameter_files`. Create the `parameter_files` directory if it does not already exist.
 

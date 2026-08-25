@@ -26,6 +26,13 @@ duplicate dependency internals.
 Feature files use this schema: H1 title, `## Summary`, `## Key Points`,
 `## Relevant Files`, `## Dev Mode`, and `## State Log`.
 
+# Topics (when tagged)
+
+Optional `topic_files/` markdown provides shared umbrella context (goal,
+status, state log) across related features. Use an embedded topic for
+planning context only; do not modify topic files in planning mode. Feature
+files and parameter files remain read-only during planning as well.
+
 # Parameter Files
 
 Each feature file has a paired `.toml` file in `parameter_files/`. Treat these

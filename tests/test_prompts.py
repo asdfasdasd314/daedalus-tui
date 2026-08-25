@@ -79,6 +79,39 @@ class PromptTests(unittest.TestCase):
         self.assertIn("Additional notes from the user", with_notes)
         self.assertIn("The API already exists in app/api/client.py.", with_notes)
 
+    def test_topic_embeds_for_coding_plan_ask_repair_and_resolver(self):
+        topic = (
+            "# Sample Topic\n\n## Topic Goal\nWhy\n\n## Topic Status\nopen\n\n"
+            "## State Log\n- 2026-08-24: Started.\n"
+        )
+        coding = build_task_prompt("Build", "coding", topic_text=topic)
+        plan = build_task_prompt("Design", "plan", topic_text=topic)
+        ask = build_task_prompt("Explain", "ask", topic_text=topic)
+        repair = build_repair_prompt("Original", "Failure", 1, 3, topic_text=topic)
+        resolver = build_resolver_prompt("Original", "Failure", 1, 3, topic_text=topic)
+
+        for prompt in (coding, plan, ask, repair, resolver):
+            self.assertIn("BEGIN_DAEDALUS_TOPIC", prompt)
+            self.assertIn("Sample Topic", prompt)
+            self.assertIn("TOPIC INSTRUCTIONS", prompt)
+
+        self.assertIn("append one State Log entry", coding)
+        self.assertIn("read-only for topic files", plan)
+        self.assertIn("read-only for topic files", ask)
+        self.assertIn("repair or resolution materially changes", repair)
+        self.assertIn("repair or resolution materially changes", resolver)
+
+    def test_untagged_prompts_omit_topic_blocks(self):
+        for prompt in (
+            build_task_prompt("Build"),
+            build_task_prompt("Design", "plan"),
+            build_task_prompt("Explain", "ask"),
+            build_repair_prompt("Original", "Failure", 1, 3),
+            build_resolver_prompt("Original", "Failure", 1, 3),
+        ):
+            self.assertNotIn("BEGIN_DAEDALUS_TOPIC", prompt)
+            self.assertNotIn("topic_files", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

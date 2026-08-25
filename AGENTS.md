@@ -39,6 +39,8 @@ Do not read unrelated profiles.
   merges, worktree cleanup, and graph refreshes.
 - Keep feature context in `feature_files/` and tunable settings in the paired
   `parameter_files/` directory.
+- Optional topic umbrellas live in `topic_files/` (shared recurrent memory for
+  related tasks); not every task needs a topic.
 
 ## graphify
 

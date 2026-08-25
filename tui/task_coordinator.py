@@ -115,6 +115,7 @@ class TaskRecord:
     model: str
     reasoning: str
     mode: str = "coding"
+    topic: str | None = None
     status: str = "queued"
     phase: str = "Queued"
     branch_name: str = ""
@@ -219,14 +220,32 @@ class TaskCoordinator:
     def set_event_callback(self, callback: TaskEventCallback | None) -> None:
         self.on_event = callback
 
-    def submit(self, prompt: str, provider: str, model: str, reasoning: str, mode: str = "coding") -> TaskRecord:
+    def submit(
+        self,
+        prompt: str,
+        provider: str,
+        model: str,
+        reasoning: str,
+        mode: str = "coding",
+        topic: str | None = None,
+    ) -> TaskRecord:
         with self._lock:
             if self._closed:
                 raise RuntimeError("Task coordinator is shut down.")
             sequence = self._next_sequence
             self._next_sequence += 1
             task_id = f"{sequence:03d}-{uuid.uuid4().hex[:8]}"
-            record = TaskRecord(task_id, sequence, prompt, provider, model, reasoning, mode=mode)
+            cleaned_topic = topic.strip() if isinstance(topic, str) and topic.strip() else None
+            record = TaskRecord(
+                task_id,
+                sequence,
+                prompt,
+                provider,
+                model,
+                reasoning,
+                mode=mode,
+                topic=cleaned_topic,
+            )
             record.prompt_history = [prompt]
             record.memory_task_id = f"task-{task_id}"
             self._tasks[task_id] = record
@@ -350,6 +369,7 @@ class TaskCoordinator:
                 record.model,
                 record.reasoning,
                 mode="coding",
+                topic=record.topic,
             )
         except Exception:
             with self._lock:
@@ -588,6 +608,7 @@ class TaskCoordinator:
             provider = record.provider
             model = record.model
             reasoning = record.reasoning
+            topic_slug = record.topic
         self._notify(record, "clarification", "Asking for clarification.", "status")
 
         answer_chunks: list[str] = []
@@ -612,6 +633,7 @@ class TaskCoordinator:
                 reasoning,
                 task_id=f"{task_id}-clarify-{clarification_id}",
                 mode="ask",
+                topic_slug=topic_slug,
             )
         except Exception as error:  # Keep clarification failures isolated from the plan task.
             log_exception(
@@ -702,6 +724,7 @@ class TaskCoordinator:
                 existing_context=record.context,
                 resume_notes=resume_notes,
                 resume_from=record.resume_from,
+                topic_slug=record.topic,
             )
         except Exception as error:  # Keep one unexpected task failure isolated from the pool.
             log_exception(f"Task worker crashed task={record.task_id}", error)
@@ -910,6 +933,7 @@ class TaskCoordinator:
                 worktree_path=record.context.path if record.context is not None else None,
                 base_commit=record.context.base_commit if record.context is not None else None,
                 resume_from=record.resume_from,
+                topic=record.topic,
             )
         except (OSError, ValueError) as error:
             # Persistent task history must never change orchestration behavior.
@@ -950,6 +974,8 @@ class TaskCoordinator:
             if status in INTERRUPTIBLE_STATUSES:
                 status = "paused"
                 error = error or "Daedalus was closed while this task was active; resume to continue."
+            topic_value = snapshot.get("topic")
+            topic = topic_value.strip() if isinstance(topic_value, str) and topic_value.strip() else None
             branch_name = snapshot.get("branch_name")
             if not isinstance(branch_name, str) or not branch_name:
                 branch_name = f"agent/task-{task_id}"
@@ -983,6 +1009,7 @@ class TaskCoordinator:
                 model=str(snapshot.get("model") or ""),
                 reasoning=str(snapshot.get("reasoning") or ""),
                 mode=str(snapshot.get("mode") or "coding"),
+                topic=topic,
                 status=status,
                 phase=_phase_for_status(status),
                 branch_name=branch_name,
