@@ -626,6 +626,7 @@ class DaedalusTuiApp(App[None]):
         self._previous_asyncio_exception_handler = None
         self._rendered_plan_question_signature: tuple[object, ...] | None = None
         self._suppress_target_branch_change = False
+        self._suppress_topic_change = False
         self._push_in_flight = False
 
     def compose(self) -> ComposeResult:
@@ -932,6 +933,15 @@ class DaedalusTuiApp(App[None]):
                 self._on_target_branch_selected(str(event.value))
             self._refresh_push_button()
             return
+        if event.select.id == "topic-select":
+            if self._suppress_topic_change:
+                return
+            value = event.value
+            if value in (Select.BLANK, "", TOPIC_NONE_VALUE, getattr(Select, "NULL", None)):
+                self._on_topic_selected(None)
+            else:
+                self._on_topic_selected(str(value))
+            return
         if event.select.id and event.select.id.startswith("plan-question-"):
             self._update_plan_custom_answer_visibility(event.select.id, event.value)
             self._update_plan_action_buttons()
@@ -1176,6 +1186,16 @@ class DaedalusTuiApp(App[None]):
             pass
         self._apply_primary_branch(project_path, branch)
 
+    def _on_topic_selected(self, topic: str | None) -> None:
+        """Remember the selected topic as the default for the active project."""
+        try:
+            if topic is None:
+                self.memory.clear_project_topic(self._active_project_path)
+            else:
+                self.memory.set_project_topic(self._active_project_path, topic)
+        except (OSError, ValueError):
+            pass
+
     def _refresh_target_branch_select(self) -> None:
         """Refresh Branch Select options for the active project and sync coordinator."""
         project_path = self._active_project_path
@@ -1275,19 +1295,28 @@ class DaedalusTuiApp(App[None]):
         self._set_error(error or "Push failed.")
         self._set_status("Push failed")
 
-    def _refresh_topic_select(self, *, reset_to_none: bool = False) -> None:
-        """Refresh Topic Select options for the active project; default remains (None)."""
+    def _refresh_topic_select(self) -> None:
+        """Refresh topics and restore the active project's remembered default."""
         options = topic_select_options(self._active_project_path)
-        topic_select = self.query_one("#topic-select", Select)
-        current = topic_select.value
-        topic_select.set_options(options)
         valid_values = {value for _, value in options}
-        if reset_to_none or current in (Select.BLANK, "", getattr(Select, "NULL", None)):
-            topic_select.value = TOPIC_NONE_VALUE
-        elif current in valid_values:
-            topic_select.value = current
-        else:
-            topic_select.value = TOPIC_NONE_VALUE
+        try:
+            remembered = self.memory.get_project_topic(self._active_project_path)
+        except (OSError, ValueError):
+            remembered = None
+        if remembered is not None and remembered not in valid_values:
+            try:
+                self.memory.clear_project_topic(self._active_project_path)
+            except (OSError, ValueError):
+                pass
+            remembered = None
+        effective = remembered if remembered is not None else TOPIC_NONE_VALUE
+        topic_select = self.query_one("#topic-select", Select)
+        self._suppress_topic_change = True
+        try:
+            topic_select.set_options(options)
+            topic_select.value = effective
+        finally:
+            self._suppress_topic_change = False
 
     def _usage_entries(self):
         try:
@@ -1344,7 +1373,7 @@ class DaedalusTuiApp(App[None]):
         }
         self.query_one("#directory", Static).update(self._directory_text())
         self._refresh_target_branch_select()
-        self._refresh_topic_select(reset_to_none=True)
+        self._refresh_topic_select()
         self._refresh_task_list()
         self._render_selected_task_safely("project switch")
         if draft is not None:
@@ -1917,7 +1946,7 @@ class DaedalusTuiApp(App[None]):
         """Clear the selected task and unlock a fresh prompt editor."""
         self._selected_task_id = None
         self._new_task_mode = True
-        self._refresh_topic_select(reset_to_none=True)
+        self._refresh_topic_select()
         self._refresh_task_list()
         self._render_selected_task_safely("new task")
         self._set_status("New task")

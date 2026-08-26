@@ -372,7 +372,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
     @patch("tui.app.TaskCoordinator")
     @patch("tui.app.list_local_branches")
     @patch("tui.app.discover_projects")
-    async def test_topic_select_refreshes_and_resets_on_new_task(
+    async def test_topic_select_persists_per_project_and_restores_on_new_task(
         self, discover, list_branches, coordinator_class
     ):
         with tempfile.TemporaryDirectory() as directory:
@@ -413,7 +413,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
                 app.action_new_task()
                 await pilot.pause()
-                self.assertEqual(app.query_one("#topic-select", Select).value, TOPIC_NONE_VALUE)
+                self.assertEqual(app.query_one("#topic-select", Select).value, "mvp")
 
                 app.query_one("#project-select", Select).value = str(second)
                 await pilot.pause()
@@ -422,6 +422,46 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 refreshed_values = {value for _, value in refreshed._options}
                 self.assertIn(TOPIC_NONE_VALUE, refreshed_values)
                 self.assertNotIn("mvp", refreshed_values)
+
+                app.query_one("#project-select", Select).value = str(first)
+                await pilot.pause()
+                self.assertEqual(app.query_one("#topic-select", Select).value, "mvp")
+
+    @patch("tui.app.list_local_branches", return_value=["main"])
+    @patch("tui.app.discover_projects")
+    async def test_stale_remembered_topic_clears_memory_and_falls_back(
+        self, discover, _list_branches
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "wfinance"
+            memory_path = root / ".daedalus-memory.json"
+            memory_path.write_text(
+                json.dumps(
+                    [
+                        {"last_opened_project": str(project.resolve())},
+                        {"project_topics": {str(project.resolve()): "missing-topic"}},
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            discover.return_value = (DaedalusProject(project, root),)
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+
+            async with app.run_test() as pilot:
+                await pilot.pause()
+                self.assertEqual(app.query_one("#topic-select", Select).value, TOPIC_NONE_VALUE)
+
+            self.assertEqual(
+                json.loads(memory_path.read_text(encoding="utf-8")),
+                [{"last_opened_project": str(project.resolve())}],
+            )
 
     @patch("tui.app.TaskCoordinator")
     @patch("tui.app.list_local_branches")

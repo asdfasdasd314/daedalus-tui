@@ -13,11 +13,12 @@ from threading import Lock
 DEFAULT_MEMORY_FILE = ".daedalus-memory.json"
 LAST_OPENED_PROJECT_KEY = "last_opened_project"
 PROJECT_TARGET_BRANCHES_KEY = "project_target_branches"
+PROJECT_TOPICS_KEY = "project_topics"
 TASKS_KEY = "tasks"
 
 
 class TaskMemoryStore:
-    """Persist task history, last project, and per-project target branches."""
+    """Persist task history, last project, and per-project task defaults."""
 
     _locks_guard = Lock()
     _locks: dict[Path, Lock] = {}
@@ -119,6 +120,65 @@ class TaskMemoryStore:
             mapping.pop(key, None)
             if mapping:
                 updated_entries.append({PROJECT_TARGET_BRANCHES_KEY: mapping})
+            self._write_entries(updated_entries)
+
+    def get_project_topic(self, project_path: Path) -> str | None:
+        """Return the remembered default topic for a project, if any."""
+        key = str(project_path.expanduser().resolve())
+        with self._lock:
+            entries = self._read_entries()
+        for entry in reversed(entries):
+            mapping = entry.get(PROJECT_TOPICS_KEY)
+            if not isinstance(mapping, dict):
+                continue
+            value = mapping.get(key)
+            if isinstance(value, str) and value:
+                return value
+        return None
+
+    def set_project_topic(self, project_path: Path, topic: str) -> None:
+        """Remember one project's default topic without losing other entries."""
+        key = str(project_path.expanduser().resolve())
+        with self._lock:
+            entries = self._read_entries()
+            updated_entries: list[dict[str, object]] = []
+            mapping: dict[str, object] = {}
+            replaced = False
+            for existing in entries:
+                existing_map = existing.get(PROJECT_TOPICS_KEY)
+                if isinstance(existing_map, dict):
+                    if not replaced:
+                        mapping.update(existing_map)
+                        replaced = True
+                    continue
+                if "tokens" in existing:
+                    continue
+                updated_entries.append(existing)
+            mapping[key] = topic
+            updated_entries.append({PROJECT_TOPICS_KEY: mapping})
+            self._write_entries(updated_entries)
+
+    def clear_project_topic(self, project_path: Path) -> None:
+        """Remove one project's topic override (absent = no default topic)."""
+        key = str(project_path.expanduser().resolve())
+        with self._lock:
+            entries = self._read_entries()
+            updated_entries: list[dict[str, object]] = []
+            mapping: dict[str, object] = {}
+            replaced = False
+            for existing in entries:
+                existing_map = existing.get(PROJECT_TOPICS_KEY)
+                if isinstance(existing_map, dict):
+                    if not replaced:
+                        mapping.update(existing_map)
+                        replaced = True
+                    continue
+                if "tokens" in existing:
+                    continue
+                updated_entries.append(existing)
+            mapping.pop(key, None)
+            if mapping:
+                updated_entries.append({PROJECT_TOPICS_KEY: mapping})
             self._write_entries(updated_entries)
 
     def get_tasks(self) -> dict[str, dict[str, object]]:

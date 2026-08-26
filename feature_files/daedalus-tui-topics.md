@@ -9,8 +9,9 @@ markdown.
 
 ## Key Points
 - **Optional attachment**: Tasks may omit a topic. The settings-bar Topic
-  Select defaults to `(None)` and does not persist the last selection in
-  launch-root memory; New Task and project switches reset to `(None)`.
+  Select defaults to `(None)` and remembers the selected topic per project in
+  launch-root memory; New Task and project switches restore that project-local
+  default. Selecting `(None)` clears the project default.
 - **Create Topic flow**: The project toolbar opens a modal for a topic name and
   the desired end state. It queues a coding task with the initialized template
   and asks the agent to expand the durable context in
@@ -50,3 +51,5 @@ HACKING
   settings-bar Select, memory persistence, and coding State Log updates.
 - 2026-08-25: Added a Create Topic modal that queues an isolated coding task to
   initialize the schema and populate a new topic from the operator's desired end state.
+- 2026-08-25: Added per-project topic defaults so New Task and project switches
+  restore the last selected topic, with stale topic selections cleared safely.
