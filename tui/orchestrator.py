@@ -9,10 +9,17 @@ from typing import Callable
 
 from .agent_runner import AgentControl, AgentRequest, AgentResult, AgentRunner
 from .debug_log import LOGGER, log_exception
+from .environment import cursor_environment
 from .graphify import update_repository
 from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
 from .project_config import load_project_worktree_settings
-from .prompts import build_repair_prompt, build_resolver_prompt, build_task_prompt
+from .prompts import (
+    build_migration_repair_prompt,
+    build_repair_prompt,
+    build_resolver_prompt,
+    build_task_prompt,
+)
+from .supabase_migrations import migrations_pending, push_migrations
 from .topics import load_topic_text, topic_path
 from .verification import discover_commands, run_verification
 
@@ -37,6 +44,8 @@ class OrchestrationSettings:
     agent_timeout_seconds: float = 450.0
     graphify_update_enabled: bool = True
     graphify_executable: str = "graphify"
+    supabase_db_push_enabled: bool = True
+    supabase_executable: str = "supabase"
     shutdown_grace_seconds: float = 8.0
     debug_log_filename: str = ".daedalus-debug.log"
 
@@ -183,6 +192,9 @@ class LocalOrchestrator:
                 if manager.head(context.path) == context.base_commit:
                     raise RuntimeError("Agent finished without creating a commit.")
                 self.verify_with_repairs(
+                    manager, context, selection, prompt, control, topic_slug=topic_slug
+                )
+                self.push_migrations_with_repairs(
                     manager, context, selection, prompt, control, topic_slug=topic_slug
                 )
             else:
@@ -333,6 +345,65 @@ class LocalOrchestrator:
             if not repair.succeeded:
                 raise RuntimeError(repair.error or "Task repair agent failed.")
             manager.commit_changes(context.path, f"Daedalus task repair {attempts}")
+
+    def push_migrations_with_repairs(
+        self,
+        manager: GitWorktreeManager,
+        context: WorktreeContext,
+        selection: tuple[str, str, str],
+        original: str,
+        control: AgentControl | None = None,
+        topic_slug: str | None = None,
+    ) -> None:
+        if not self.settings.supabase_db_push_enabled:
+            return
+        attempts = 0
+        failure_log: list[str] = []
+        limit = self.settings.task_verification_attempt_limit
+        environment = cursor_environment(context.path, (self.repository / ".env",))
+        while True:
+            if not migrations_pending(context.path, context.base_commit):
+                return
+            self.emit("migrations", "Pushing pending Supabase migrations.")
+            self._raise_if_stopped(control)
+            result = push_migrations(
+                context.path,
+                executable=self.settings.supabase_executable,
+                env=environment,
+            )
+            self._raise_if_stopped(control)
+            if result.succeeded:
+                return
+            attempts += 1
+            reason = result.output.strip() or "Migration push produced no diagnostic output."
+            attempt_summary = f"Migration push attempt {attempts}/{limit} failed.\n\n{reason}"
+            failure_log.append(attempt_summary)
+            self.emit("migrations", attempt_summary, "error")
+            if attempts >= limit:
+                raise RuntimeError(
+                    f"Migration push failed after {limit} attempts.\n\n"
+                    + "\n\n".join(failure_log)
+                )
+            self.emit("repairing", f"Launching migration repair attempt {attempts}/{limit}.")
+            profile_text = self.load_profile(context.path, "coding")
+            topic_text = self.load_topic(context.path, topic_slug)
+            repair = self.run_agent(
+                manager,
+                context,
+                selection,
+                build_migration_repair_prompt(
+                    original,
+                    reason,
+                    attempts,
+                    limit,
+                    profile_text=profile_text,
+                    topic_text=topic_text,
+                ),
+                control,
+            )
+            if not repair.succeeded:
+                raise RuntimeError(repair.error or "Migration repair agent failed.")
+            manager.commit_changes(context.path, f"Daedalus migration repair {attempts}")
 
     def integrate(
         self,

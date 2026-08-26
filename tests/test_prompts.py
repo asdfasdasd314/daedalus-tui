@@ -1,6 +1,7 @@
 import unittest
 
 from tui.prompts import (
+    build_migration_repair_prompt,
     build_repair_prompt,
     build_resolver_prompt,
     build_task_prompt,
@@ -24,8 +25,18 @@ class PromptTests(unittest.TestCase):
     def test_task_prompt_assigns_git_ownership_to_orchestrator(self):
         prompt = build_task_prompt("Build the feature")
         self.assertIn("leave them in the worktree", prompt)
-        self.assertIn("orchestration layer owns all file staging, commits, merges, graph refreshes, and cleanup", prompt)
+        self.assertIn("orchestration layer owns all file staging, commits, merges, graph refreshes", prompt)
         self.assertIn("Do not run git add, git commit, git merge, git push, or switch branches", prompt)
+        self.assertIn("Do not run graphify", prompt)
+        self.assertIn("Do not run `supabase db push`", prompt)
+
+    def test_migration_repair_prompt_forbids_agent_db_push(self):
+        prompt = build_migration_repair_prompt("Original", "SQL error", 1, 3)
+        self.assertIn("TASK_MODE: coding", prompt)
+        self.assertIn("Migration push failure", prompt)
+        self.assertIn("SQL error", prompt)
+        self.assertIn("Do not run `supabase db push`", prompt)
+        self.assertIn("Do not run git add", prompt)
         self.assertIn("Do not run graphify", prompt)
 
     def test_task_prompt_embeds_profile_after_user_prompt_and_before_constraints(self):
@@ -63,10 +74,12 @@ class PromptTests(unittest.TestCase):
         for prompt in (
             build_repair_prompt("Original", "Failure", 1, 3),
             build_resolver_prompt("Original", "Failure", 1, 3),
+            build_migration_repair_prompt("Original", "Failure", 1, 3),
         ):
             self.assertIn("Do not run git add, git commit, git merge, git push, or switch branches", prompt)
             self.assertIn("orchestration layer", prompt)
             self.assertIn("Do not run graphify", prompt)
+            self.assertIn("Do not run `supabase db push`", prompt)
 
     def test_ask_and_plan_modes_are_read_only(self):
         ask = build_task_prompt("Explain this", "ask")

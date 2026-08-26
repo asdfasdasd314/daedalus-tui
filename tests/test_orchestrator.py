@@ -7,6 +7,7 @@ from tui.agent_runner import AgentResult
 from tui.git_worktree import GitWorktreeError, WorktreeContext
 from tui.graphify import GraphifyResult
 from tui.orchestrator import LocalOrchestrator, OrchestrationSettings
+from tui.supabase_migrations import PushResult
 from tui.verification import VerificationResult
 
 
@@ -458,6 +459,233 @@ class OrchestratorTests(unittest.TestCase):
         self.assertTrue(result.succeeded)
         self.assertTrue(any(phase == "topic" and channel == "error" for phase, _, channel in events))
         self.assertNotIn("BEGIN_DAEDALUS_TOPIC", runner.run.call_args.args[0].prompt)
+
+    def test_migration_push_skipped_when_disabled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "done")
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            manager.create.return_value = context
+            manager.head.return_value = "changed"
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(
+                    verification_commands=(("true",),),
+                    supabase_db_push_enabled=False,
+                ),
+                lambda *_: None,
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch("tui.orchestrator.migrations_pending", return_value=True) as pending,
+                patch("tui.orchestrator.push_migrations") as push,
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-5.6-luna", "medium")
+
+        self.assertTrue(result.succeeded)
+        pending.assert_not_called()
+        push.assert_not_called()
+
+    def test_migration_push_skipped_when_no_migration_diff(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "done")
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            manager.create.return_value = context
+            manager.head.return_value = "changed"
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(verification_commands=(("true",),)),
+                lambda *_: None,
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch("tui.orchestrator.migrations_pending", return_value=False) as pending,
+                patch("tui.orchestrator.push_migrations") as push,
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-5.6-luna", "medium")
+
+        self.assertTrue(result.succeeded)
+        pending.assert_called()
+        push.assert_not_called()
+
+    def test_migration_push_runs_once_after_verification(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "done")
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            manager.create.return_value = context
+            manager.head.return_value = "changed"
+            events = []
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(verification_commands=(("true",),)),
+                lambda phase, message, channel: events.append((phase, message, channel)),
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch("tui.orchestrator.migrations_pending", return_value=True),
+                patch(
+                    "tui.orchestrator.push_migrations",
+                    return_value=PushResult(True, "Remote database is up to date."),
+                ) as push,
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-5.6-luna", "medium")
+
+        self.assertTrue(result.succeeded)
+        push.assert_called_once()
+        self.assertEqual(push.call_args.args[0], context.path)
+        self.assertTrue(any(phase == "migrations" for phase, _, _ in events))
+        self.assertTrue(any(phase == "ready" for phase, _, _ in events))
+
+    def test_migration_push_failure_repairs_then_succeeds(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            (context.path / ".agents" / "profiles").mkdir(parents=True)
+            (context.path / ".agents" / "profiles" / "coding.md").write_text(
+                "CODING_PROFILE_FOR_MIGRATION_REPAIR", encoding="utf-8"
+            )
+
+            def run_agent(request, _on_event):
+                if "Migration push failure" in request.prompt:
+                    return AgentResult("codex", 0, "fixed migration", tokens_consumed=4)
+                return AgentResult("codex", 0, "done", tokens_consumed=8)
+
+            runner.run.side_effect = run_agent
+            manager = Mock()
+            manager.create.return_value = context
+            manager.head.return_value = "changed"
+            events = []
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(
+                    verification_commands=(("true",),),
+                    task_verification_attempt_limit=2,
+                ),
+                lambda phase, message, channel: events.append((phase, message, channel)),
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch("tui.orchestrator.migrations_pending", return_value=True),
+                patch(
+                    "tui.orchestrator.push_migrations",
+                    side_effect=[
+                        PushResult(False, "ERROR: relation already exists"),
+                        PushResult(True, "Applied migration."),
+                    ],
+                ) as push,
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-5.6-luna", "medium")
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual(push.call_count, 2)
+        self.assertEqual(runner.run.call_count, 2)
+        self.assertTrue(
+            any(phase == "migrations" and channel == "error" for phase, _, channel in events)
+        )
+        self.assertTrue(any(phase == "repairing" for phase, _, _ in events))
+        self.assertIn("Migration push failure", runner.run.call_args_list[1].args[0].prompt)
+        self.assertIn("CODING_PROFILE_FOR_MIGRATION_REPAIR", runner.run.call_args_list[1].args[0].prompt)
+        manager.commit_changes.assert_any_call(context.path, "Daedalus migration repair 1")
+
+    def test_exhausted_migration_push_logs_each_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.side_effect = [
+                AgentResult("codex", 0, "done"),
+                AgentResult("codex", 0, "repair-1"),
+                AgentResult("codex", 0, "repair-2"),
+            ]
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            manager.create.return_value = context
+            manager.head.return_value = "changed"
+            events = []
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(
+                    verification_commands=(("true",),),
+                    task_verification_attempt_limit=3,
+                ),
+                lambda phase, message, channel: events.append((phase, message, channel)),
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch("tui.orchestrator.migrations_pending", return_value=True),
+                patch(
+                    "tui.orchestrator.push_migrations",
+                    side_effect=[
+                        PushResult(False, "first migration failed"),
+                        PushResult(False, "second migration failed"),
+                        PushResult(False, "third migration failed"),
+                    ],
+                ),
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-5.6-luna", "medium")
+
+        self.assertFalse(result.succeeded)
+        self.assertIn("first migration failed", result.error)
+        self.assertIn("second migration failed", result.error)
+        self.assertIn("third migration failed", result.error)
+        migration_errors = [
+            message for phase, message, channel in events if phase == "migrations" and channel == "error"
+        ]
+        self.assertEqual(len(migration_errors), 3)
+        failed_events = [message for phase, message, channel in events if phase == "failed" and channel == "error"]
+        self.assertEqual(len(failed_events), 1)
+        self.assertIn("Migration push failed after 3 attempts", failed_events[0])
+        manager.remove_successful.assert_not_called()
+        manager.promote.assert_not_called()
+
+    def test_integration_resume_does_not_push_migrations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            context = WorktreeContext(repository, "task", "base", "agent/task-task", repository / "worktree")
+            manager = Mock()
+            orchestrator = LocalOrchestrator(
+                repository,
+                runner,
+                OrchestrationSettings(verification_commands=(("true",),)),
+                lambda *_: None,
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch("tui.orchestrator.migrations_pending") as pending,
+                patch("tui.orchestrator.push_migrations") as push,
+            ):
+                result = orchestrator.run(
+                    "Build it",
+                    "codex",
+                    "gpt-5.6-luna",
+                    "medium",
+                    existing_context=context,
+                    resume_from="integration",
+                )
+
+        self.assertTrue(result.succeeded)
+        pending.assert_not_called()
+        push.assert_not_called()
 
 
 if __name__ == "__main__":

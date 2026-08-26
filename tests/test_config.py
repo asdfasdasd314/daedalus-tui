@@ -27,6 +27,8 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(orchestration.agent_timeout_seconds, 450)
         self.assertTrue(orchestration.graphify_update_enabled)
         self.assertEqual(orchestration.graphify_executable, "graphify")
+        self.assertTrue(orchestration.supabase_db_push_enabled)
+        self.assertEqual(orchestration.supabase_executable, "supabase")
 
     def test_loads_target_branch_and_primary_branch_alias(self):
         with tempfile.TemporaryDirectory() as directory:
