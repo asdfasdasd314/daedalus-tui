@@ -24,14 +24,14 @@ The standalone TUI orchestration layer creates isolated Git worktrees from a con
 - **Profile prompt boundary**: The orchestrator reloads the selected repository profile from the active task worktree and embeds it inline before each task, repair, follow-up planning, or resolver prompt; agents apply supplied profile content directly without reopening the file, while the mode and orchestration constraints that follow remain authoritative.
 - **Topic prompt boundary**: When a task carries a topic slug, the orchestrator reloads that topic markdown from the task worktree and embeds it with mode-specific instructions before task, repair, and resolver prompts; missing topics emit a non-fatal diagnostic and omit the embed.
 - **Graph refresh boundary**: Graphify runs only after successful primary promotion, and a failed refresh is cleaned up and reported without starting a resolver.
-- **Local-only boundary**: No persistence, daemon communications, Supabase deployment, migration handling, or remote Git push is included.
+- **Local-only boundary**: No persistence, daemon communications, Supabase deployment, or migration handling is included. Automated orchestration never pushes remotes; an explicit operator Push in the TUI may publish the selected operating branch.
 - **Project-scoped execution**: The TUI creates one coordinator per discovered `feature_files` project, so task numbering, worktrees, branches, and integration gates stay scoped to the selected repository.
 - **Shutdown diagnostics**: A rotating project-local debug log records agent process IDs, task transitions, Textual exceptions, worker shutdown, and on-demand all-thread stack dumps.
 
 ## Relevant Files
 - `tui/orchestrator.py`: Single-task lifecycle, verification repair, integration, and resolver loops.
 - `tui/task_coordinator.py`: Concurrent task records, executor limit, and serialized integration gate.
-- `tui/git_worktree.py`: Git validation, worktree, branch listing, merge, and cleanup operations.
+- `tui/git_worktree.py`: Git validation, worktree, branch listing, operator push helper, merge, and cleanup operations.
 - `tui/project_config.py`: Target-project `.daedalus` worktree provisioning settings.
 - `tui/memory.py`: Atomic task snapshots, worktree identity, restart metadata, and per-project target branches.
 - `tui/topics.py`: Topic discovery and embed helpers used at prompt-build time.
@@ -42,6 +42,7 @@ The standalone TUI orchestration layer creates isolated Git worktrees from a con
 HACKING
 
 ## State Log
+- 2026-08-25: Clarified that remote push remains outside automated orchestration while the TUI may offer an operator-owned Push for the selected operating branch.
 - 2026-08-24: Tagged tasks embed topic markdown from the worktree into task, repair, and resolver prompts.
 - 2026-08-23: Made the orchestration parameter `target_branch` a default seed only, with per-project operating-branch overrides applied through each coordinator's cloned settings.
 - 2026-08-23: Logged every exhausted verification failure reason into the task error panel and resumed retries from integration once coding had already succeeded.

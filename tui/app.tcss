@@ -89,6 +89,10 @@ Screen {
     margin-right: 1;
 }
 
+#push-branch-button {
+    width: 10;
+}
+
 #directory, #phase, #title, #task-context, #status,
 #resume-notes-label {
     color: $text-muted;

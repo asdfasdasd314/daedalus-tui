@@ -245,6 +245,66 @@ class GitWorktreeTests(unittest.TestCase):
             with self.assertRaisesRegex(GitWorktreeError, "destination exists"):
                 manager.provision_worktree(context, ProjectWorktreeSettings(readonly_paths=("food-data",)))
 
+    def test_remote_exists_checks_origin_url(self):
+        with patch("tui.git_worktree.subprocess.run") as run:
+            run.return_value = type("Process", (), {"returncode": 0, "stdout": "git@example.com:repo.git\n", "stderr": ""})()
+            from tui.git_worktree import remote_exists
+
+            self.assertTrue(remote_exists(Path("/repo")))
+            self.assertEqual(run.call_args.args[0], ["git", "remote", "get-url", "origin"])
+
+    def test_remote_exists_false_when_missing(self):
+        with patch("tui.git_worktree.subprocess.run") as run:
+            run.return_value = type("Process", (), {"returncode": 2, "stdout": "", "stderr": "error"})()
+            from tui.git_worktree import remote_exists
+
+            self.assertFalse(remote_exists(Path("/repo"), remote="upstream"))
+
+    def test_push_branch_runs_push_with_upstream(self):
+        with patch("tui.git_worktree.subprocess.run") as run:
+            run.side_effect = [
+                type("Process", (), {"returncode": 0, "stdout": "git@example.com:repo.git\n", "stderr": ""})(),
+                type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
+                type("Process", (), {"returncode": 0, "stdout": "ok\n", "stderr": ""})(),
+            ]
+            from tui.git_worktree import push_branch
+
+            push_branch(Path("/repo"), "james")
+            self.assertEqual(
+                [call.args[0] for call in run.call_args_list],
+                [
+                    ["git", "remote", "get-url", "origin"],
+                    ["git", "rev-parse", "--verify", "--quiet", "refs/heads/james"],
+                    ["git", "push", "-u", "origin", "james"],
+                ],
+            )
+
+    def test_push_branch_rejects_missing_remote(self):
+        with patch("tui.git_worktree.subprocess.run") as run:
+            run.return_value = type("Process", (), {"returncode": 2, "stdout": "", "stderr": "missing"})()
+            from tui.git_worktree import push_branch
+
+            with self.assertRaisesRegex(GitWorktreeError, "not configured"):
+                push_branch(Path("/repo"), "main")
+
+    def test_push_branch_rejects_blank_branch(self):
+        from tui.git_worktree import push_branch
+
+        with self.assertRaisesRegex(GitWorktreeError, "empty"):
+            push_branch(Path("/repo"), "  ")
+
+    def test_push_branch_surfaces_auth_failure(self):
+        with patch("tui.git_worktree.subprocess.run") as run:
+            run.side_effect = [
+                type("Process", (), {"returncode": 0, "stdout": "git@example.com:repo.git\n", "stderr": ""})(),
+                type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})(),
+                type("Process", (), {"returncode": 128, "stdout": "", "stderr": "Authentication failed"})(),
+            ]
+            from tui.git_worktree import push_branch
+
+            with self.assertRaisesRegex(GitWorktreeError, "Authentication failed"):
+                push_branch(Path("/repo"), "main")
+
 
 if __name__ == "__main__":
     unittest.main()

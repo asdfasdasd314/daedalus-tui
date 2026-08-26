@@ -173,6 +173,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(app.query_one("#mode-select", Select).value, "coding")
             self.assertEqual(app.query_one("#target-branch-select", Select).value, "main")
             self.assertEqual(app.query_one("#topic-select", Select).value, TOPIC_NONE_VALUE)
+            self.assertIsInstance(app.query_one("#push-branch-button", Button), Button)
             self.assertIn("/workspace/project", str(app.query_one("#directory", Static).render()))
             self.assertIsInstance(app.query_one("#task-list", DataTable), DataTable)
             self.assertIsInstance(app.query_one("#prompt-input", TextArea), DaedalusVimTextArea)
@@ -190,6 +191,60 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
             self.assertIsInstance(app.query_one("#create-topic-button", Button), Button)
             self.assertIsInstance(app.query_one("#output-toggle-button", Button), Button)
+            await pilot.pause()
+
+    @patch("tui.app.remote_exists", return_value=False)
+    async def test_push_button_disabled_without_origin(self, _remote_exists):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            self.assertTrue(app.query_one("#push-branch-button", Button).disabled)
+            await pilot.pause()
+
+    @patch("tui.app.push_branch")
+    @patch("tui.app.remote_exists", return_value=True)
+    async def test_push_button_pushes_selected_operating_branch(self, _remote_exists, push_branch):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            push_button = app.query_one("#push-branch-button", Button)
+            self.assertFalse(push_button.disabled)
+
+            workers = []
+
+            def capture_worker(work, **kwargs):
+                workers.append((work, kwargs))
+                work()
+
+            with patch.object(app, "run_worker", side_effect=capture_worker), patch.object(
+                app, "call_from_thread", side_effect=lambda fn, *args: fn(*args)
+            ):
+                push_button.press()
+                await pilot.pause()
+
+            self.assertEqual(len(workers), 1)
+            self.assertTrue(workers[0][1].get("thread"))
+            push_branch.assert_called_once_with(app._active_project_path, "main")
+            self.assertEqual(str(app.query_one("#status", Static).render()), "Pushed main to origin")
+            self.assertFalse(app.query_one("#push-branch-button", Button).disabled)
+            await pilot.pause()
+
+    @patch("tui.app.remote_exists", return_value=True)
+    async def test_push_button_surfaces_failure(self, _remote_exists):
+        from tui.git_worktree import GitWorktreeError
+
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            def run_inline(work, **kwargs):
+                work()
+
+            with patch("tui.app.push_branch", side_effect=GitWorktreeError("auth failed")), patch.object(
+                app, "run_worker", side_effect=run_inline
+            ), patch.object(app, "call_from_thread", side_effect=lambda fn, *args: fn(*args)):
+                app.query_one("#push-branch-button", Button).press()
+                await pilot.pause()
+
+            self.assertEqual(str(app.query_one("#status", Static).render()), "Push failed")
+            self.assertIn("auth failed", "\n".join(app.query_one("#task-error", Log)._lines))
+            self.assertFalse(app._push_in_flight)
             await pilot.pause()
 
     async def test_output_and_error_logs_toggle_as_full_size_selectable_views(self):

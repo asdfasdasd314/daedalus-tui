@@ -8,11 +8,12 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Provider controls**: Codex exposes Luna, Terra, and Sol with light, medium,
   high, and extra-high reasoning; Cursor CLI is a provider-only choice with
   model and reasoning disabled. The settings bar also exposes a per-project
-  Branch Select for the operating branch used by new task worktrees.
+  Branch Select for the operating branch used by new task worktrees, with an
+  operator Push control that publishes that branch to `origin`.
 - **Optional Topics**: A Topic Select lists `(None)` plus `topic_files/*.md`
   stems so related tasks can share goal/status/state-log memory without
   requiring a topic on every submission.
-- **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, a database, or a remote push.
+- **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, or a database; agent and orchestration automation never push remotes, while an explicit operator Push button may publish the selected operating branch.
 - **Concurrent task inbox**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript; the left-side inbox promotes tasks with unseen updates.
 - **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
 - **Plan custom answers**: Plan review renders a software-owned custom-answer choice alongside the agent's reasonable options and collects free text only when that choice is selected; the agent protocol remains unchanged.
@@ -31,6 +32,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 ## Relevant Files
 - `tui/app.py`: Textual layout, selectors, task list, transcript replay, and task controls.
 - `tui/app.tcss`: Shared full-height output-panel layout and readable transcript/diagnostic styling.
+- `tui/git_worktree.py`: Local Git helpers including operating-branch push for the operator Push control.
 - `tui/prompts.py`: Task, repair, and resolver prompt wrappers, including plan-mode recommended-option instructions.
 - `tui/topics.py`: Optional topic discovery, load, and prompt embedding.
 - `tui/plan.py`: Agent plan parsing plus UI-owned custom-answer encoding, clarification prompts, and prompt formatting.
@@ -47,6 +49,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-08-25: Added a settings-bar Push control that publishes the Branch Select operating branch to origin without changing agent or orchestration auto-push boundaries.
 - 2026-08-24: Preserved a final complete word at the reserved transcript edge buffer while retaining hyphenation for overlong words.
 - 2026-08-24: Tightened transcript wrapping to the content region, hyphenated only overlong words, and set the output surface to a narrower border-box with horizontal overflow disabled.
 - 2026-08-24: Repaired transcript boundary fitting and reserved a one-cell right-edge buffer so resized output reflows without clipping the final glyph.

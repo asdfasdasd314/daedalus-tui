@@ -30,6 +30,53 @@ def list_local_branches(repository: Path) -> list[str]:
     return [line.strip() for line in process.stdout.splitlines() if line.strip()]
 
 
+def remote_exists(repository: Path, remote: str = "origin") -> bool:
+    """Return whether ``remote`` is configured for ``repository``."""
+    try:
+        process = subprocess.run(
+            ["git", "remote", "get-url", remote],
+            cwd=repository,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return False
+    return process.returncode == 0
+
+
+def push_branch(repository: Path, branch: str, remote: str = "origin") -> None:
+    """Push a local branch to ``remote``, setting upstream with ``-u`` when needed.
+
+    Never force-pushes. Raises ``GitWorktreeError`` when the remote or branch is
+    missing, or when ``git push`` fails (including auth errors).
+    """
+    branch = branch.strip()
+    if not branch:
+        raise GitWorktreeError("Branch name cannot be empty.")
+    if not remote_exists(repository, remote):
+        raise GitWorktreeError(f"Remote {remote!r} is not configured.")
+    verify = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"],
+        cwd=repository,
+        capture_output=True,
+        text=True,
+    )
+    if verify.returncode != 0:
+        raise GitWorktreeError(f"Local branch {branch!r} does not exist.")
+    command = ["git", "push", "-u", remote, branch]
+    try:
+        process = subprocess.run(
+            command,
+            cwd=repository,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as error:
+        raise GitWorktreeError(f"Failed to run git push: {error}") from error
+    if process.returncode != 0:
+        raise GitWorktreeError(GitWorktreeManager.format_failure(command, process))
+
+
 @dataclass(frozen=True)
 class WorktreeContext:
     repository: Path

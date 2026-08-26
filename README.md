@@ -40,7 +40,9 @@ alias), runs Codex or Cursor there, verifies the result, resolves integration
 failures with the selected agent, and fast-forwards that target branch after
 successful checks. The operator does not need the target branch checked out.
 Up to four prompts can run concurrently; integration and promotion remain
-serialized. No remote push is performed, and failed worktrees are preserved
+serialized. Automated orchestration never pushes remotes; use the settings-bar
+Push control when you want to publish the selected operating branch to
+`origin`. Failed worktrees are preserved
 for inspection. After a successful promotion, the orchestrator refreshes and
 commits `graphify-out` onto the target branch when the target repository has
 graphify configured; graph refresh failures are reported as warnings and never

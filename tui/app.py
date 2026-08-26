@@ -23,7 +23,7 @@ from .config import (
     load_tui_settings,
 )
 from .debug_log import LOGGER, close_fault_handler, configure_debug_logging, install_fault_handler, log_exception
-from .git_worktree import list_local_branches
+from .git_worktree import GitWorktreeError, list_local_branches, push_branch, remote_exists
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .project_initializer import initialize_project, load_initializer_settings, validate_project_name
 from .projects import DaedalusProject, discover_projects
@@ -626,6 +626,7 @@ class DaedalusTuiApp(App[None]):
         self._previous_asyncio_exception_handler = None
         self._rendered_plan_question_signature: tuple[object, ...] | None = None
         self._suppress_target_branch_change = False
+        self._push_in_flight = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -668,6 +669,11 @@ class DaedalusTuiApp(App[None]):
                             id="mode-select",
                         )
                         yield Select(
+                            [("(None)", TOPIC_NONE_VALUE)],
+                            value=TOPIC_NONE_VALUE,
+                            id="topic-select",
+                        )
+                        yield Select(
                             [
                                 (
                                     self.orchestration_settings.primary_branch,
@@ -677,11 +683,7 @@ class DaedalusTuiApp(App[None]):
                             value=self.orchestration_settings.primary_branch,
                             id="target-branch-select",
                         )
-                        yield Select(
-                            [("(None)", TOPIC_NONE_VALUE)],
-                            value=TOPIC_NONE_VALUE,
-                            id="topic-select",
-                        )
+                        yield Button("Push", id="push-branch-button")
                     yield Static(self._directory_text(), id="directory")
                     yield Static("Phase: Idle", id="phase")
                     yield Static("Task branch: —    Worktree: —", id="task-context")
@@ -734,6 +736,7 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#output", TranscriptLog).styles.width = self.settings.output_width
         self._refresh_target_branch_select()
         self._refresh_topic_select()
+        self._refresh_push_button()
         self._refresh_task_list()
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
         prompt.enter_insert_mode()
@@ -892,6 +895,8 @@ class DaedalusTuiApp(App[None]):
             self.action_show_new_project()
         elif event.button.id == "create-topic-button":
             self.action_show_create_topic()
+        elif event.button.id == "push-branch-button":
+            self._push_selected_branch()
         elif event.button.id == "continue-plan-button":
             self._continue_plan()
         elif event.button.id == "start-coding-button":
@@ -925,6 +930,7 @@ class DaedalusTuiApp(App[None]):
                 return
             if event.value not in (Select.BLANK, ""):
                 self._on_target_branch_selected(str(event.value))
+            self._refresh_push_button()
             return
         if event.select.id and event.select.id.startswith("plan-question-"):
             self._update_plan_custom_answer_visibility(event.select.id, event.value)
@@ -1199,6 +1205,71 @@ class DaedalusTuiApp(App[None]):
         finally:
             self._suppress_target_branch_change = False
         self._apply_primary_branch(project_path, effective)
+        self._refresh_push_button()
+
+    def _selected_operating_branch(self) -> str:
+        value = self.query_one("#target-branch-select", Select).value
+        if value in (Select.BLANK, "", getattr(Select, "NULL", None)):
+            return ""
+        return str(value).strip()
+
+    def _refresh_push_button(self) -> None:
+        """Enable Push only when an origin remote and operating branch are available."""
+        button = self.query_one("#push-branch-button", Button)
+        if self._push_in_flight:
+            button.disabled = True
+            return
+        branch = self._selected_operating_branch()
+        button.disabled = not branch or not remote_exists(self._active_project_path)
+
+    def _push_selected_branch(self) -> None:
+        """Push the Branch Select value for the active project to origin."""
+        if self._push_in_flight:
+            return
+        branch = self._selected_operating_branch()
+        if not branch:
+            self._set_error("Select a branch before pushing.")
+            self._set_status("Error")
+            return
+        project_path = self._active_project_path
+        if not remote_exists(project_path):
+            self._set_error("Remote 'origin' is not configured for this project.")
+            self._set_status("Error")
+            self._refresh_push_button()
+            return
+
+        self._push_in_flight = True
+        self._refresh_push_button()
+        self._set_error("")
+        self._set_status(f"Pushing {branch}…")
+
+        def work() -> None:
+            try:
+                push_branch(project_path, branch)
+            except GitWorktreeError as error:
+                self.call_from_thread(self._on_push_finished, False, str(error), branch)
+            except Exception as error:  # pragma: no cover - defensive UI boundary
+                self.call_from_thread(self._on_push_finished, False, str(error), branch)
+            else:
+                self.call_from_thread(self._on_push_finished, True, "", branch)
+
+        self.run_worker(
+            work,
+            thread=True,
+            exclusive=True,
+            group="git-push",
+            exit_on_error=False,
+        )
+
+    def _on_push_finished(self, succeeded: bool, error: str, branch: str) -> None:
+        self._push_in_flight = False
+        self._refresh_push_button()
+        if succeeded:
+            self._set_error("")
+            self._set_status(f"Pushed {branch} to origin")
+            return
+        self._set_error(error or "Push failed.")
+        self._set_status("Push failed")
 
     def _refresh_topic_select(self, *, reset_to_none: bool = False) -> None:
         """Refresh Topic Select options for the active project; default remains (None)."""
