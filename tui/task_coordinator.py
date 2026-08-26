@@ -881,6 +881,7 @@ class TaskCoordinator:
             "questioning": "questioning",
             "agent": "running",
             "verification": "verifying",
+            "migrations": "verifying",
             "repairing": "verifying",
             "ready": "ready",
             "integration": "integrating",

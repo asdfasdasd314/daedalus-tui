@@ -13,7 +13,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Optional Topics**: A Topic Select lists `(None)` plus `topic_files/*.md`
   stems so related tasks can share goal/status/state-log memory without
   requiring a topic on every submission.
-- **Local execution**: Prompts run in isolated Git worktrees and never use Supabase, daemon RPC, or a database; agent and orchestration automation never push remotes, while an explicit operator Push button may publish the selected operating branch.
+- **Local execution**: Prompts run in isolated Git worktrees without daemon RPC or a local database; orchestration may push pending Supabase migrations for target projects when migration files change, while agents still do not own DB push or Git remotes. An explicit operator Push button may publish the selected operating branch.
 - **Concurrent task inbox**: Up to four independent prompts can run at once, each with its own configuration snapshot, branch, worktree, status, and transcript; the left-side inbox promotes tasks with unseen updates.
 - **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
 - **Plan custom answers**: Plan review renders a software-owned custom-answer choice alongside the agent's reasonable options and collects free text only when that choice is selected; the agent protocol remains unchanged.
@@ -49,6 +49,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-08-25: Clarified that orchestration may push pending Supabase migrations for target projects while agents remain file-only for DB push and Git remotes.
 - 2026-08-25: Guarded Push button refresh so Select.Changed during mount or teardown cannot query a missing #push-branch-button.
 - 2026-08-25: Added a settings-bar Push control that publishes the Branch Select operating branch to origin without changing agent or orchestration auto-push boundaries.
 - 2026-08-24: Preserved a final complete word at the reserved transcript edge buffer while retaining hyphenation for overlong words.

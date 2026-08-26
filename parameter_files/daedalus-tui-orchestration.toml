@@ -13,6 +13,8 @@ shutdown_grace_seconds = 8
 debug_log_filename = ".daedalus-debug.log"
 graphify_update_enabled = true
 graphify_executable = "graphify"
+supabase_db_push_enabled = true
+supabase_executable = "supabase"
 
 # An empty list discovers root and one-level nested npm/pytest suites.
 verification_commands = []

@@ -76,7 +76,9 @@ def build_task_prompt(
         f"{instructions} Work only in this Git worktree. "
         "Do not run git add, git commit, git merge, git push, or switch branches. "
         "Do not run graphify, `graphify update`, or any graph refresh. "
-        "The orchestration layer owns all file staging, commits, merges, graph refreshes, and cleanup."
+        "Do not run `supabase db push` or other database push commands. "
+        "The orchestration layer owns all file staging, commits, merges, graph refreshes, "
+        "migration pushes, and cleanup."
     )
     if not resumed:
         return task_prompt
@@ -109,10 +111,36 @@ def build_repair_prompt(
         "Preserve the original task intent and make the smallest compatible fix. "
         "Do not run git add, git commit, git merge, git push, or switch branches. "
         "Do not run graphify, `graphify update`, or any graph refresh. "
+        "Do not run `supabase db push` or other database push commands. "
         "Leave file changes in the worktree for the orchestration layer to stage, commit, and refresh.\n\n"
         f"Original task:\n{original}\n\n"
         f"Repair attempt: {attempt}/{limit}\n\n"
         f"Verification failure:\n{failure}"
+    )
+
+
+def build_migration_repair_prompt(
+    original: str,
+    failure: str,
+    attempt: int,
+    limit: int,
+    profile_text: str | None = None,
+    topic_text: str | None = None,
+) -> str:
+    return (
+        "TASK_MODE: coding\n\n"
+        f"{_embedded_profile(profile_text)}"
+        f"{_embedded_topic(topic_text, 'repair')}"
+        "Repair the failing Supabase migration push in this existing isolated Git worktree. "
+        "Fix migration SQL and related application code only. "
+        "Preserve the original task intent and make the smallest compatible fix. "
+        "Do not run git add, git commit, git merge, git push, or switch branches. "
+        "Do not run graphify, `graphify update`, or any graph refresh. "
+        "Do not run `supabase db push` or other database push commands. "
+        "Leave file changes in the worktree for the orchestration layer to stage, commit, and push.\n\n"
+        f"Original task:\n{original}\n\n"
+        f"Migration repair attempt: {attempt}/{limit}\n\n"
+        f"Migration push failure:\n{failure}"
     )
 
 
@@ -132,6 +160,7 @@ def build_resolver_prompt(
         "Preserve the task intent, resolve conflicts or repair the failing checks, and run relevant checks. "
         "Do not run git add, git commit, git merge, git push, or switch branches. "
         "Do not run graphify, `graphify update`, or any graph refresh. "
+        "Do not run `supabase db push` or other database push commands. "
         "Leave all resolutions in the worktree for the orchestration layer to stage, commit, and refresh.\n\n"
         f"Task goal:\n{original}\n\n"
         f"Resolver attempt: {attempt}/{limit}\n\n"

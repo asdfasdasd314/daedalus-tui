@@ -112,6 +112,8 @@ def load_orchestration_settings(parameter_path: Path | None = None) -> Orchestra
         agent_timeout_seconds=agent_timeout_seconds,
         graphify_update_enabled=bool(values.get("graphify_update_enabled", True)),
         graphify_executable=str(values.get("graphify_executable", "graphify")),
+        supabase_db_push_enabled=bool(values.get("supabase_db_push_enabled", True)),
+        supabase_executable=str(values.get("supabase_executable", "supabase")),
         shutdown_grace_seconds=shutdown_grace_seconds,
         debug_log_filename=str(values.get("debug_log_filename", ".daedalus-debug.log")),
     )
