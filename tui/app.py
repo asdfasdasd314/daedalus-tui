@@ -1215,6 +1215,10 @@ class DaedalusTuiApp(App[None]):
 
     def _refresh_push_button(self) -> None:
         """Enable Push only when an origin remote and operating branch are available."""
+        # Select.Changed can fire while siblings are still mounting or during
+        # teardown, before/after #push-branch-button is in the DOM.
+        if not self.query("#push-branch-button"):
+            return
         button = self.query_one("#push-branch-button", Button)
         if self._push_in_flight:
             button.disabled = True

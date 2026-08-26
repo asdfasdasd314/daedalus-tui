@@ -49,6 +49,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-08-25: Guarded Push button refresh so Select.Changed during mount or teardown cannot query a missing #push-branch-button.
 - 2026-08-25: Added a settings-bar Push control that publishes the Branch Select operating branch to origin without changing agent or orchestration auto-push boundaries.
 - 2026-08-24: Preserved a final complete word at the reserved transcript edge buffer while retaining hyphenation for overlong words.
 - 2026-08-24: Tightened transcript wrapping to the content region, hyphenated only overlong words, and set the output surface to a narrower border-box with horizontal overflow disabled.
