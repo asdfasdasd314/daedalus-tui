@@ -53,3 +53,5 @@ HACKING
   initialize the schema and populate a new topic from the operator's desired end state.
 - 2026-08-25: Added per-project topic defaults so New Task and project switches
   restore the last selected topic, with stale topic selections cleared safely.
+- 2026-08-25: Persisted the selected topic during prompt submission so immediate
+  New Task actions restore the project-local default before queued UI events run.

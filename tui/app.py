@@ -1009,6 +1009,9 @@ class DaedalusTuiApp(App[None]):
         topic: str | None = None
         if topic_value not in (Select.BLANK, "", TOPIC_NONE_VALUE, getattr(Select, "NULL", None)):
             topic = str(topic_value)
+        # Persist the value read from the Select before submitting so a fresh
+        # task can restore it even if Select.Changed is still queued.
+        self._on_topic_selected(topic)
         try:
             record = self.coordinator.submit(prompt, provider, model, reasoning, mode, topic=topic)
         except (RuntimeError, ValueError) as error:
