@@ -47,3 +47,4 @@ open
 - 2026-09-01: Hardened call-graph analysis against pyan collapse_inner crashes on namespace-less anonymous scopes so import workflows can analyze real Python codebases.
 - 2026-09-01: Call-tree HTML now renders as an SVG top-down tree diagram (n-ary branches, multiple roots) instead of a nested file-tree list.
 - 2026-09-01: Call-tree HTML uses natural-size SVG nodes in a scrollable viewport so large graphs remain readable during import review.
+- 2026-09-01: Call-tree SVG layout now prevents overlapping node labels and adds wider side margins so import-review diagrams are not clipped at the edges.

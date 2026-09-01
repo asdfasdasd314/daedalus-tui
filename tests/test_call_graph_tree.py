@@ -3,6 +3,8 @@ from pathlib import Path
 
 from tui.call_graph_tree import (
     CallGraphConfig,
+    _layout_trees,
+    _subtree_bounds,
     build_tree,
     discover_source_files,
     extract_uses_edges,
@@ -80,6 +82,35 @@ class CallGraphTreeTests(unittest.TestCase):
         self.assertIn('class="node"', output)
         self.assertNotIn('width="100%"', output)
         self.assertIn('overflow: auto', output)
+
+    def test_layout_keeps_wide_sibling_labels_from_overlapping(self):
+        trees = [
+            build_tree(
+                "root",
+                {
+                    "root": [
+                        "package.module_a.very_long_function_name_one",
+                        "package.module_b.very_long_function_name_two",
+                    ],
+                },
+                4,
+            )
+        ]
+        layouts = _layout_trees(trees)
+        leaves: list[tuple[float, float]] = []
+
+        def collect_leaves(layout):
+            if not layout.children:
+                leaves.append(_subtree_bounds(layout))
+            for child in layout.children:
+                collect_leaves(child)
+
+        for layout in layouts:
+            collect_leaves(layout)
+
+        self.assertEqual(len(leaves), 2)
+        leaves.sort(key=lambda bounds: bounds[0])
+        self.assertGreaterEqual(leaves[1][0], leaves[0][1])
 
     def test_extract_uses_edges_handles_lambda_scopes_without_namespace(self):
         files = discover_source_files(

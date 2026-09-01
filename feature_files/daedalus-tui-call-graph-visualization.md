@@ -25,3 +25,4 @@ HACKING
 - 2026-09-01: Guarded pyan collapse_inner against anonymous nodes with namespace=None so real projects (including this TUI) no longer crash during analysis.
 - 2026-09-01: Replaced nested-list file-tree HTML with an SVG top-down tree diagram supporting n-ary branches and multiple roots.
 - 2026-09-01: Call-tree HTML now renders at natural pixel size inside a scrollable viewport so nodes stay readable instead of shrinking to fit the page width.
+- 2026-09-01: Call-tree layout now spaces siblings by subtree width and uses full-graph bounds with wider side margins so labels no longer overlap or clip at the edges.

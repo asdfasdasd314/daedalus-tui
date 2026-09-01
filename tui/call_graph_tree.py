@@ -46,6 +46,7 @@ _MIN_NODE_WIDTH = 80
 _SIBLING_GAP = 40
 _LEVEL_GAP = 72
 _ROOT_GAP = 64
+_SVG_MARGIN = 48
 _FONT_SIZE = 14
 
 
@@ -220,25 +221,37 @@ def _node_label_width(name: str) -> float:
     return max(len(name) * _CHAR_WIDTH + _H_PADDING * 2, _MIN_NODE_WIDTH)
 
 
-def _layout_subtree(node: TreeNode, depth: int, next_x: list[float]) -> _LayoutNode:
-    """Assign horizontal positions using leaf-order spacing (tidy top-down tree)."""
+def _subtree_bounds(layout: _LayoutNode) -> tuple[float, float]:
+    """Return the left and right x extents of a laid-out subtree."""
+    half = _node_label_width(layout.node.name) / 2.0
+    left = layout.x - half
+    right = layout.x + half
+    for child in layout.children:
+        child_left, child_right = _subtree_bounds(child)
+        left = min(left, child_left)
+        right = max(right, child_right)
+    return left, right
+
+
+def _layout_subtree(node: TreeNode, depth: int) -> _LayoutNode:
+    """Assign horizontal positions using subtree widths so labels never overlap."""
+    y = float(depth) * _LEVEL_GAP
     if not node.children:
-        x = next_x[0]
-        next_x[0] += 1.0
-        return _LayoutNode(node=node, x=x, y=float(depth), children=[])
+        width = _node_label_width(node.name)
+        return _LayoutNode(node=node, x=width / 2.0, y=y, children=[])
 
-    children = [_layout_subtree(child, depth + 1, next_x) for child in node.children]
-    x = (children[0].x + children[-1].x) / 2.0
-    return _LayoutNode(node=node, x=x, y=float(depth), children=children)
+    children = [_layout_subtree(child, depth + 1) for child in node.children]
+    positioned: list[_LayoutNode] = []
+    x_cursor = 0.0
+    for child in children:
+        child_left, _ = _subtree_bounds(child)
+        positioned_child = _translate_layout(child, x_cursor - child_left, 0)
+        positioned.append(positioned_child)
+        _, child_right = _subtree_bounds(positioned_child)
+        x_cursor = child_right + _SIBLING_GAP
 
-
-def _to_pixel_layout(layout: _LayoutNode, x_offset: float) -> _LayoutNode:
-    return _LayoutNode(
-        node=layout.node,
-        x=layout.x * _SIBLING_GAP + x_offset,
-        y=layout.y * _LEVEL_GAP,
-        children=[_to_pixel_layout(child, x_offset) for child in layout.children],
-    )
+    parent_x = (positioned[0].x + positioned[-1].x) / 2.0
+    return _LayoutNode(node=node, x=parent_x, y=y, children=positioned)
 
 
 def _translate_layout(layout: _LayoutNode, dx: float, dy: float = 0.0) -> _LayoutNode:
@@ -255,37 +268,37 @@ def _layout_trees(trees: list[TreeNode]) -> list[_LayoutNode]:
     layouts: list[_LayoutNode] = []
     x_offset = 0.0
     for tree in trees:
-        next_x = [0.0]
-        layout = _layout_subtree(tree, 0, next_x)
-        if next_x[0] <= 1.0:
-            span = _node_label_width(tree.name)
-        else:
-            span = (next_x[0] - 1.0) * _SIBLING_GAP + _MIN_NODE_WIDTH
-        layouts.append(_to_pixel_layout(layout, x_offset))
-        x_offset += span + _ROOT_GAP
+        layout = _layout_subtree(tree, 0)
+        left, right = _subtree_bounds(layout)
+        layout = _translate_layout(layout, x_offset - left, 0)
+        _, right = _subtree_bounds(layout)
+        layouts.append(layout)
+        x_offset = right + _ROOT_GAP
     return layouts
 
 
-def _layout_bounds(layouts: list[_LayoutNode]) -> tuple[float, float]:
+def _layout_extent_y(layout: _LayoutNode) -> float:
+    max_y = layout.y + _NODE_HEIGHT
+    for child in layout.children:
+        max_y = max(max_y, _layout_extent_y(child))
+    return max_y
+
+
+def _layouts_bounds(layouts: list[_LayoutNode]) -> tuple[float, float, float, float]:
+    if not layouts:
+        return 0.0, 0.0, 0.0, 0.0
+
     min_x = float("inf")
     max_x = float("-inf")
-    max_y = 0.0
-
-    def visit(node: _LayoutNode) -> None:
-        nonlocal min_x, max_x, max_y
-        half = _node_label_width(node.node.name) / 2.0
-        min_x = min(min_x, node.x - half)
-        max_x = max(max_x, node.x + half)
-        max_y = max(max_y, node.y + _NODE_HEIGHT)
-        for child in node.children:
-            visit(child)
-
+    min_y = float("inf")
+    max_y = float("-inf")
     for layout in layouts:
-        visit(layout)
-
-    if not layouts:
-        return 0.0, 0.0
-    return max_x - min_x, max_y
+        left, right = _subtree_bounds(layout)
+        min_x = min(min_x, left)
+        max_x = max(max_x, right)
+        min_y = min(min_y, layout.y)
+        max_y = max(max_y, _layout_extent_y(layout))
+    return min_x, max_x, min_y, max_y
 
 
 def _render_layout_edges(layout: _LayoutNode, parts: list[str]) -> None:
@@ -327,12 +340,10 @@ def render_tree_svg(trees: list[TreeNode]) -> str:
     if not layouts:
         return ""
 
-    margin = 24.0
-    min_x = min(
-        layout.x - _node_label_width(layout.node.name) / 2.0 for layout in layouts
-    )
+    margin = _SVG_MARGIN
+    min_x, max_x, min_y, max_y = _layouts_bounds(layouts)
     shifted = [
-        _translate_layout(layout, margin - min_x, margin) for layout in layouts
+        _translate_layout(layout, margin - min_x, margin - min_y) for layout in layouts
     ]
 
     parts: list[str] = []
@@ -341,7 +352,8 @@ def render_tree_svg(trees: list[TreeNode]) -> str:
     for layout in shifted:
         _render_layout_nodes(layout, parts)
 
-    content_width, content_height = _layout_bounds(shifted)
+    content_width = max_x - min_x
+    content_height = max_y - min_y
     svg_width = content_width + margin * 2
     svg_height = content_height + margin * 2
     body = "\n  ".join(parts)
