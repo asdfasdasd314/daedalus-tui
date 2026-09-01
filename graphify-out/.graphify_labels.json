@@ -19,7 +19,6 @@
   "17": "planning.md",
   "18": "Daedalus TUI Project Instructions",
   "19": "integrating.md",
-  "20": ".__init__",
   "21": "._shutdown_coordinators",
   "22": "._set_status",
   "23": "update_repository",
@@ -43,13 +42,11 @@
   "41": "KeyboardShortcutsScreen",
   "42": "CodingStatisticsScreen",
   "43": "._rebuild_plan_questions",
-  "44": "orchestrator.py",
   "45": "KeyboardShortcutsScreen",
   "46": ".emit",
   "47": "._start_new_task",
   "48": ".on_data_table_row_selected",
   "49": "PlanQuestion",
-  "50": "orchestrator.py",
   "51": "CreateTopicScreen",
   "52": "Daedalus TUI Call Graph Visualization",
   "53": "b.py",
@@ -57,10 +54,5 @@
   "55": "conftest.py",
   "56": "cycle_a.py",
   "57": "._render_selected_task",
-  "58": "__init__.py",
-  "59": ".enter_insert_mode",
-  "60": ".nav_word_end",
-  "61": "TaskRecord",
-  "62": "embed_topic",
-  "63": "._reload_projects"
+  "58": "__init__.py"
 }
