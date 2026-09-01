@@ -46,5 +46,6 @@
   "44": "orchestrator.py",
   "45": "KeyboardShortcutsScreen",
   "46": ".emit",
-  "47": "._start_new_task"
+  "47": "._start_new_task",
+  "48": ".on_data_table_row_selected"
 }

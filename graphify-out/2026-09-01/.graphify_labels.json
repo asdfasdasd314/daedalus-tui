@@ -46,5 +46,5 @@
   "44": "orchestrator.py",
   "45": "KeyboardShortcutsScreen",
   "46": ".emit",
-  "51": "._shutdown_coordinators"
+  "47": "._start_new_task"
 }
