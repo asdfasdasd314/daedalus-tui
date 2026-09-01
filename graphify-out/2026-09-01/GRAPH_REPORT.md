@@ -1,16 +1,16 @@
 # Graph Report - daedalus-tui  (2026-09-01)
 
 ## Corpus Check
-- 75 files · ~51,974 words
+- 75 files · ~52,456 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1121 nodes · 2922 edges · 64 communities (56 shown, 8 thin omitted)
+- 1131 nodes · 2949 edges · 56 communities (47 shown, 9 thin omitted)
 - Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 314 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0aa96dfa`
+- Built from commit: `ee944572`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -34,7 +34,6 @@
 - planning.md
 - Daedalus TUI Project Instructions
 - integrating.md
-- .__init__
 - ._shutdown_coordinators
 - ._set_status
 - update_repository
@@ -58,13 +57,11 @@
 - KeyboardShortcutsScreen
 - CodingStatisticsScreen
 - ._rebuild_plan_questions
-- orchestrator.py
 - KeyboardShortcutsScreen
 - .emit
 - ._start_new_task
 - .on_data_table_row_selected
 - PlanQuestion
-- orchestrator.py
 - CreateTopicScreen
 - Daedalus TUI Call Graph Visualization
 - b.py
@@ -73,10 +70,6 @@
 - cycle_a.py
 - ._render_selected_task
 - __init__.py
-- .enter_insert_mode
-- .nav_word_end
-- TaskRecord
-- embed_topic
 
 ## God Nodes (most connected - your core abstractions)
 1. `DaedalusTuiApp` - 131 edges
@@ -105,27 +98,23 @@
 ## Import Cycles
 - None detected.
 
-## Communities (64 total, 8 thin omitted)
+## Communities (56 total, 9 thin omitted)
 
 ### Community 0 - "PlanQuestion"
-Cohesion: 0.19
-Nodes (4): Path, Memory override for the project, else the parameter-file default., Update the project's coordinator so later submits use ``branch``., Remember the selected topic as the default for the active project.
-
-### Community 1 - "DaedalusVimTextArea"
-Cohesion: 0.09
-Nodes (7): Agent plan text must not be parsed as Textual/Rich markup., TuiAppTests, PlanOption, DaedalusVimTextArea, VimTextArea with multiline prompt behavior and system clipboard sync., Return to Insert mode after programmatic prompt operations., VimTextArea
+Cohesion: 0.11
+Nodes (7): ComposeResult, Mount, Select, KeyboardShortcutsScreen, PlanAnswerSelect, Initialize dynamic plan selectors after their nested children mount., Modal reference for the app and prompt editor keyboard shortcuts.
 
 ### Community 2 - "AgentRunner"
 Cohesion: 0.07
 Nodes (21): OutputCallback, AgentRunnerTests, FakeProcess, FakeStream, InterruptibleProcess, Thread, AgentLogEvent, AgentRequest (+13 more)
 
 ### Community 3 - "DaedalusTuiApp"
-Cohesion: 0.14
-Nodes (8): Key, Keep Enter as a newline; Ctrl+Enter remains the app submit key., Route visual-line mode and mirror new yanks to the host clipboard., Add Daedalus prompt commands that the dependency does not provide., Select the current line and enter Vim visual-line mode., Select every character in the lines between the start and cursor., Handle movement and operators while whole lines are selected., Expose operator-pending so the caret can become an underline.
+Cohesion: 0.10
+Nodes (14): DaedalusVimTextArea, Key, Keep Enter as a newline; Ctrl+Enter remains the app submit key., Route visual-line mode and mirror new yanks to the host clipboard., Add Daedalus prompt commands that the dependency does not provide., VimTextArea with multiline prompt behavior and system clipboard sync., Select the current line and enter Vim visual-line mode., Select every character in the lines between the start and cursor. (+6 more)
 
 ### Community 4 - "app.py"
-Cohesion: 0.20
-Nodes (6): Queue a coding task that writes and expands the requested topic file., Promote only events that need the user's attention in the inbox., Render actionable history and tasks created during this session., Keep failures, active work, and all tasks submitted in this launch., Switch the project context and focus a row selected in the inbox., Keep one bad dynamic widget update from closing the entire TUI.
+Cohesion: 0.13
+Nodes (8): Path, Queue a coding task that writes and expands the requested topic file., Memory override for the project, else the parameter-file default., Update the project's coordinator so later submits use ``branch``., Refresh Branch Select options for the active project and sync coordinator., Render actionable history and tasks created during this session., Keep failures, active work, and all tasks submitted in this launch., Switch the project context and focus a row selected in the inbox.
 
 ### Community 5 - "TokenUsageStore"
 Cohesion: 0.29
@@ -175,41 +164,37 @@ Nodes (4): Daedalus TUI Project Instructions, graphify, Project boundaries, Task
 Cohesion: 0.40
 Nodes (4): Development Lifecycle, Execution Boundaries (CRITICAL), Integration Boundaries, Parameter Files
 
-### Community 20 - ".__init__"
-Cohesion: 0.22
-Nodes (4): TaskCoordinatorTests, OrchestrationSettings, Submit independent prompts while sharing a serialized integration gate., TaskCoordinator
-
 ### Community 21 - "._shutdown_coordinators"
-Cohesion: 0.19
-Nodes (3): Changed, Prefer mounted selector values so clarification refreshes keep choices., Show either the full-size transcript or the full-size diagnostics log.
+Cohesion: 0.17
+Nodes (5): Changed, DaedalusTuiApp, Remember the selected topic as the default for the active project., Prefer mounted selector values so clarification refreshes keep choices., Replace question controls after Textual has completed child removal.
 
 ### Community 22 - "._set_status"
-Cohesion: 0.17
-Nodes (11): Textual interface for concurrent local agent tasks., Pause active agents before ThreadPoolExecutor joins its workers.      CPython ex, _register_app_for_thread_exit(), _shutdown_apps_before_thread_join(), copy_to_system_clipboard(), paste_from_system_clipboard(), System clipboard helpers for terminals without OSC 52 support., Read clipboard text using the native command available on the host. (+3 more)
+Cohesion: 0.16
+Nodes (9): Textual interface for concurrent local agent tasks., _unregister_app_for_thread_exit(), paste_from_system_clipboard(), System clipboard helpers for terminals without OSC 52 support., Read clipboard text using the native command available on the host., close_fault_handler(), The Daedalus prompt's incremental Vim editing adapter., Paste Vim's register, falling back to the system clipboard. (+1 more)
 
 ### Community 24 - "Daedalus TUI Coding Statistics"
 Cohesion: 0.29
 Nodes (6): Daedalus TUI Coding Statistics, Dev Mode, Key Points, Relevant Files, State Log, Summary
 
 ### Community 25 - "DaedalusVimTextArea"
-Cohesion: 0.13
-Nodes (21): TopicsTests, build_topic_template(), list_topic_slugs(), load_topic_settings(), load_topic_text(), Path, Topic file discovery, creation, loading, and prompt embedding., Return missing required headings; empty list means structurally complete. (+13 more)
+Cohesion: 0.14
+Nodes (19): TopicsTests, build_topic_instructions(), build_topic_template(), embed_topic(), list_topic_slugs(), load_topic_text(), Path, Topic file discovery, creation, loading, and prompt embedding. (+11 more)
 
 ### Community 26 - ".provider_split"
-Cohesion: 0.14
-Nodes (18): ProgressCallback, Submitted, ProjectInitializerTests, find_github_url(), initialize_project(), load_initializer_settings(), matching_request_marker(), materialize_templates() (+10 more)
+Cohesion: 0.11
+Nodes (20): ProgressCallback, Submitted, ProjectInitializerTests, ProjectInitializerScreen, Collect a project slug and create a Daedalus-compatible directory., find_github_url(), initialize_project(), load_initializer_settings() (+12 more)
 
 ### Community 27 - ".on_mount"
-Cohesion: 0.10
-Nodes (31): CallGraphVisitor, load_config(), main(), Path, CallGraphTreeTests, build_tree(), CallGraphConfig, _collapse_inner_safe() (+23 more)
+Cohesion: 0.08
+Nodes (41): CallGraphVisitor, load_config(), main(), Path, CallGraphTreeTests, build_tree(), CallGraphConfig, _collapse_inner_safe() (+33 more)
 
 ### Community 28 - "log_exception"
 Cohesion: 0.29
 Nodes (6): Daedalus TUI Topics, Dev Mode, Key Points, Relevant Files, State Log, Summary
 
 ### Community 29 - "CodingStatisticsScreen"
-Cohesion: 0.10
-Nodes (9): FakeCoordinator, FakeRunner, settings(), KeyboardShortcutsScreen, Modal reference for the app and prompt editor keyboard shortcuts., ModelOption, TuiSettings, DaedalusProject (+1 more)
+Cohesion: 0.09
+Nodes (13): FakeCoordinator, FakeRunner, settings(), PlanClarificationScreen, Collect a clarification about one plan question., Display a topic markdown file without allowing edits., TopicViewerScreen, ModelOption (+5 more)
 
 ### Community 30 - "calculate_token_usage"
 Cohesion: 0.05
@@ -224,16 +209,16 @@ Cohesion: 0.25
 Nodes (7): 4-Stage Development Lifecycle, Alignment, Debugging, Execution Boundaries (CRITICAL), Feature File Automation, Parameter File Centralization, Topics (when tagged)
 
 ### Community 33 - ".on_button_pressed"
-Cohesion: 0.15
-Nodes (8): Mount, Select, CodingStatisticsScreen, _format_count(), _format_tokens(), PlanAnswerSelect, Initialize dynamic plan selectors after their nested children mount., Show token or task usage history and derived coding statistics.
+Cohesion: 0.27
+Nodes (4): CodingStatisticsScreen, _format_count(), _format_tokens(), Show token or task usage history and derived coding statistics.
 
 ### Community 34 - "._render_line_strip"
 Cohesion: 0.25
 Nodes (7): 4-Stage Development Lifecycle, Alignment, Debugging, Execution Boundaries (CRITICAL), Feature File Automation, Parameter File Centralization, Topics (when tagged)
 
 ### Community 35 - "agent_runner.py"
-Cohesion: 0.08
-Nodes (13): ComposeResult, Pressed, CreateTopicScreen, PlanClarificationScreen, ProjectInitializerScreen, Collect a clarification about one plan question., Collect a project slug and create a Daedalus-compatible directory., Collect the context needed to initialize and populate a topic file. (+5 more)
+Cohesion: 0.13
+Nodes (9): Pressed, CreateTopicScreen, Collect the context needed to initialize and populate a topic file., load_topic_settings(), Load tunable limits for topic creation from the paired parameter file., Return a display name suitable for an H1 and a filesystem slug., Convert a validated topic name to the filename stem used by the TUI., topic_slug_from_name() (+1 more)
 
 ### Community 36 - "architecture.md"
 Cohesion: 0.33
@@ -244,8 +229,8 @@ Cohesion: 0.40
 Nodes (4): 4-Stage Development Lifecycle, Execution Boundaries (CRITICAL), Feature File Automation, Parameter File Centralization
 
 ### Community 38 - "._set_status"
-Cohesion: 0.20
-Nodes (4): Key, Return a TextArea selection or the active screen selection., Use Textual's OSC 52 path and a native clipboard fallback., Add Vim-like navigation without changing TextArea insert behavior.
+Cohesion: 0.18
+Nodes (5): Key, Return a TextArea selection or the active screen selection., Use Textual's OSC 52 path and a native clipboard fallback., Add Vim-like navigation without changing TextArea insert behavior., copy_to_system_clipboard()
 
 ### Community 39 - "Daedalus Project Instructions"
 Cohesion: 0.40
@@ -260,36 +245,24 @@ Cohesion: 0.31
 Nodes (5): ProjectDiscoveryTests, discover_projects(), Path, Discovery of Daedalus-supported repositories beneath a launch root., Recursively find folders containing a direct ``feature_files`` child.      Git m
 
 ### Community 43 - "._rebuild_plan_questions"
-Cohesion: 0.25
-Nodes (6): AbstractEventLoop, BaseException, Exception, Persist Textual failures that would otherwise only flash on screen., log_exception(), main()
-
-### Community 44 - "orchestrator.py"
-Cohesion: 0.18
-Nodes (7): Send selected plan answers back to the planning agent for confirmation., Ask a side-channel clarification about one plan question without plan follow-up., Run another planning pass while keeping the task in questioning., Promote a reviewed plan into the normal coding and verification route., Retry a failed agent request after connectivity or service recovery., Run an ask-mode clarification that does not mutate plan conversation state., Persist the latest task state without affecting task execution.
+Cohesion: 0.17
+Nodes (6): AbstractEventLoop, BaseException, Promote only events that need the user's attention in the inbox., Keep one bad dynamic widget update from closing the entire TUI., log_exception(), main()
 
 ### Community 45 - "KeyboardShortcutsScreen"
 Cohesion: 0.20
 Nodes (9): Constraints and Design Principles, Desired End State, Intended Import Workflow, Open Questions, Project Imports to the Daedalus Format, Scope and Durable Context, State Log, Topic Goal (+1 more)
 
 ### Community 46 - ".emit"
-Cohesion: 0.32
-Nodes (7): configure_debug_logging(), install_fault_handler(), _install_thread_exception_logging(), Path, Persistent diagnostics for failures that occur after the Textual screen closes., Write detailed runtime diagnostics to a rotating local log file., Capture fatal faults and ``SIGUSR1`` thread dumps in the debug log.
-
-### Community 47 - "._start_new_task"
-Cohesion: 0.22
-Nodes (4): Refresh Branch Select options for the active project and sync coordinator., Enable Push only when an origin remote and operating branch are available., Push the Branch Select value for the active project to origin., Cover terminal and event-loop exits that bypass Textual unmount.
+Cohesion: 0.24
+Nodes (8): Cover terminal and event-loop exits that bypass Textual unmount., configure_debug_logging(), install_fault_handler(), _install_thread_exception_logging(), Path, Persistent diagnostics for failures that occur after the Textual screen closes., Write detailed runtime diagnostics to a rotating local log file., Capture fatal faults and ``SIGUSR1`` thread dumps in the debug log.
 
 ### Community 49 - "PlanQuestion"
-Cohesion: 0.15
-Nodes (21): PlanTests, build_implementation_prompt(), build_plan_clarification_prompt(), build_plan_followup_prompt(), custom_answer_text(), encode_custom_answer(), is_valid_plan_answer(), parse_plan_response() (+13 more)
-
-### Community 50 - "orchestrator.py"
-Cohesion: 0.21
-Nodes (10): TaskEventCallback, _nonnegative_int(), _phase_for_status(), Path, Concurrent task state and serialized local integration., Rehydrate this project's persisted tasks after a TUI restart., _snapshot_path(), _snapshot_sequence() (+2 more)
+Cohesion: 0.05
+Nodes (50): TaskEventCallback, PlanTests, FakeOrchestrator, TaskCoordinatorTests, OrchestrationResult, OrchestrationSettings, build_implementation_prompt(), build_plan_clarification_prompt() (+42 more)
 
 ### Community 51 - "CreateTopicScreen"
-Cohesion: 0.32
-Nodes (7): ConfigTests, load_coding_statistics_settings(), load_orchestration_settings(), load_tui_settings(), _options(), Path, Read-only configuration for the standalone TUI.
+Cohesion: 0.23
+Nodes (8): ConfigTests, CodingStatisticsSettings, load_coding_statistics_settings(), load_orchestration_settings(), load_tui_settings(), _options(), Path, Read-only configuration for the standalone TUI.
 
 ### Community 52 - "Daedalus TUI Call Graph Visualization"
 Cohesion: 0.29
@@ -308,34 +281,22 @@ Cohesion: 0.50
 Nodes (3): pytest_configure(), Pytest hooks shared across the test suite., Install pyan3 when call-graph tests run in an environment missing it.
 
 ### Community 57 - "._render_selected_task"
-Cohesion: 0.17
-Nodes (6): Stop agents before an explicit Textual exit begins., Run before ThreadPoolExecutor's internal interpreter-exit join., Clean up if Textual's run loop returns without its unmount hook., Idempotently detach task callbacks and request child-process shutdown., _unregister_app_for_thread_exit(), close_fault_handler()
-
-### Community 59 - ".enter_insert_mode"
-Cohesion: 0.25
-Nodes (4): FakeOrchestrator, OrchestrationResult, IntegrationCoordinator, Run ready integration operations one at a time in ready order.
-
-### Community 61 - "TaskRecord"
-Cohesion: 0.24
-Nodes (4): Replace question controls after Textual has completed child removal., Create a new coding task from a confirmed plan review., Remove the clean, read-only planning worktree after coding is queued., TaskRecord
-
-### Community 62 - "embed_topic"
-Cohesion: 0.40
-Nodes (4): build_topic_instructions(), embed_topic(), Mode-specific rules for using an embedded topic file., Wrap topic markdown and instructions for inline prompt injection.
+Cohesion: 0.14
+Nodes (9): Exception, Pause active agents before ThreadPoolExecutor joins its workers.      CPython ex, Stop agents before an explicit Textual exit begins., Persist Textual failures that would otherwise only flash on screen., Run before ThreadPoolExecutor's internal interpreter-exit join., Clean up if Textual's run loop returns without its unmount hook., Idempotently detach task callbacks and request child-process shutdown., _register_app_for_thread_exit() (+1 more)
 
 ## Knowledge Gaps
 - **101 isolated node(s):** `daedalus-tui`, `Execution Boundaries (CRITICAL)`, `Evidence Extraction`, `Architecture Boundaries`, `Parameter Files` (+96 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DaedalusTuiApp` connect `update_repository` to `PlanQuestion`, `DaedalusVimTextArea`, `AgentRunner`, `app.py`, `GitWorktreeManager`, `Key`, `.__init__`, `._shutdown_coordinators`, `._set_status`, `CodingStatisticsScreen`, `calculate_token_usage`, `agent_runner.py`, `._set_status`, `._rebuild_plan_questions`, `._start_new_task`, `.on_data_table_row_selected`, `PlanQuestion`, `.action_view_topic`, `._render_selected_task`, `TaskRecord`, `._reload_projects`?**
-  _High betweenness centrality (0.233) - this node is a cross-community bridge._
-- **Why does `GitWorktreeError` connect `Key` to `DaedalusVimTextArea`, `.on_button_pressed`, `agent_runner.py`, `update_repository`, `KeyboardShortcutsScreen`, `orchestrator.py`, `TaskRecord`, `.__init__`, `._set_status`, `update_repository`, `.enter_insert_mode`, `CodingStatisticsScreen`?**
-  _High betweenness centrality (0.074) - this node is a cross-community bridge._
-- **Why does `TaskMemoryStore` connect `calculate_token_usage` to `.on_button_pressed`, `agent_runner.py`, `orchestrator.py`, `TaskRecord`, `.__init__`, `._set_status`, `update_repository`, `.enter_insert_mode`, `CodingStatisticsScreen`?**
+- **Why does `DaedalusTuiApp` connect `._shutdown_coordinators` to `PlanQuestion`, `DaedalusVimTextArea`, `AgentRunner`, `DaedalusTuiApp`, `app.py`, `GitWorktreeManager`, `Key`, `._set_status`, `update_repository`, `CodingStatisticsScreen`, `calculate_token_usage`, `.on_button_pressed`, `._set_status`, `._rebuild_plan_questions`, `.emit`, `._start_new_task`, `.on_data_table_row_selected`, `PlanQuestion`, `CreateTopicScreen`, `.action_view_topic`, `._render_selected_task`?**
+  _High betweenness centrality (0.220) - this node is a cross-community bridge._
+- **Why does `GitWorktreeError` connect `Key` to `PlanQuestion`, `DaedalusVimTextArea`, `.on_button_pressed`, `agent_runner.py`, `update_repository`, `KeyboardShortcutsScreen`, `PlanQuestion`, `._shutdown_coordinators`, `._set_status`, `.provider_split`, `CodingStatisticsScreen`?**
+  _High betweenness centrality (0.086) - this node is a cross-community bridge._
+- **Why does `TaskMemoryStore` connect `calculate_token_usage` to `PlanQuestion`, `.on_button_pressed`, `agent_runner.py`, `PlanQuestion`, `CreateTopicScreen`, `._shutdown_coordinators`, `._set_status`, `.provider_split`, `CodingStatisticsScreen`?**
   _High betweenness centrality (0.071) - this node is a cross-community bridge._
 - **Are the 16 inferred relationships involving `DaedalusTuiApp` (e.g. with `FakeCoordinator` and `FakeRunner`) actually correct?**
   _`DaedalusTuiApp` has 16 INFERRED edges - model-reasoned connections that need verification._
