@@ -29,6 +29,25 @@ class TreeNode:
     is_cycle: bool = False
 
 
+@dataclass
+class _LayoutNode:
+    node: TreeNode
+    x: float
+    y: float
+    children: list[_LayoutNode]
+
+
+# Layout and SVG rendering constants (pixels).
+_CHAR_WIDTH = 7.2
+_H_PADDING = 14
+_V_PADDING = 8
+_NODE_HEIGHT = 28
+_MIN_NODE_WIDTH = 72
+_SIBLING_GAP = 28
+_LEVEL_GAP = 64
+_ROOT_GAP = 56
+
+
 def discover_source_files(
     project_root: Path,
     source_globs: list[str],
@@ -196,26 +215,140 @@ def build_tree(
     return visit(root, frozenset(), 0)
 
 
-def render_tree_list(trees: list[TreeNode]) -> str:
-    """Render tree nodes as nested HTML lists."""
-    parts: list[str] = []
-    for tree in trees:
-        parts.append(_render_tree_node(tree))
-    return "\n".join(parts)
+def _node_label_width(name: str) -> float:
+    return max(len(name) * _CHAR_WIDTH + _H_PADDING * 2, _MIN_NODE_WIDTH)
 
 
-def _render_tree_node(node: TreeNode) -> str:
-    class_names = ["name"]
-    if node.is_cycle:
-        class_names.append("cycle")
-    label = html.escape(node.name)
+def _layout_subtree(node: TreeNode, depth: int, next_x: list[float]) -> _LayoutNode:
+    """Assign horizontal positions using leaf-order spacing (tidy top-down tree)."""
     if not node.children:
-        return f'<li><span class="{" ".join(class_names)}">{label}</span></li>'
+        x = next_x[0]
+        next_x[0] += 1.0
+        return _LayoutNode(node=node, x=x, y=float(depth), children=[])
 
-    child_html = "\n".join(_render_tree_node(child) for child in node.children)
+    children = [_layout_subtree(child, depth + 1, next_x) for child in node.children]
+    x = (children[0].x + children[-1].x) / 2.0
+    return _LayoutNode(node=node, x=x, y=float(depth), children=children)
+
+
+def _to_pixel_layout(layout: _LayoutNode, x_offset: float) -> _LayoutNode:
+    return _LayoutNode(
+        node=layout.node,
+        x=layout.x * _SIBLING_GAP + x_offset,
+        y=layout.y * _LEVEL_GAP,
+        children=[_to_pixel_layout(child, x_offset) for child in layout.children],
+    )
+
+
+def _translate_layout(layout: _LayoutNode, dx: float, dy: float = 0.0) -> _LayoutNode:
+    return _LayoutNode(
+        node=layout.node,
+        x=layout.x + dx,
+        y=layout.y + dy,
+        children=[_translate_layout(child, dx, dy) for child in layout.children],
+    )
+
+
+def _layout_trees(trees: list[TreeNode]) -> list[_LayoutNode]:
+    """Lay out each root tree separately, offsetting siblings horizontally."""
+    layouts: list[_LayoutNode] = []
+    x_offset = 0.0
+    for tree in trees:
+        next_x = [0.0]
+        layout = _layout_subtree(tree, 0, next_x)
+        if next_x[0] <= 1.0:
+            span = _node_label_width(tree.name)
+        else:
+            span = (next_x[0] - 1.0) * _SIBLING_GAP + _MIN_NODE_WIDTH
+        layouts.append(_to_pixel_layout(layout, x_offset))
+        x_offset += span + _ROOT_GAP
+    return layouts
+
+
+def _layout_bounds(layouts: list[_LayoutNode]) -> tuple[float, float]:
+    min_x = float("inf")
+    max_x = float("-inf")
+    max_y = 0.0
+
+    def visit(node: _LayoutNode) -> None:
+        nonlocal min_x, max_x, max_y
+        half = _node_label_width(node.node.name) / 2.0
+        min_x = min(min_x, node.x - half)
+        max_x = max(max_x, node.x + half)
+        max_y = max(max_y, node.y + _NODE_HEIGHT)
+        for child in node.children:
+            visit(child)
+
+    for layout in layouts:
+        visit(layout)
+
+    if not layouts:
+        return 0.0, 0.0
+    return max_x - min_x, max_y
+
+
+def _render_layout_edges(layout: _LayoutNode, parts: list[str]) -> None:
+    parent_bottom_y = layout.y + _NODE_HEIGHT
+    parent_x = layout.x
+    for child in layout.children:
+        child_top_y = child.y
+        mid_y = (parent_bottom_y + child_top_y) / 2.0
+        parts.append(
+            f'<path class="edge" d="M {parent_x:.1f},{parent_bottom_y:.1f} '
+            f'V {mid_y:.1f} H {child.x:.1f} V {child_top_y:.1f}"/>'
+        )
+        _render_layout_edges(child, parts)
+
+
+def _render_layout_nodes(layout: _LayoutNode, parts: list[str]) -> None:
+    label = html.escape(layout.node.name)
+    width = _node_label_width(layout.node.name)
+    height = _NODE_HEIGHT
+    x = layout.x - width / 2.0
+    y = layout.y
+    class_names = ["node"]
+    if layout.node.is_cycle:
+        class_names.append("cycle")
+    parts.append(
+        f'<g class="{" ".join(class_names)}" transform="translate({x:.1f},{y:.1f})">'
+        f'<rect width="{width:.1f}" height="{height:.1f}" rx="6" ry="6"/>'
+        f'<text x="{width / 2:.1f}" y="{height / 2:.1f}" '
+        f'text-anchor="middle" dominant-baseline="central">{label}</text>'
+        f"</g>"
+    )
+    for child in layout.children:
+        _render_layout_nodes(child, parts)
+
+
+def render_tree_svg(trees: list[TreeNode]) -> str:
+    """Render tree nodes as a top-down SVG diagram with connector lines."""
+    layouts = _layout_trees(trees)
+    if not layouts:
+        return ""
+
+    margin = 24.0
+    min_x = min(
+        layout.x - _node_label_width(layout.node.name) / 2.0 for layout in layouts
+    )
+    shifted = [
+        _translate_layout(layout, margin - min_x, margin) for layout in layouts
+    ]
+
+    parts: list[str] = []
+    for layout in shifted:
+        _render_layout_edges(layout, parts)
+    for layout in shifted:
+        _render_layout_nodes(layout, parts)
+
+    content_width, content_height = _layout_bounds(shifted)
+    svg_width = content_width + margin * 2
+    svg_height = content_height + margin * 2
+    body = "\n  ".join(parts)
     return (
-        f'<li><span class="{" ".join(class_names)}">{label}</span>'
-        f'<ul class="tree">\n{child_html}\n</ul></li>'
+        f'<svg class="call-tree" xmlns="http://www.w3.org/2000/svg" '
+        f'viewBox="0 0 {svg_width:.1f} {svg_height:.1f}" '
+        f'width="100%" height="{svg_height:.1f}" role="img" '
+        f'aria-label="Call graph tree diagram">\n  {body}\n</svg>'
     )
 
 
@@ -233,7 +366,7 @@ def render_html(
     if empty_message:
         body = f"<p class=\"empty\">{html.escape(empty_message)}</p>"
     elif trees:
-        body = f'<ul class="tree roots">\n{render_tree_list(trees)}\n</ul>'
+        body = f'<div class="diagram">{render_tree_svg(trees)}</div>'
     else:
         body = '<p class="empty">No call graph roots were found.</p>'
 
@@ -262,38 +395,34 @@ def render_html(
       margin: 0 0 1.5rem;
       font-size: 0.9rem;
     }}
-    ul.tree {{
-      list-style: none;
-      margin: 0;
-      padding-left: 1.25rem;
-      border-left: 1px solid #bbb;
+    .diagram {{
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
     }}
-    ul.tree.roots {{
-      border-left: none;
-      padding-left: 0;
+    svg.call-tree {{
+      display: block;
+      min-width: 100%;
     }}
-    li {{
-      margin: 0.2rem 0;
-      position: relative;
+    .edge {{
+      fill: none;
+      stroke: #999;
+      stroke-width: 1.5;
     }}
-    li::before {{
-      content: "";
-      position: absolute;
-      left: -1.25rem;
-      top: 0.75rem;
-      width: 0.85rem;
-      border-top: 1px solid #bbb;
+    .node rect {{
+      fill: rgba(127, 127, 127, 0.12);
+      stroke: #888;
+      stroke-width: 1;
     }}
-    ul.tree.roots > li::before {{
-      display: none;
+    .node text {{
+      font: inherit;
+      font-size: 12px;
+      fill: CanvasText;
     }}
-    .name {{
-      display: inline-block;
-      padding: 0.1rem 0.35rem;
-      border-radius: 0.2rem;
-      background: rgba(127, 127, 127, 0.12);
+    .node.cycle rect {{
+      stroke-dasharray: 4 3;
+      opacity: 0.9;
     }}
-    .name.cycle {{
+    .node.cycle text {{
       font-style: italic;
       opacity: 0.85;
     }}

@@ -70,13 +70,14 @@ class CallGraphTreeTests(unittest.TestCase):
         roots = select_roots(edges, all_nodes, [])
         self.assertEqual(roots, ["a.fn", "orphan.fn"])
 
-    def test_render_html_contains_expected_fqns_and_list_nesting(self):
+    def test_render_html_contains_expected_fqns_and_svg_tree(self):
         trees = [build_tree("call_graph_sample.a.alpha", {"call_graph_sample.a.alpha": ["call_graph_sample.b.beta"]}, 4)]
         output = render_html(trees, "sample")
         self.assertIn("call_graph_sample.a.alpha", output)
         self.assertIn("call_graph_sample.b.beta", output)
-        self.assertIn('<ul class="tree roots">', output)
-        self.assertIn('<ul class="tree">', output)
+        self.assertIn('<svg class="call-tree"', output)
+        self.assertIn('class="edge"', output)
+        self.assertIn('class="node"', output)
 
     def test_extract_uses_edges_handles_lambda_scopes_without_namespace(self):
         files = discover_source_files(
