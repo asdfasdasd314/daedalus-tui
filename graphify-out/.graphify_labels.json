@@ -59,5 +59,8 @@
   "57": "._render_selected_task",
   "58": "__init__.py",
   "59": ".enter_insert_mode",
-  "60": ".nav_word_end"
+  "60": ".nav_word_end",
+  "61": "TaskRecord",
+  "62": "embed_topic",
+  "63": "._reload_projects"
 }
