@@ -41,6 +41,7 @@ from .topics import (
     TOPIC_NONE_VALUE,
     build_topic_template,
     load_topic_settings,
+    load_topic_text,
     topic_path,
     topic_select_options,
     topic_slug_from_name,
@@ -405,6 +406,45 @@ class CreateTopicScreen(ModalScreen[dict | None]):
         )
 
 
+class TopicViewerScreen(ModalScreen[None]):
+    """Display a topic markdown file without allowing edits."""
+
+    BINDINGS = [
+        ("escape", "close_topic_viewer", "Close"),
+    ]
+
+    def __init__(self, topic_slug: str, topic_text: str) -> None:
+        super().__init__()
+        self.topic_slug = topic_slug
+        self.topic_text = topic_text
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="topic-view-dialog"):
+            yield Static(f"Topic: {self.topic_slug}", id="topic-view-title")
+            yield Static(
+                "Read-only view · Select text to copy · Press Esc to close",
+                id="topic-view-subtitle",
+            )
+            yield TextArea(
+                self.topic_text,
+                id="topic-view-content",
+                read_only=True,
+                soft_wrap=False,
+            )
+            with Horizontal(id="topic-view-actions"):
+                yield Button("Close", id="close-topic-view-button")
+
+    def on_mount(self) -> None:
+        self.query_one("#topic-view-content", TextArea).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "close-topic-view-button":
+            self.dismiss(None)
+
+    def action_close_topic_viewer(self) -> None:
+        self.dismiss(None)
+
+
 class CodingStatisticsScreen(ModalScreen[None]):
     """Show token or task usage history and derived coding statistics."""
 
@@ -674,6 +714,7 @@ class DaedalusTuiApp(App[None]):
                             value=TOPIC_NONE_VALUE,
                             id="topic-select",
                         )
+                        yield Button("View Topic", id="view-topic-button", disabled=True)
                         yield Select(
                             [
                                 (
@@ -887,6 +928,20 @@ class DaedalusTuiApp(App[None]):
     def action_show_create_topic(self) -> None:
         self.push_screen(CreateTopicScreen(self._active_project_path), self._on_topic_created)
 
+    def action_view_topic(self) -> None:
+        """Open the selected project topic in a read-only modal."""
+        topic = self._selected_topic()
+        if topic is None:
+            self._set_status("Select a topic first")
+            return
+        topic_text = load_topic_text(self._active_project_path, topic)
+        if topic_text is None:
+            self._set_error(f"Could not load topic: {topic}")
+            self._set_status("Topic unavailable")
+            self._refresh_topic_view_button()
+            return
+        self.push_screen(TopicViewerScreen(topic, topic_text))
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "send-button":
             self._submit_prompt()
@@ -896,6 +951,8 @@ class DaedalusTuiApp(App[None]):
             self.action_show_new_project()
         elif event.button.id == "create-topic-button":
             self.action_show_create_topic()
+        elif event.button.id == "view-topic-button":
+            self.action_view_topic()
         elif event.button.id == "push-branch-button":
             self._push_selected_branch()
         elif event.button.id == "continue-plan-button":
@@ -941,6 +998,7 @@ class DaedalusTuiApp(App[None]):
                 self._on_topic_selected(None)
             else:
                 self._on_topic_selected(str(value))
+            self._refresh_topic_view_button()
             return
         if event.select.id and event.select.id.startswith("plan-question-"):
             self._update_plan_custom_answer_visibility(event.select.id, event.value)
@@ -1320,6 +1378,20 @@ class DaedalusTuiApp(App[None]):
             topic_select.value = effective
         finally:
             self._suppress_topic_change = False
+        self._refresh_topic_view_button()
+
+    def _selected_topic(self) -> str | None:
+        """Return the selected topic slug, or None for the blank option."""
+        value = self.query_one("#topic-select", Select).value
+        if value in (Select.BLANK, "", TOPIC_NONE_VALUE, getattr(Select, "NULL", None)):
+            return None
+        return str(value)
+
+    def _refresh_topic_view_button(self) -> None:
+        """Enable topic viewing only when the selector has a real topic."""
+        if not self.query("#view-topic-button"):
+            return
+        self.query_one("#view-topic-button", Button).disabled = self._selected_topic() is None
 
     def _usage_entries(self):
         try:

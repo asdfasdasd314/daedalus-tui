@@ -11,7 +11,12 @@ from textual.selection import Selection as ScreenSelection
 from textual.widgets import Button, DataTable, Log, Select, Static, TextArea
 from vimkeys_input import VimMode
 
-from tui.app import CodingStatisticsScreen, DaedalusTuiApp, KeyboardShortcutsScreen
+from tui.app import (
+    CodingStatisticsScreen,
+    DaedalusTuiApp,
+    KeyboardShortcutsScreen,
+    TopicViewerScreen,
+)
 from tui.config import ModelOption, TuiSettings
 from tui.projects import DaedalusProject
 from tui.plan import CUSTOM_ANSWER_OPTION_ID, PlanOption, PlanQuestion, encode_custom_answer
@@ -190,6 +195,8 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#start-coding-button", Button), Button)
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
             self.assertIsInstance(app.query_one("#create-topic-button", Button), Button)
+            self.assertIsInstance(app.query_one("#view-topic-button", Button), Button)
+            self.assertTrue(app.query_one("#view-topic-button", Button).disabled)
             self.assertIsInstance(app.query_one("#output-toggle-button", Button), Button)
             await pilot.pause()
 
@@ -426,6 +433,43 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 app.query_one("#project-select", Select).value = str(first)
                 await pilot.pause()
                 self.assertEqual(app.query_one("#topic-select", Select).value, "mvp")
+
+    @patch("tui.app.discover_projects")
+    async def test_selected_topic_opens_in_a_read_only_viewer(self, discover):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "project"
+            project.mkdir()
+            (project / "topic_files").mkdir()
+            topic_text = "# MVP\n\n## Topic Goal\nBuild it.\n"
+            (project / "topic_files" / "mvp.md").write_text(topic_text, encoding="utf-8")
+            discover.return_value = (DaedalusProject(project, root),)
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+
+            async with app.run_test() as pilot:
+                topic_select = app.query_one("#topic-select", Select)
+                topic_select.value = "mvp"
+                await pilot.pause()
+
+                view_button = app.query_one("#view-topic-button", Button)
+                self.assertFalse(view_button.disabled)
+                view_button.press()
+                await pilot.pause()
+
+                self.assertIsInstance(app.screen, TopicViewerScreen)
+                content = app.screen.query_one("#topic-view-content", TextArea)
+                self.assertTrue(content.read_only)
+                self.assertEqual(content.text, topic_text)
+
+                await pilot.press("escape")
+                await pilot.pause()
+                self.assertNotIsInstance(app.screen, TopicViewerScreen)
 
     @patch("tui.app.list_local_branches", return_value=["main"])
     @patch("tui.app.discover_projects")

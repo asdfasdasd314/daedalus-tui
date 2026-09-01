@@ -25,6 +25,9 @@ markdown.
   task worktree and embeds it with mode-specific instructions (coding may
   append State Log / set Status; ask/plan are read-only for topic files;
   repair/resolver re-embed and only write when the umbrella outcome changes).
+- **Read-only viewer**: A selected topic can be opened from the settings bar
+  in a selectable, read-only modal so operators can inspect the markdown
+  without leaving the TUI or changing the file.
 - **Inheritance**: Plan → Implement, retry, resume, repair, resolver, and
   plan-question clarifications keep the originating task's topic slug.
 - **Boundary**: Topics are project-local and optional; project discovery still
@@ -55,3 +58,5 @@ HACKING
   restore the last selected topic, with stale topic selections cleared safely.
 - 2026-08-25: Persisted the selected topic during prompt submission so immediate
   New Task actions restore the project-local default before queued UI events run.
+- 2026-09-01: Added a settings-bar View Topic action with a selectable
+  read-only markdown modal for the active project topic.

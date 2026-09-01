@@ -89,6 +89,11 @@ Screen {
     margin-right: 1;
 }
 
+#view-topic-button {
+    width: 13;
+    margin-right: 1;
+}
+
 #push-branch-button {
     width: 10;
 }
@@ -319,6 +324,45 @@ ProjectInitializerScreen {
 
 CreateTopicScreen {
     align: center middle;
+}
+
+TopicViewerScreen {
+    align: center middle;
+}
+
+#topic-view-dialog {
+    width: 90%;
+    height: 85%;
+    border: round $primary;
+    background: $surface;
+    padding: 1 2;
+}
+
+#topic-view-title {
+    color: $text-accent;
+    text-style: bold;
+    height: 2;
+}
+
+#topic-view-subtitle {
+    color: $text-muted;
+    height: 1;
+    margin-bottom: 1;
+}
+
+#topic-view-content {
+    height: 1fr;
+    border: round $primary;
+    margin-bottom: 1;
+}
+
+#topic-view-actions {
+    height: 3;
+    align: right middle;
+}
+
+#close-topic-view-button {
+    width: 10;
 }
 
 #create-topic-dialog {
