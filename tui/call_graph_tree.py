@@ -6,8 +6,10 @@ import html
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-from pyan.analyzer import CallGraphVisitor
+if TYPE_CHECKING:
+    from pyan.analyzer import CallGraphVisitor
 
 
 @dataclass(frozen=True)
@@ -50,7 +52,7 @@ def discover_source_files(
     return kept
 
 
-def _collect_node_names(visitor: CallGraphVisitor) -> set[str]:
+def _collect_node_names(visitor: Any) -> set[str]:
     names: set[str] = set()
     for node_list in visitor.nodes.values():
         for node in node_list:
@@ -67,6 +69,8 @@ def extract_uses_edges(
     """Run pyan analysis and return caller→callees edges plus all node names."""
     if not file_paths:
         return {}, set()
+
+    from pyan.analyzer import CallGraphVisitor
 
     project_root = project_root.resolve()
     visitor = CallGraphVisitor(
@@ -115,7 +119,7 @@ def build_tree(
     def visit(name: str, visited: frozenset[str], depth: int) -> TreeNode:
         if name in visited:
             return TreeNode(name=f"{name} … (cycle)", children=[], is_cycle=True)
-        if depth >= max_tree_depth:
+        if depth + 1 >= max_tree_depth:
             return TreeNode(name=name, children=[])
 
         next_visited = visited | {name}

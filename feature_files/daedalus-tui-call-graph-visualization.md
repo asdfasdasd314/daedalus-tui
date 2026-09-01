@@ -21,3 +21,4 @@ HACKING
 
 ## State Log
 - 2026-09-01: Added pyan3-backed call-graph discovery and top-down HTML tree rendering for import workflow evidence gathering.
+- 2026-09-01: Repaired verification by lazy-loading pyan3, fixing max_tree_depth traversal semantics, and bootstrapping the test dependency when missing.
