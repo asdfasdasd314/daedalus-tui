@@ -7,7 +7,11 @@ name = "daedalus-tui"
 version = "0.1.0"
 description = "Standalone Textual TUI for local Daedalus agent orchestration"
 requires-python = ">=3.11"
-dependencies = ["textual>=8.2,<9", "textual-vimkeys-input>=0.3.2,<0.4"]
+dependencies = [
+    "textual>=8.2,<9",
+    "textual-vimkeys-input>=0.3.2,<0.4",
+    "pyan3>=2.8,<3",
+]
 
 [tool.setuptools.packages.find]
 include = ["tui*"]

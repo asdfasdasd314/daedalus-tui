@@ -1,0 +1,6 @@
+source_globs = ["tui/**/*.py"]
+exclude = ["tests/**", "**/test_*.py", "graphify-out/**", ".venv/**"]
+entry_points = ["tui.__main__.main"]
+output_path = "call-graph-out/call-tree.html"
+max_tree_depth = 12
+pyan_depth = 2
