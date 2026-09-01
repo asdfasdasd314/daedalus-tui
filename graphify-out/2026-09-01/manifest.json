@@ -315,8 +315,8 @@
     "semantic_hash": ""
   },
   "topic_files/project-imports-to-the-daedalus-format.md": {
-    "mtime": 1788304533.653937,
-    "ast_hash": "26244eb9826eca96253706e82e054d7e",
+    "mtime": 1788304744.3543208,
+    "ast_hash": "a49cb7041059a7edcbc1533853745ad5",
     "semantic_hash": ""
   },
   "scripts/render_call_graph_tree.py": {
@@ -360,18 +360,18 @@
     "semantic_hash": ""
   },
   "tests/test_call_graph_tree.py": {
-    "mtime": 1788304533.6535947,
-    "ast_hash": "3e5e69bc997c1ffeebc71d2da427098a",
+    "mtime": 1788304744.353998,
+    "ast_hash": "ff28abac8dff16831c9e167b136681ff",
     "semantic_hash": ""
   },
   "tui/call_graph_tree.py": {
-    "mtime": 1788304533.6544633,
-    "ast_hash": "513887a6169acaabbceacbad40b47571",
+    "mtime": 1788304744.354661,
+    "ast_hash": "bcfbdf6a2956b6e95d8b345df4ade636",
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-call-graph-visualization.md": {
-    "mtime": 1788304533.6531498,
-    "ast_hash": "9055552d8be545a5f62f7b3102fb87b3",
+    "mtime": 1788304744.353662,
+    "ast_hash": "8eb05f1111e61b4e9fbfc98a5e3c6ee0",
     "semantic_hash": ""
   },
   "tests/fixtures/call_graph_sample/lambda_edge.py": {

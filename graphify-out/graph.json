@@ -607,8 +607,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_app",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "test_app.py"
     },
     {
@@ -1047,8 +1047,8 @@
       "source_location": "L757",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_ctrl_k_opens_shortcuts_menu_with_global_and_vim_keys",
-      "community": 0,
-      "community_name": "PlanQuestion",
+      "community": 1,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": ".test_ctrl_k_opens_shortcuts_menu_with_global_and_vim_keys()"
     },
     {
@@ -1080,8 +1080,8 @@
       "source_location": "L856",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_project_switch_preserves_editable_prompt_draft",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_project_switch_preserves_editable_prompt_draft()"
     },
     {
@@ -1124,8 +1124,8 @@
       "source_location": "L935",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_submitted_prompt_is_visible_and_immutable",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_submitted_prompt_is_visible_and_immutable()"
     },
     {
@@ -1135,8 +1135,8 @@
       "source_location": "L948",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_new_task_unlocks_a_blank_prompt_after_viewing_submitted_task",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_new_task_unlocks_a_blank_prompt_after_viewing_submitted_task()"
     },
     {
@@ -1168,8 +1168,8 @@
       "source_location": "L1004",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_prompt_supports_modal_vim_modes_and_multiline_insert",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_prompt_supports_modal_vim_modes_and_multiline_insert()"
     },
     {
@@ -1179,8 +1179,8 @@
       "source_location": "L1017",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_prompt_e_advances_to_the_end_of_each_word",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_prompt_e_advances_to_the_end_of_each_word()"
     },
     {
@@ -1190,8 +1190,8 @@
       "source_location": "L1030",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_escape_clears_visual_line_highlighting_and_cursor_does_not_blink",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_escape_clears_visual_line_highlighting_and_cursor_does_not_blink()"
     },
     {
@@ -1201,8 +1201,8 @@
       "source_location": "L1045",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_shift_v_selects_complete_lines",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_shift_v_selects_complete_lines()"
     },
     {
@@ -1212,8 +1212,8 @@
       "source_location": "L1060",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_prompt_paste_falls_back_to_system_clipboard",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_prompt_paste_falls_back_to_system_clipboard()"
     },
     {
@@ -1223,8 +1223,8 @@
       "source_location": "L1071",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_prompt_yank_mirrors_vim_register_to_system_clipboard",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_prompt_yank_mirrors_vim_register_to_system_clipboard()"
     },
     {
@@ -1234,8 +1234,8 @@
       "source_location": "L1083",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_prompt_cursor_shape_follows_insert_command_and_yank_pending",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_prompt_cursor_shape_follows_insert_command_and_yank_pending()"
     },
     {
@@ -1256,8 +1256,8 @@
       "source_location": "L1135",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_prompt_dollar_moves_to_line_end_in_command_mode",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_prompt_dollar_moves_to_line_end_in_command_mode()"
     },
     {
@@ -1531,8 +1531,8 @@
       "source_location": "L1775",
       "_origin": "ast",
       "id": "tests_test_app_tuiapptests_test_submitted_prompt_uses_faded_read_only_text_style",
-      "community": 1,
-      "community_name": "DaedalusVimTextArea",
+      "community": 3,
+      "community_name": "DaedalusTuiApp",
       "norm_label": ".test_submitted_prompt_uses_faded_read_only_text_style()"
     },
     {
@@ -1627,7 +1627,7 @@
       "label": "CallGraphTreeTests",
       "file_type": "code",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L20",
+      "source_location": "L22",
       "_origin": "ast",
       "id": "tests_test_call_graph_tree_callgraphtreetests",
       "community": 27,
@@ -1638,7 +1638,7 @@
       "label": ".test_discover_source_files_respects_exclude_globs()",
       "file_type": "code",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L21",
+      "source_location": "L23",
       "_origin": "ast",
       "id": "tests_test_call_graph_tree_callgraphtreetests_test_discover_source_files_respects_exclude_globs",
       "community": 27,
@@ -1649,7 +1649,7 @@
       "label": ".test_extract_uses_edges_contains_expected_pairs()",
       "file_type": "code",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L33",
+      "source_location": "L35",
       "_origin": "ast",
       "id": "tests_test_call_graph_tree_callgraphtreetests_test_extract_uses_edges_contains_expected_pairs",
       "community": 27,
@@ -1660,7 +1660,7 @@
       "label": ".test_build_tree_marks_cycles_and_respects_max_depth()",
       "file_type": "code",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L45",
+      "source_location": "L47",
       "_origin": "ast",
       "id": "tests_test_call_graph_tree_callgraphtreetests_test_build_tree_marks_cycles_and_respects_max_depth",
       "community": 27,
@@ -1671,7 +1671,7 @@
       "label": ".test_select_roots_prefers_entry_points()",
       "file_type": "code",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L61",
+      "source_location": "L63",
       "_origin": "ast",
       "id": "tests_test_call_graph_tree_callgraphtreetests_test_select_roots_prefers_entry_points",
       "community": 27,
@@ -1682,7 +1682,7 @@
       "label": ".test_select_roots_falls_back_to_orphan_nodes()",
       "file_type": "code",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L67",
+      "source_location": "L69",
       "_origin": "ast",
       "id": "tests_test_call_graph_tree_callgraphtreetests_test_select_roots_falls_back_to_orphan_nodes",
       "community": 27,
@@ -1693,7 +1693,7 @@
       "label": ".test_render_html_contains_expected_fqns_and_svg_tree()",
       "file_type": "code",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L73",
+      "source_location": "L75",
       "_origin": "ast",
       "id": "tests_test_call_graph_tree_callgraphtreetests_test_render_html_contains_expected_fqns_and_svg_tree",
       "community": 27,
@@ -1701,10 +1701,21 @@
       "norm_label": ".test_render_html_contains_expected_fqns_and_svg_tree()"
     },
     {
+      "label": ".test_layout_keeps_wide_sibling_labels_from_overlapping()",
+      "file_type": "code",
+      "source_file": "tests/test_call_graph_tree.py",
+      "source_location": "L86",
+      "_origin": "ast",
+      "id": "tests_test_call_graph_tree_callgraphtreetests_test_layout_keeps_wide_sibling_labels_from_overlapping",
+      "community": 27,
+      "community_name": ".on_mount",
+      "norm_label": ".test_layout_keeps_wide_sibling_labels_from_overlapping()"
+    },
+    {
       "label": ".test_extract_uses_edges_handles_lambda_scopes_without_namespace()",
       "file_type": "code",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L84",
+      "source_location": "L115",
       "_origin": "ast",
       "id": "tests_test_call_graph_tree_callgraphtreetests_test_extract_uses_edges_handles_lambda_scopes_without_namespace",
       "community": 27,
@@ -1715,7 +1726,7 @@
       "label": ".test_render_call_graph_tree_writes_html_for_fixture()",
       "file_type": "code",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L98",
+      "source_location": "L129",
       "_origin": "ast",
       "id": "tests_test_call_graph_tree_callgraphtreetests_test_render_call_graph_tree_writes_html_for_fixture",
       "community": 27,
@@ -3049,8 +3060,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_test_task_coordinator",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": "test_task_coordinator.py"
     },
     {
@@ -3060,8 +3071,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_fakeorchestrator",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": "fakeorchestrator"
     },
     {
@@ -3071,8 +3082,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_fakeorchestrator_init",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": ".__init__()"
     },
     {
@@ -3082,8 +3093,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_fakeorchestrator_run",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": ".run()"
     },
     {
@@ -3093,8 +3104,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": "taskcoordinatortests"
     },
     {
@@ -3104,8 +3115,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_setup",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".setup()"
     },
     {
@@ -3115,8 +3126,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_executor_limits_concurrent_agent_tasks_and_snapshots_settings",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_executor_limits_concurrent_agent_tasks_and_snapshots_settings()"
     },
     {
@@ -3126,8 +3137,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_plan_task_stays_questioning_until_started_as_coding",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_plan_task_stays_questioning_until_started_as_coding()"
     },
     {
@@ -3137,8 +3148,8 @@
       "source_location": "L128",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_first_ready_integration_is_serialized",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": ".test_first_ready_integration_is_serialized()"
     },
     {
@@ -3148,8 +3159,8 @@
       "source_location": "L155",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_shutdown_pauses_an_active_worker_without_waiting_indefinitely",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_shutdown_pauses_an_active_worker_without_waiting_indefinitely()"
     },
     {
@@ -3159,8 +3170,8 @@
       "source_location": "L181",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_failed_task_does_not_block_later_task",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_failed_task_does_not_block_later_task()"
     },
     {
@@ -3170,8 +3181,8 @@
       "source_location": "L208",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_persists_task_details_for_failed_and_completed_tasks",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_persists_task_details_for_failed_and_completed_tasks()"
     },
     {
@@ -3181,8 +3192,8 @@
       "source_location": "L258",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_rehydrates_failed_and_interrupted_tasks_with_worktree_context",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_rehydrates_failed_and_interrupted_tasks_with_worktree_context()"
     },
     {
@@ -3192,8 +3203,8 @@
       "source_location": "L328",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_failed_agent_can_be_retried_with_the_same_request",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_failed_agent_can_be_retried_with_the_same_request()"
     },
     {
@@ -3203,8 +3214,8 @@
       "source_location": "L365",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_repeated_retries_replace_previous_output_context_instead_of_duplicating_it",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_repeated_retries_replace_previous_output_context_instead_of_duplicating_it()"
     },
     {
@@ -3214,8 +3225,8 @@
       "source_location": "L403",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_persists_null_model_and_reasoning_for_cursor_task",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_persists_null_model_and_reasoning_for_cursor_task()"
     },
     {
@@ -3225,8 +3236,8 @@
       "source_location": "L445",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_pause_preserves_context_and_resume_reuses_same_worktree",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_pause_preserves_context_and_resume_reuses_same_worktree()"
     },
     {
@@ -3236,8 +3247,8 @@
       "source_location": "L489",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_retry_after_integration_failure_resumes_from_integration",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_retry_after_integration_failure_resumes_from_integration()"
     },
     {
@@ -3247,8 +3258,8 @@
       "source_location": "L548",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_cancel_paused_task_removes_preserved_worktree",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_cancel_paused_task_removes_preserved_worktree()"
     },
     {
@@ -3258,8 +3269,8 @@
       "source_location": "L563",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_plan_answers_require_agent_confirmation_before_implementation",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_plan_answers_require_agent_confirmation_before_implementation()"
     },
     {
@@ -3269,8 +3280,8 @@
       "source_location": "L614",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_plan_answers_accept_ui_owned_custom_text",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_plan_answers_accept_ui_owned_custom_text()"
     },
     {
@@ -3280,8 +3291,8 @@
       "source_location": "L650",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_invalid_confirmation_preserves_answers_for_a_safe_retry",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_invalid_confirmation_preserves_answers_for_a_safe_retry()"
     },
     {
@@ -3291,8 +3302,8 @@
       "source_location": "L686",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_revised_question_drops_only_its_invalid_saved_answer",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_revised_question_drops_only_its_invalid_saved_answer()"
     },
     {
@@ -3302,8 +3313,8 @@
       "source_location": "L716",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_implementation_discards_the_clean_planning_worktree",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_implementation_discards_the_clean_planning_worktree()"
     },
     {
@@ -3313,8 +3324,8 @@
       "source_location": "L739",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_plan_clarification_is_separate_from_plan_conversation",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_plan_clarification_is_separate_from_plan_conversation()"
     },
     {
@@ -3324,8 +3335,8 @@
       "source_location": "L792",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_submit_persists_and_restores_topic",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_submit_persists_and_restores_topic()"
     },
     {
@@ -3335,8 +3346,8 @@
       "source_location": "L828",
       "_origin": "ast",
       "id": "tests_test_task_coordinator_taskcoordinatortests_test_implement_plan_and_clarification_inherit_topic",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".test_implement_plan_and_clarification_inherit_topic()"
     },
     {
@@ -3456,8 +3467,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "tests_test_topics_topicstests_test_topic_name_and_slug_are_safe_for_topic_files",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 25,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": ".test_topic_name_and_slug_are_safe_for_topic_files()"
     },
     {
@@ -3599,8 +3610,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_main",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "__main__.py"
     },
     {
@@ -3610,8 +3621,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "tui_main_main",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "main()"
     },
     {
@@ -4028,8 +4039,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_app",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "app.py"
     },
     {
@@ -4061,8 +4072,8 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "tui_app_unregister_app_for_thread_exit",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "_unregister_app_for_thread_exit()"
     },
     {
@@ -4127,8 +4138,8 @@
       "source_location": "L172",
       "_origin": "ast",
       "id": "tui_app_planclarificationscreen",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": "planclarificationscreen"
     },
     {
@@ -4138,8 +4149,8 @@
       "source_location": "L179",
       "_origin": "ast",
       "id": "tui_app_planclarificationscreen_init",
-      "community": 51,
-      "community_name": "CreateTopicScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".__init__()"
     },
     {
@@ -4171,8 +4182,8 @@
       "source_location": "L199",
       "_origin": "ast",
       "id": "tui_app_planclarificationscreen_on_mount",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".on_mount()"
     },
     {
@@ -4182,8 +4193,8 @@
       "source_location": "L202",
       "_origin": "ast",
       "id": "tui_app_planclarificationscreen_on_button_pressed",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".on_button_pressed()"
     },
     {
@@ -4193,8 +4204,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "pressed",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": "pressed"
     },
     {
@@ -4204,8 +4215,8 @@
       "source_location": "L211",
       "_origin": "ast",
       "id": "tui_app_planclarificationscreen_action_cancel_clarification",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".action_cancel_clarification()"
     },
     {
@@ -4215,8 +4226,8 @@
       "source_location": "L215",
       "_origin": "ast",
       "id": "tui_app_keyboardshortcutsscreen",
-      "community": 0,
-      "community_name": "PlanQuestion",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "keyboardshortcutsscreen"
     },
     {
@@ -4237,8 +4248,8 @@
       "source_location": "L232",
       "_origin": "ast",
       "id": "tui_app_keyboardshortcutsscreen_action_close_shortcuts",
-      "community": 0,
-      "community_name": "PlanQuestion",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": ".action_close_shortcuts()"
     },
     {
@@ -4248,8 +4259,8 @@
       "source_location": "L236",
       "_origin": "ast",
       "id": "tui_app_projectinitializerscreen",
-      "community": 26,
-      "community_name": ".provider_split",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": "projectinitializerscreen"
     },
     {
@@ -4259,8 +4270,8 @@
       "source_location": "L243",
       "_origin": "ast",
       "id": "tui_app_projectinitializerscreen_init",
-      "community": 26,
-      "community_name": ".provider_split",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".__init__()"
     },
     {
@@ -4292,8 +4303,8 @@
       "source_location": "L263",
       "_origin": "ast",
       "id": "tui_app_projectinitializerscreen_on_mount",
-      "community": 26,
-      "community_name": ".provider_split",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".on_mount()"
     },
     {
@@ -4303,8 +4314,8 @@
       "source_location": "L266",
       "_origin": "ast",
       "id": "tui_app_projectinitializerscreen_on_button_pressed",
-      "community": 26,
-      "community_name": ".provider_split",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".on_button_pressed()"
     },
     {
@@ -4314,8 +4325,8 @@
       "source_location": "L272",
       "_origin": "ast",
       "id": "tui_app_projectinitializerscreen_on_input_submitted",
-      "community": 26,
-      "community_name": ".provider_split",
+      "community": 35,
+      "community_name": "agent_runner.py",
       "norm_label": ".on_input_submitted()"
     },
     {
@@ -4325,8 +4336,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "submitted",
-      "community": 26,
-      "community_name": ".provider_split",
+      "community": 35,
+      "community_name": "agent_runner.py",
       "norm_label": "submitted"
     },
     {
@@ -4336,8 +4347,8 @@
       "source_location": "L276",
       "_origin": "ast",
       "id": "tui_app_projectinitializerscreen_action_cancel_initializer",
-      "community": 26,
-      "community_name": ".provider_split",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".action_cancel_initializer()"
     },
     {
@@ -4402,8 +4413,8 @@
       "source_location": "L360",
       "_origin": "ast",
       "id": "tui_app_createtopicscreen_on_button_pressed",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".on_button_pressed()"
     },
     {
@@ -4413,8 +4424,8 @@
       "source_location": "L366",
       "_origin": "ast",
       "id": "tui_app_createtopicscreen_on_input_submitted",
-      "community": 26,
-      "community_name": ".provider_split",
+      "community": 35,
+      "community_name": "agent_runner.py",
       "norm_label": ".on_input_submitted()"
     },
     {
@@ -4435,8 +4446,8 @@
       "source_location": "L373",
       "_origin": "ast",
       "id": "tui_app_createtopicscreen_create_topic",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 25,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": "._create_topic()"
     },
     {
@@ -4446,8 +4457,8 @@
       "source_location": "L409",
       "_origin": "ast",
       "id": "tui_app_topicviewerscreen",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": "topicviewerscreen"
     },
     {
@@ -4457,8 +4468,8 @@
       "source_location": "L416",
       "_origin": "ast",
       "id": "tui_app_topicviewerscreen_init",
-      "community": 51,
-      "community_name": "CreateTopicScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".__init__()"
     },
     {
@@ -4479,8 +4490,8 @@
       "source_location": "L437",
       "_origin": "ast",
       "id": "tui_app_topicviewerscreen_on_mount",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".on_mount()"
     },
     {
@@ -4490,8 +4501,8 @@
       "source_location": "L440",
       "_origin": "ast",
       "id": "tui_app_topicviewerscreen_on_button_pressed",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".on_button_pressed()"
     },
     {
@@ -4501,8 +4512,8 @@
       "source_location": "L444",
       "_origin": "ast",
       "id": "tui_app_topicviewerscreen_action_close_topic_viewer",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".action_close_topic_viewer()"
     },
     {
@@ -4523,8 +4534,8 @@
       "source_location": "L456",
       "_origin": "ast",
       "id": "tui_app_codingstatisticsscreen_init",
-      "community": 51,
-      "community_name": "CreateTopicScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".__init__()"
     },
     {
@@ -4655,8 +4666,8 @@
       "source_location": "L615",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_init",
-      "community": 51,
-      "community_name": "CreateTopicScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": ".__init__()"
     },
     {
@@ -4677,8 +4688,8 @@
       "source_location": "L773",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_on_mount",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 47,
+      "community_name": "._start_new_task",
       "norm_label": ".on_mount()"
     },
     {
@@ -4688,8 +4699,8 @@
       "source_location": "L787",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_on_key",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": ".on_key()"
     },
     {
@@ -4699,8 +4710,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tui_app_py_key",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "key"
     },
     {
@@ -4710,8 +4721,8 @@
       "source_location": "L812",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_on_unmount",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": ".on_unmount()"
     },
     {
@@ -4754,8 +4765,8 @@
       "source_location": "L831",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_install_exit_diagnostics",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 47,
+      "community_name": "._start_new_task",
       "norm_label": "._install_exit_diagnostics()"
     },
     {
@@ -4765,8 +4776,8 @@
       "source_location": "L839",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_remove_exit_diagnostics",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "._remove_exit_diagnostics()"
     },
     {
@@ -4776,8 +4787,8 @@
       "source_location": "L846",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_log_asyncio_exception",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "._log_asyncio_exception()"
     },
     {
@@ -4787,8 +4798,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "abstracteventloop",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "abstracteventloop"
     },
     {
@@ -4831,8 +4842,8 @@
       "source_location": "L892",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_action_submit_prompt",
-      "community": 4,
-      "community_name": "app.py",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": ".action_submit_prompt()"
     },
     {
@@ -4842,8 +4853,8 @@
       "source_location": "L895",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_action_new_task",
-      "community": 54,
-      "community_name": ".action_view_topic",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": ".action_new_task()"
     },
     {
@@ -4853,8 +4864,8 @@
       "source_location": "L898",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_action_copy_selection",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": ".action_copy_selection()"
     },
     {
@@ -4908,8 +4919,8 @@
       "source_location": "L913",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_action_cancel_task",
-      "community": 21,
-      "community_name": "._shutdown_coordinators",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": ".action_cancel_task()"
     },
     {
@@ -4930,8 +4941,8 @@
       "source_location": "L919",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_action_show_shortcuts",
-      "community": 0,
-      "community_name": "PlanQuestion",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": ".action_show_shortcuts()"
     },
     {
@@ -5062,8 +5073,8 @@
       "source_location": "L1129",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_on_task_event",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "._on_task_event()"
     },
     {
@@ -5073,8 +5084,8 @@
       "source_location": "L1153",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_apply_task_event",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "._apply_task_event()"
     },
     {
@@ -5084,8 +5095,8 @@
       "source_location": "L1183",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_should_promote_task_update",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": "._should_promote_task_update()"
     },
     {
@@ -5150,8 +5161,8 @@
       "source_location": "L1260",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_refresh_target_branch_select",
-      "community": 4,
-      "community_name": "app.py",
+      "community": 47,
+      "community_name": "._start_new_task",
       "norm_label": "._refresh_target_branch_select()"
     },
     {
@@ -5205,8 +5216,8 @@
       "source_location": "L1359",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_refresh_topic_select",
-      "community": 54,
-      "community_name": ".action_view_topic",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "._refresh_topic_select()"
     },
     {
@@ -5282,8 +5293,8 @@
       "source_location": "L1458",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_on_project_initialized",
-      "community": 54,
-      "community_name": ".action_view_topic",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "._on_project_initialized()"
     },
     {
@@ -5370,8 +5381,8 @@
       "source_location": "L1580",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_project_for_record",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "._project_for_record()"
     },
     {
@@ -5414,8 +5425,8 @@
       "source_location": "L1611",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_render_selected_task_safely",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "._render_selected_task_safely()"
     },
     {
@@ -5425,8 +5436,8 @@
       "source_location": "L1623",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_render_selected_task",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": "._render_selected_task()"
     },
     {
@@ -5590,8 +5601,8 @@
       "source_location": "L2020",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_start_new_task",
-      "community": 54,
-      "community_name": ".action_view_topic",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "._start_new_task()"
     },
     {
@@ -5601,8 +5612,8 @@
       "source_location": "L2029",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_set_prompt_text",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": "._set_prompt_text()"
     },
     {
@@ -5612,8 +5623,8 @@
       "source_location": "L2044",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_copy_selection",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "._copy_selection()"
     },
     {
@@ -5623,8 +5634,8 @@
       "source_location": "L2052",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_handle_vim_key",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "._handle_vim_key()"
     },
     {
@@ -5634,8 +5645,8 @@
       "source_location": "L2071",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_scroll_output",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "._scroll_output()"
     },
     {
@@ -5645,8 +5656,8 @@
       "source_location": "L2088",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_set_output_view",
-      "community": 23,
-      "community_name": "update_repository",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": "._set_output_view()"
     },
     {
@@ -5656,8 +5667,8 @@
       "source_location": "L2110",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_paste_into_prompt",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "._paste_into_prompt()"
     },
     {
@@ -5667,8 +5678,8 @@
       "source_location": "L2125",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_get_selected_text",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "._get_selected_text()"
     },
     {
@@ -5678,8 +5689,8 @@
       "source_location": "L2143",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_copy_to_clipboard",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": ".copy_to_clipboard()"
     },
     {
@@ -5689,8 +5700,8 @@
       "source_location": "L2148",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_copy_text",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": "._copy_text()"
     },
     {
@@ -5744,8 +5755,8 @@
       "source_location": "L2184",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_cancel_task",
-      "community": 21,
-      "community_name": "._shutdown_coordinators",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "._cancel_task()"
     },
     {
@@ -5766,8 +5777,8 @@
       "source_location": "L2198",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_set_status",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "._set_status()"
     },
     {
@@ -5777,8 +5788,8 @@
       "source_location": "L2201",
       "_origin": "ast",
       "id": "tui_app_daedalustuiapp_set_error",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "._set_error()"
     },
     {
@@ -5788,8 +5799,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_app_rationale_1",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "textual interface for concurrent local agent tasks."
     },
     {
@@ -5821,8 +5832,8 @@
       "source_location": "L173",
       "_origin": "ast",
       "id": "tui_app_rationale_173",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": "collect a clarification about one plan question."
     },
     {
@@ -5832,8 +5843,8 @@
       "source_location": "L216",
       "_origin": "ast",
       "id": "tui_app_rationale_216",
-      "community": 0,
-      "community_name": "PlanQuestion",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "modal reference for the app and prompt editor keyboard shortcuts."
     },
     {
@@ -5843,8 +5854,8 @@
       "source_location": "L237",
       "_origin": "ast",
       "id": "tui_app_rationale_237",
-      "community": 26,
-      "community_name": ".provider_split",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": "collect a project slug and create a daedalus-compatible directory."
     },
     {
@@ -5865,8 +5876,8 @@
       "source_location": "L410",
       "_origin": "ast",
       "id": "tui_app_rationale_410",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": "display a topic markdown file without allowing edits."
     },
     {
@@ -5887,8 +5898,8 @@
       "source_location": "L788",
       "_origin": "ast",
       "id": "tui_app_rationale_788",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "add vim-like navigation without changing textarea insert behavior."
     },
     {
@@ -5920,8 +5931,8 @@
       "source_location": "L832",
       "_origin": "ast",
       "id": "tui_app_rationale_832",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 47,
+      "community_name": "._start_new_task",
       "norm_label": "cover terminal and event-loop exits that bypass textual unmount."
     },
     {
@@ -5997,8 +6008,8 @@
       "source_location": "L1184",
       "_origin": "ast",
       "id": "tui_app_rationale_1184",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": "promote only events that need the user's attention in the inbox."
     },
     {
@@ -6041,8 +6052,8 @@
       "source_location": "L1261",
       "_origin": "ast",
       "id": "tui_app_rationale_1261",
-      "community": 4,
-      "community_name": "app.py",
+      "community": 47,
+      "community_name": "._start_new_task",
       "norm_label": "refresh branch select options for the active project and sync coordinator."
     },
     {
@@ -6074,8 +6085,8 @@
       "source_location": "L1360",
       "_origin": "ast",
       "id": "tui_app_rationale_1360",
-      "community": 54,
-      "community_name": ".action_view_topic",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "refresh topics and restore the active project's remembered default."
     },
     {
@@ -6151,8 +6162,8 @@
       "source_location": "L1612",
       "_origin": "ast",
       "id": "tui_app_rationale_1612",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "keep one bad dynamic widget update from closing the entire tui."
     },
     {
@@ -6184,8 +6195,8 @@
       "source_location": "L2021",
       "_origin": "ast",
       "id": "tui_app_rationale_2021",
-      "community": 54,
-      "community_name": ".action_view_topic",
+      "community": 4,
+      "community_name": "app.py",
       "norm_label": "clear the selected task and unlock a fresh prompt editor."
     },
     {
@@ -6195,8 +6206,8 @@
       "source_location": "L2095",
       "_origin": "ast",
       "id": "tui_app_rationale_2095",
-      "community": 23,
-      "community_name": "update_repository",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": "show either the full-size transcript or the full-size diagnostics log."
     },
     {
@@ -6206,8 +6217,8 @@
       "source_location": "L2126",
       "_origin": "ast",
       "id": "tui_app_rationale_2126",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 23,
+      "community_name": "update_repository",
       "norm_label": "return a textarea selection or the active screen selection."
     },
     {
@@ -6217,8 +6228,8 @@
       "source_location": "L2144",
       "_origin": "ast",
       "id": "tui_app_rationale_2144",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 21,
+      "community_name": "._shutdown_coordinators",
       "norm_label": "use textual's osc 52 path and a native clipboard fallback."
     },
     {
@@ -6269,7 +6280,7 @@
       "label": "discover_source_files()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L52",
+      "source_location": "L53",
       "_origin": "ast",
       "id": "tui_call_graph_tree_discover_source_files",
       "community": 27,
@@ -6291,7 +6302,7 @@
       "label": "_collect_node_names()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L75",
+      "source_location": "L76",
       "_origin": "ast",
       "id": "tui_call_graph_tree_collect_node_names",
       "community": 27,
@@ -6313,7 +6324,7 @@
       "label": "_collapse_inner_safe()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L84",
+      "source_location": "L85",
       "_origin": "ast",
       "id": "tui_call_graph_tree_collapse_inner_safe",
       "community": 27,
@@ -6324,7 +6335,7 @@
       "label": "_SafeCallGraphVisitor",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L115",
+      "source_location": "L116",
       "_origin": "ast",
       "id": "tui_call_graph_tree_safecallgraphvisitor",
       "community": 27,
@@ -6335,7 +6346,7 @@
       "label": ".create()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L119",
+      "source_location": "L120",
       "_origin": "ast",
       "id": "tui_call_graph_tree_safecallgraphvisitor_create",
       "community": 27,
@@ -6357,7 +6368,7 @@
       "label": "extract_uses_edges()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L145",
+      "source_location": "L146",
       "_origin": "ast",
       "id": "tui_call_graph_tree_extract_uses_edges",
       "community": 27,
@@ -6368,7 +6379,7 @@
       "label": "select_roots()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L177",
+      "source_location": "L178",
       "_origin": "ast",
       "id": "tui_call_graph_tree_select_roots",
       "community": 27,
@@ -6379,7 +6390,7 @@
       "label": "build_tree()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L196",
+      "source_location": "L197",
       "_origin": "ast",
       "id": "tui_call_graph_tree_build_tree",
       "community": 27,
@@ -6390,7 +6401,7 @@
       "label": "_node_label_width()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L219",
+      "source_location": "L220",
       "_origin": "ast",
       "id": "tui_call_graph_tree_node_label_width",
       "community": 27,
@@ -6398,10 +6409,21 @@
       "norm_label": "_node_label_width()"
     },
     {
+      "label": "_subtree_bounds()",
+      "file_type": "code",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L224",
+      "_origin": "ast",
+      "id": "tui_call_graph_tree_subtree_bounds",
+      "community": 27,
+      "community_name": ".on_mount",
+      "norm_label": "_subtree_bounds()"
+    },
+    {
       "label": "_layout_subtree()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L223",
+      "source_location": "L236",
       "_origin": "ast",
       "id": "tui_call_graph_tree_layout_subtree",
       "community": 27,
@@ -6409,21 +6431,10 @@
       "norm_label": "_layout_subtree()"
     },
     {
-      "label": "_to_pixel_layout()",
-      "file_type": "code",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L235",
-      "_origin": "ast",
-      "id": "tui_call_graph_tree_to_pixel_layout",
-      "community": 27,
-      "community_name": ".on_mount",
-      "norm_label": "_to_pixel_layout()"
-    },
-    {
       "label": "_translate_layout()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L244",
+      "source_location": "L257",
       "_origin": "ast",
       "id": "tui_call_graph_tree_translate_layout",
       "community": 27,
@@ -6434,7 +6445,7 @@
       "label": "_layout_trees()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L253",
+      "source_location": "L266",
       "_origin": "ast",
       "id": "tui_call_graph_tree_layout_trees",
       "community": 27,
@@ -6442,21 +6453,32 @@
       "norm_label": "_layout_trees()"
     },
     {
-      "label": "_layout_bounds()",
+      "label": "_layout_extent_y()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L269",
+      "source_location": "L280",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_layout_bounds",
+      "id": "tui_call_graph_tree_layout_extent_y",
       "community": 27,
       "community_name": ".on_mount",
-      "norm_label": "_layout_bounds()"
+      "norm_label": "_layout_extent_y()"
+    },
+    {
+      "label": "_layouts_bounds()",
+      "file_type": "code",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L287",
+      "_origin": "ast",
+      "id": "tui_call_graph_tree_layouts_bounds",
+      "community": 27,
+      "community_name": ".on_mount",
+      "norm_label": "_layouts_bounds()"
     },
     {
       "label": "_render_layout_edges()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L291",
+      "source_location": "L304",
       "_origin": "ast",
       "id": "tui_call_graph_tree_render_layout_edges",
       "community": 27,
@@ -6467,7 +6489,7 @@
       "label": "_render_layout_nodes()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L304",
+      "source_location": "L317",
       "_origin": "ast",
       "id": "tui_call_graph_tree_render_layout_nodes",
       "community": 27,
@@ -6478,7 +6500,7 @@
       "label": "render_tree_svg()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L324",
+      "source_location": "L337",
       "_origin": "ast",
       "id": "tui_call_graph_tree_render_tree_svg",
       "community": 27,
@@ -6489,7 +6511,7 @@
       "label": "render_html()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L356",
+      "source_location": "L368",
       "_origin": "ast",
       "id": "tui_call_graph_tree_render_html",
       "community": 27,
@@ -6511,7 +6533,7 @@
       "label": "render_call_graph_tree()",
       "file_type": "code",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L445",
+      "source_location": "L457",
       "_origin": "ast",
       "id": "tui_call_graph_tree_render_call_graph_tree",
       "community": 27,
@@ -6533,9 +6555,9 @@
       "label": "Collect Python source files matching *source_globs* and not *exclude*.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L57",
+      "source_location": "L58",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_57",
+      "id": "tui_call_graph_tree_rationale_58",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "collect python source files matching *source_globs* and not *exclude*."
@@ -6544,9 +6566,9 @@
       "label": "Run pyan's collapse_inner while skipping anonymous nodes pyan cannot parent-reso",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L85",
+      "source_location": "L86",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_85",
+      "id": "tui_call_graph_tree_rationale_86",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "run pyan's collapse_inner while skipping anonymous nodes pyan cannot parent-reso"
@@ -6555,9 +6577,9 @@
       "label": "CallGraphVisitor with a collapse_inner guard for namespace-less anonymous nodes.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L116",
+      "source_location": "L117",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_116",
+      "id": "tui_call_graph_tree_rationale_117",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "callgraphvisitor with a collapse_inner guard for namespace-less anonymous nodes."
@@ -6566,9 +6588,9 @@
       "label": "Run pyan analysis and return caller\u2192callees edges plus all node names.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L150",
+      "source_location": "L151",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_150",
+      "id": "tui_call_graph_tree_rationale_151",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "run pyan analysis and return caller\u2192callees edges plus all node names."
@@ -6577,9 +6599,9 @@
       "label": "Choose tree roots from configured entry points or orphan graph nodes.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L182",
+      "source_location": "L183",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_182",
+      "id": "tui_call_graph_tree_rationale_183",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "choose tree roots from configured entry points or orphan graph nodes."
@@ -6588,31 +6610,42 @@
       "label": "Build a call tree from *root* with cycle and depth limits.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L201",
+      "source_location": "L202",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_201",
+      "id": "tui_call_graph_tree_rationale_202",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "build a call tree from *root* with cycle and depth limits."
     },
     {
-      "label": "Assign horizontal positions using leaf-order spacing (tidy top-down tree).",
+      "label": "Return the left and right x extents of a laid-out subtree.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L224",
+      "source_location": "L225",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_224",
+      "id": "tui_call_graph_tree_rationale_225",
       "community": 27,
       "community_name": ".on_mount",
-      "norm_label": "assign horizontal positions using leaf-order spacing (tidy top-down tree)."
+      "norm_label": "return the left and right x extents of a laid-out subtree."
+    },
+    {
+      "label": "Assign horizontal positions using subtree widths so labels never overlap.",
+      "file_type": "rationale",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L237",
+      "_origin": "ast",
+      "id": "tui_call_graph_tree_rationale_237",
+      "community": 27,
+      "community_name": ".on_mount",
+      "norm_label": "assign horizontal positions using subtree widths so labels never overlap."
     },
     {
       "label": "Lay out each root tree separately, offsetting siblings horizontally.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L254",
+      "source_location": "L267",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_254",
+      "id": "tui_call_graph_tree_rationale_267",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "lay out each root tree separately, offsetting siblings horizontally."
@@ -6621,9 +6654,9 @@
       "label": "Render tree nodes as a top-down SVG diagram with connector lines.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L325",
+      "source_location": "L338",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_325",
+      "id": "tui_call_graph_tree_rationale_338",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "render tree nodes as a top-down svg diagram with connector lines."
@@ -6632,9 +6665,9 @@
       "label": "Render a self-contained HTML page for the call trees.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L363",
+      "source_location": "L375",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_363",
+      "id": "tui_call_graph_tree_rationale_375",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "render a self-contained html page for the call trees."
@@ -6643,9 +6676,9 @@
       "label": "Analyze the project at *project_root* and write the HTML call tree.",
       "file_type": "rationale",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L446",
+      "source_location": "L458",
       "_origin": "ast",
-      "id": "tui_call_graph_tree_rationale_446",
+      "id": "tui_call_graph_tree_rationale_458",
       "community": 27,
       "community_name": ".on_mount",
       "norm_label": "analyze the project at *project_root* and write the html call tree."
@@ -6657,8 +6690,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_clipboard",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "clipboard.py"
     },
     {
@@ -6668,8 +6701,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "tui_clipboard_copy_to_system_clipboard",
-      "community": 38,
-      "community_name": "._set_status",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "copy_to_system_clipboard()"
     },
     {
@@ -6690,8 +6723,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_clipboard_rationale_1",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "system clipboard helpers for terminals without osc 52 support."
     },
     {
@@ -6723,8 +6756,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tui_config_modeloption",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "modeloption"
     },
     {
@@ -6734,8 +6767,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "tui_config_tuisettings",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "tuisettings"
     },
     {
@@ -6745,8 +6778,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "tui_config_codingstatisticssettings",
-      "community": 51,
-      "community_name": "CreateTopicScreen",
+      "community": 43,
+      "community_name": "._rebuild_plan_questions",
       "norm_label": "codingstatisticssettings"
     },
     {
@@ -6822,8 +6855,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_debug_log",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "debug_log.py"
     },
     {
@@ -6833,8 +6866,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tui_debug_log_configure_debug_logging",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "configure_debug_logging()"
     },
     {
@@ -6844,8 +6877,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tui_debug_log_py_path",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "path"
     },
     {
@@ -6855,8 +6888,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "tui_debug_log_install_fault_handler",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "install_fault_handler()"
     },
     {
@@ -6866,8 +6899,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tui_debug_log_close_fault_handler",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "close_fault_handler()"
     },
     {
@@ -6877,8 +6910,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "tui_debug_log_log_exception",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "log_exception()"
     },
     {
@@ -6888,8 +6921,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "baseexception",
-      "community": 43,
-      "community_name": "._rebuild_plan_questions",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "baseexception"
     },
     {
@@ -6899,8 +6932,8 @@
       "source_location": "L75",
       "_origin": "ast",
       "id": "tui_debug_log_install_thread_exception_logging",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "_install_thread_exception_logging()"
     },
     {
@@ -6910,8 +6943,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_debug_log_rationale_1",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "persistent diagnostics for failures that occur after the textual screen closes."
     },
     {
@@ -6921,8 +6954,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "tui_debug_log_rationale_20",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "write detailed runtime diagnostics to a rotating local log file."
     },
     {
@@ -6932,8 +6965,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "tui_debug_log_rationale_46",
-      "community": 46,
-      "community_name": ".emit",
+      "community": 57,
+      "community_name": "._render_selected_task",
       "norm_label": "capture fatal faults and ``sigusr1`` thread dumps in the debug log."
     },
     {
@@ -7933,8 +7966,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "tui_orchestrator_orchestrationsettings",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 41,
+      "community_name": "KeyboardShortcutsScreen",
       "norm_label": "orchestrationsettings"
     },
     {
@@ -7944,8 +7977,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "tui_orchestrator_orchestrationresult",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": "orchestrationresult"
     },
     {
@@ -8263,8 +8296,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "tui_plan_planclarification",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "planclarification"
     },
     {
@@ -8417,8 +8450,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "tui_plan_rationale_33",
-      "community": 29,
-      "community_name": "CodingStatisticsScreen",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "a side-channel clarification about one plan question (not plan follow-up)."
     },
     {
@@ -9077,8 +9110,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_task_coordinator",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "task_coordinator.py"
     },
     {
@@ -9088,8 +9121,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tui_task_coordinator_string_list",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "_string_list()"
     },
     {
@@ -9099,8 +9132,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "tui_task_coordinator_nonnegative_int",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "_nonnegative_int()"
     },
     {
@@ -9110,8 +9143,8 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "tui_task_coordinator_snapshot_timestamp",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "_snapshot_timestamp()"
     },
     {
@@ -9121,8 +9154,8 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "tui_task_coordinator_snapshot_path",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "_snapshot_path()"
     },
     {
@@ -9132,8 +9165,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tui_task_coordinator_py_path",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "path"
     },
     {
@@ -9143,8 +9176,8 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "tui_task_coordinator_snapshot_sequence",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "_snapshot_sequence()"
     },
     {
@@ -9154,8 +9187,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "tui_task_coordinator_phase_for_status",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "_phase_for_status()"
     },
     {
@@ -9165,8 +9198,8 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskrecord",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "taskrecord"
     },
     {
@@ -9176,8 +9209,8 @@
       "source_location": "L150",
       "_origin": "ast",
       "id": "tui_task_coordinator_integrationcoordinator",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": "integrationcoordinator"
     },
     {
@@ -9187,8 +9220,8 @@
       "source_location": "L153",
       "_origin": "ast",
       "id": "tui_task_coordinator_integrationcoordinator_init",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": ".__init__()"
     },
     {
@@ -9198,8 +9231,8 @@
       "source_location": "L160",
       "_origin": "ast",
       "id": "tui_task_coordinator_integrationcoordinator_shutdown",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": ".shutdown()"
     },
     {
@@ -9209,8 +9242,8 @@
       "source_location": "L165",
       "_origin": "ast",
       "id": "tui_task_coordinator_integrationcoordinator_run_when_ready",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": ".run_when_ready()"
     },
     {
@@ -9220,8 +9253,8 @@
       "source_location": "L194",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": "taskcoordinator"
     },
     {
@@ -9231,8 +9264,8 @@
       "source_location": "L197",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_init",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": ".__init__()"
     },
     {
@@ -9242,8 +9275,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "taskeventcallback",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "taskeventcallback"
     },
     {
@@ -9253,8 +9286,8 @@
       "source_location": "L220",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_set_event_callback",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": ".set_event_callback()"
     },
     {
@@ -9264,8 +9297,8 @@
       "source_location": "L223",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_submit",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".submit()"
     },
     {
@@ -9275,8 +9308,8 @@
       "source_location": "L257",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_answer_plan",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".answer_plan()"
     },
     {
@@ -9286,8 +9319,8 @@
       "source_location": "L305",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_clarify_plan_question",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".clarify_plan_question()"
     },
     {
@@ -9297,8 +9330,8 @@
       "source_location": "L343",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_implement_plan",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".implement_plan()"
     },
     {
@@ -9308,8 +9341,8 @@
       "source_location": "L381",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_tasks",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".tasks()"
     },
     {
@@ -9319,8 +9352,8 @@
       "source_location": "L385",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_get",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".get()"
     },
     {
@@ -9330,8 +9363,8 @@
       "source_location": "L389",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_shutdown",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": ".shutdown()"
     },
     {
@@ -9341,8 +9374,8 @@
       "source_location": "L423",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_pause",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".pause()"
     },
     {
@@ -9352,8 +9385,8 @@
       "source_location": "L441",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_resume",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".resume()"
     },
     {
@@ -9363,8 +9396,8 @@
       "source_location": "L458",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_continue_plan",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".continue_plan()"
     },
     {
@@ -9374,8 +9407,8 @@
       "source_location": "L477",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_start_coding",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".start_coding()"
     },
     {
@@ -9385,8 +9418,8 @@
       "source_location": "L499",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_retry",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".retry()"
     },
     {
@@ -9396,8 +9429,8 @@
       "source_location": "L521",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_cancel",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": ".cancel()"
     },
     {
@@ -9407,8 +9440,8 @@
       "source_location": "L582",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_run_clarification",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "._run_clarification()"
     },
     {
@@ -9418,8 +9451,8 @@
       "source_location": "L684",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_find_clarification",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "._find_clarification()"
     },
     {
@@ -9429,8 +9462,8 @@
       "source_location": "L691",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_run",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "._run()"
     },
     {
@@ -9440,8 +9473,8 @@
       "source_location": "L818",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_update_plan_state",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "._update_plan_state()"
     },
     {
@@ -9451,8 +9484,8 @@
       "source_location": "L855",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_discard_plan_worktree",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "._discard_plan_worktree()"
     },
     {
@@ -9462,8 +9495,8 @@
       "source_location": "L876",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_handle_event",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "._handle_event()"
     },
     {
@@ -9473,8 +9506,8 @@
       "source_location": "L913",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_persist_task",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "._persist_task()"
     },
     {
@@ -9484,8 +9517,8 @@
       "source_location": "L945",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_restore_tasks",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "._restore_tasks()"
     },
     {
@@ -9495,8 +9528,8 @@
       "source_location": "L1030",
       "_origin": "ast",
       "id": "tui_task_coordinator_taskcoordinator_notify",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "._notify()"
     },
     {
@@ -9506,8 +9539,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_1",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "concurrent task state and serialized local integration."
     },
     {
@@ -9517,8 +9550,8 @@
       "source_location": "L151",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_151",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 46,
+      "community_name": ".emit",
       "norm_label": "run ready integration operations one at a time in ready order."
     },
     {
@@ -9528,8 +9561,8 @@
       "source_location": "L195",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_195",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 38,
+      "community_name": "._set_status",
       "norm_label": "submit independent prompts while sharing a serialized integration gate."
     },
     {
@@ -9539,8 +9572,8 @@
       "source_location": "L258",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_258",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "send selected plan answers back to the planning agent for confirmation."
     },
     {
@@ -9550,8 +9583,8 @@
       "source_location": "L306",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_306",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "ask a side-channel clarification about one plan question without plan follow-up."
     },
     {
@@ -9561,8 +9594,8 @@
       "source_location": "L344",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_344",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "create a new coding task from a confirmed plan review."
     },
     {
@@ -9572,8 +9605,8 @@
       "source_location": "L459",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_459",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "run another planning pass while keeping the task in questioning."
     },
     {
@@ -9583,8 +9616,8 @@
       "source_location": "L478",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_478",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "promote a reviewed plan into the normal coding and verification route."
     },
     {
@@ -9594,8 +9627,8 @@
       "source_location": "L500",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_500",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "retry a failed agent request after connectivity or service recovery."
     },
     {
@@ -9605,8 +9638,8 @@
       "source_location": "L583",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_583",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "run an ask-mode clarification that does not mutate plan conversation state."
     },
     {
@@ -9616,8 +9649,8 @@
       "source_location": "L856",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_856",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "remove the clean, read-only planning worktree after coding is queued."
     },
     {
@@ -9627,8 +9660,8 @@
       "source_location": "L914",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_914",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 20,
+      "community_name": "TaskRecord",
       "norm_label": "persist the latest task state without affecting task execution."
     },
     {
@@ -9638,8 +9671,8 @@
       "source_location": "L946",
       "_origin": "ast",
       "id": "tui_task_coordinator_rationale_946",
-      "community": 49,
-      "community_name": "PlanQuestion",
+      "community": 44,
+      "community_name": "task_coordinator.py",
       "norm_label": "rehydrate this project's persisted tasks after a tui restart."
     },
     {
@@ -9891,8 +9924,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "tui_topics_load_topic_settings",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 25,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": "load_topic_settings()"
     },
     {
@@ -9902,8 +9935,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "tui_topics_validate_topic_name",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 25,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": "validate_topic_name()"
     },
     {
@@ -9913,8 +9946,8 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "tui_topics_topic_slug_from_name",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 25,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": "topic_slug_from_name()"
     },
     {
@@ -10034,8 +10067,8 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "tui_topics_rationale_21",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 25,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": "load tunable limits for topic creation from the paired parameter file."
     },
     {
@@ -10045,8 +10078,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "tui_topics_rationale_27",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 25,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": "return a display name suitable for an h1 and a filesystem slug."
     },
     {
@@ -10056,8 +10089,8 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "tui_topics_rationale_41",
-      "community": 35,
-      "community_name": "agent_runner.py",
+      "community": 25,
+      "community_name": "DaedalusVimTextArea",
       "norm_label": "convert a validated topic name to the filename stem used by the tui."
     },
     {
@@ -10331,8 +10364,8 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "tui_transcript_transcriptlog_render_line_strip",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 50,
+      "community_name": "._render_line_strip",
       "norm_label": "._render_line_strip()"
     },
     {
@@ -10342,8 +10375,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "style",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 50,
+      "community_name": "._render_line_strip",
       "norm_label": "style"
     },
     {
@@ -10353,8 +10386,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "strip",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 50,
+      "community_name": "._render_line_strip",
       "norm_label": "strip"
     },
     {
@@ -10496,8 +10529,8 @@
       "source_location": "L185",
       "_origin": "ast",
       "id": "tui_transcript_rationale_185",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 50,
+      "community_name": "._render_line_strip",
       "norm_label": "render a line with the final-message color before selection styling."
     },
     {
@@ -10606,8 +10639,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_vim_text_area",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "vim_text_area.py"
     },
     {
@@ -10793,8 +10826,8 @@
       "source_location": "L182",
       "_origin": "ast",
       "id": "tui_vim_text_area_daedalusvimtextarea_render_line",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 50,
+      "community_name": "._render_line_strip",
       "norm_label": ".render_line()"
     },
     {
@@ -10837,8 +10870,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tui_vim_text_area_rationale_1",
-      "community": 22,
-      "community_name": "._set_status",
+      "community": 51,
+      "community_name": "CreateTopicScreen",
       "norm_label": "the daedalus prompt's incremental vim editing adapter."
     },
     {
@@ -10958,8 +10991,8 @@
       "source_location": "L183",
       "_origin": "ast",
       "id": "tui_vim_text_area_rationale_183",
-      "community": 6,
-      "community_name": "GitWorktreeManager",
+      "community": 50,
+      "community_name": "._render_line_strip",
       "norm_label": "render the native cursor without a background in visible modes."
     },
     {
@@ -18562,7 +18595,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L20",
+      "source_location": "L22",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree",
@@ -18638,6 +18671,18 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree",
+      "target": "tui_call_graph_tree_layout_trees",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_call_graph_tree.py",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_test_call_graph_tree",
       "target": "tui_call_graph_tree_render_call_graph_tree",
       "confidence_score": 1.0
     },
@@ -18666,10 +18711,22 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_call_graph_tree.py",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_test_call_graph_tree",
+      "target": "tui_call_graph_tree_subtree_bounds",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L45",
+      "source_location": "L47",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests",
@@ -18680,7 +18737,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L21",
+      "source_location": "L23",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests",
@@ -18691,7 +18748,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L33",
+      "source_location": "L35",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests",
@@ -18702,7 +18759,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L84",
+      "source_location": "L115",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests",
@@ -18713,7 +18770,18 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L98",
+      "source_location": "L86",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_test_call_graph_tree_callgraphtreetests",
+      "target": "tests_test_call_graph_tree_callgraphtreetests_test_layout_keeps_wide_sibling_labels_from_overlapping",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_call_graph_tree.py",
+      "source_location": "L129",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests",
@@ -18724,7 +18792,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L73",
+      "source_location": "L75",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests",
@@ -18735,7 +18803,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L67",
+      "source_location": "L69",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests",
@@ -18746,7 +18814,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L61",
+      "source_location": "L63",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests",
@@ -18770,7 +18838,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L22",
+      "source_location": "L24",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_discover_source_files_respects_exclude_globs",
@@ -18782,7 +18850,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L34",
+      "source_location": "L36",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_extract_uses_edges_contains_expected_pairs",
@@ -18794,7 +18862,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L39",
+      "source_location": "L41",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_extract_uses_edges_contains_expected_pairs",
@@ -18806,7 +18874,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L51",
+      "source_location": "L53",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_build_tree_marks_cycles_and_respects_max_depth",
@@ -18818,7 +18886,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L64",
+      "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_select_roots_prefers_entry_points",
@@ -18830,7 +18898,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L70",
+      "source_location": "L72",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_select_roots_falls_back_to_orphan_nodes",
@@ -18842,7 +18910,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L74",
+      "source_location": "L76",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_render_html_contains_expected_fqns_and_svg_tree",
@@ -18854,7 +18922,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L75",
+      "source_location": "L77",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_render_html_contains_expected_fqns_and_svg_tree",
@@ -18866,7 +18934,31 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L85",
+      "source_location": "L88",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_test_call_graph_tree_callgraphtreetests_test_layout_keeps_wide_sibling_labels_from_overlapping",
+      "target": "tui_call_graph_tree_build_tree"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_call_graph_tree.py",
+      "source_location": "L99",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_test_call_graph_tree_callgraphtreetests_test_layout_keeps_wide_sibling_labels_from_overlapping",
+      "target": "tui_call_graph_tree_layout_trees"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/test_call_graph_tree.py",
+      "source_location": "L116",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_extract_uses_edges_handles_lambda_scopes_without_namespace",
@@ -18878,7 +18970,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L90",
+      "source_location": "L121",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_extract_uses_edges_handles_lambda_scopes_without_namespace",
@@ -18890,7 +18982,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L99",
+      "source_location": "L130",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_render_call_graph_tree_writes_html_for_fixture",
@@ -18902,7 +18994,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/test_call_graph_tree.py",
-      "source_location": "L107",
+      "source_location": "L138",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_test_call_graph_tree_callgraphtreetests_test_render_call_graph_tree_writes_html_for_fixture",
@@ -34856,7 +34948,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L196",
+      "source_location": "L197",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -34878,7 +34970,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L84",
+      "source_location": "L85",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -34889,7 +34981,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L75",
+      "source_location": "L76",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -34900,7 +34992,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L52",
+      "source_location": "L53",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -34911,7 +35003,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L145",
+      "source_location": "L146",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -34922,18 +35014,18 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L269",
+      "source_location": "L280",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
-      "target": "tui_call_graph_tree_layout_bounds",
+      "target": "tui_call_graph_tree_layout_extent_y",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L223",
+      "source_location": "L236",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -34944,7 +35036,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L253",
+      "source_location": "L266",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -34966,7 +35058,18 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L219",
+      "source_location": "L287",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree",
+      "target": "tui_call_graph_tree_layouts_bounds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L220",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -34989,7 +35092,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L445",
+      "source_location": "L457",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -35000,7 +35103,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L356",
+      "source_location": "L368",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -35011,7 +35114,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L291",
+      "source_location": "L304",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -35022,7 +35125,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L304",
+      "source_location": "L317",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -35033,7 +35136,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L324",
+      "source_location": "L337",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -35044,7 +35147,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L115",
+      "source_location": "L116",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -35055,7 +35158,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L177",
+      "source_location": "L178",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -35066,18 +35169,18 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L235",
+      "source_location": "L224",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
-      "target": "tui_call_graph_tree_to_pixel_layout",
+      "target": "tui_call_graph_tree_subtree_bounds",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L244",
+      "source_location": "L257",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree",
@@ -35111,7 +35214,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L445",
+      "source_location": "L457",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_render_call_graph_tree",
@@ -35123,7 +35226,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L196",
+      "source_location": "L197",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_build_tree",
@@ -35135,7 +35238,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L223",
+      "source_location": "L236",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_layout_subtree",
@@ -35147,7 +35250,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L253",
+      "source_location": "L266",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_layout_trees",
@@ -35159,7 +35262,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L356",
+      "source_location": "L368",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_render_html",
@@ -35171,7 +35274,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L324",
+      "source_location": "L337",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_render_tree_svg",
@@ -35180,13 +35283,13 @@
     },
     {
       "relation": "references",
-      "context": "generic_arg",
+      "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L269",
+      "source_location": "L280",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tui_call_graph_tree_layout_bounds",
+      "source": "tui_call_graph_tree_layout_extent_y",
       "target": "tui_call_graph_tree_layoutnode",
       "confidence_score": 1.0
     },
@@ -35195,7 +35298,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L223",
+      "source_location": "L236",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_layout_subtree",
@@ -35207,7 +35310,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L253",
+      "source_location": "L266",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_layout_trees",
@@ -35216,13 +35319,13 @@
     },
     {
       "relation": "references",
-      "context": "parameter_type",
+      "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L291",
+      "source_location": "L287",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tui_call_graph_tree_render_layout_edges",
+      "source": "tui_call_graph_tree_layouts_bounds",
       "target": "tui_call_graph_tree_layoutnode",
       "confidence_score": 1.0
     },
@@ -35234,19 +35337,31 @@
       "source_location": "L304",
       "weight": 1.0,
       "_origin": "ast",
+      "source": "tui_call_graph_tree_render_layout_edges",
+      "target": "tui_call_graph_tree_layoutnode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L317",
+      "weight": 1.0,
+      "_origin": "ast",
       "source": "tui_call_graph_tree_render_layout_nodes",
       "target": "tui_call_graph_tree_layoutnode",
       "confidence_score": 1.0
     },
     {
       "relation": "references",
-      "context": "return_type",
+      "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L235",
+      "source_location": "L224",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tui_call_graph_tree_to_pixel_layout",
+      "source": "tui_call_graph_tree_subtree_bounds",
       "target": "tui_call_graph_tree_layoutnode",
       "confidence_score": 1.0
     },
@@ -35255,7 +35370,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L244",
+      "source_location": "L257",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_translate_layout",
@@ -35267,7 +35382,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L52",
+      "source_location": "L53",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_discover_source_files",
@@ -35278,10 +35393,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L57",
+      "source_location": "L58",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_57",
+      "source": "tui_call_graph_tree_rationale_58",
       "target": "tui_call_graph_tree_discover_source_files",
       "confidence_score": 1.0
     },
@@ -35290,7 +35405,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L448",
+      "source_location": "L460",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_render_call_graph_tree",
@@ -35302,7 +35417,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L145",
+      "source_location": "L146",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_extract_uses_edges",
@@ -35314,7 +35429,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L445",
+      "source_location": "L457",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_render_call_graph_tree",
@@ -35326,7 +35441,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L119",
+      "source_location": "L120",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_safecallgraphvisitor_create",
@@ -35338,7 +35453,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L75",
+      "source_location": "L76",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_collect_node_names",
@@ -35350,7 +35465,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L174",
+      "source_location": "L175",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_extract_uses_edges",
@@ -35362,7 +35477,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L84",
+      "source_location": "L85",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_collapse_inner_safe",
@@ -35373,10 +35488,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L85",
+      "source_location": "L86",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_85",
+      "source": "tui_call_graph_tree_rationale_86",
       "target": "tui_call_graph_tree_collapse_inner_safe",
       "confidence_score": 1.0
     },
@@ -35384,10 +35499,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L116",
+      "source_location": "L117",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_116",
+      "source": "tui_call_graph_tree_rationale_117",
       "target": "tui_call_graph_tree_safecallgraphvisitor",
       "confidence_score": 1.0
     },
@@ -35395,7 +35510,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L119",
+      "source_location": "L120",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_safecallgraphvisitor",
@@ -35407,7 +35522,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L155",
+      "source_location": "L156",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_extract_uses_edges",
@@ -35419,7 +35534,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L119",
+      "source_location": "L120",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_safecallgraphvisitor_create",
@@ -35430,10 +35545,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L150",
+      "source_location": "L151",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_150",
+      "source": "tui_call_graph_tree_rationale_151",
       "target": "tui_call_graph_tree_extract_uses_edges",
       "confidence_score": 1.0
     },
@@ -35442,7 +35557,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L449",
+      "source_location": "L461",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_render_call_graph_tree",
@@ -35453,222 +35568,11 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L182",
+      "source_location": "L183",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_182",
+      "source": "tui_call_graph_tree_rationale_183",
       "target": "tui_call_graph_tree_select_roots",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L450",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_call_graph_tree",
-      "target": "tui_call_graph_tree_select_roots",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L201",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_201",
-      "target": "tui_call_graph_tree_build_tree",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L459",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_call_graph_tree",
-      "target": "tui_call_graph_tree_build_tree",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L261",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_layout_trees",
-      "target": "tui_call_graph_tree_node_label_width",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L306",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_layout_nodes",
-      "target": "tui_call_graph_tree_node_label_width",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L332",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_tree_svg",
-      "target": "tui_call_graph_tree_node_label_width",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L259",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_layout_trees",
-      "target": "tui_call_graph_tree_layout_subtree",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L224",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_224",
-      "target": "tui_call_graph_tree_layout_subtree",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L264",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_layout_trees",
-      "target": "tui_call_graph_tree_to_pixel_layout",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L335",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_tree_svg",
-      "target": "tui_call_graph_tree_translate_layout",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L254",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_254",
-      "target": "tui_call_graph_tree_layout_trees",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L326",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_tree_svg",
-      "target": "tui_call_graph_tree_layout_trees",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L344",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_tree_svg",
-      "target": "tui_call_graph_tree_layout_bounds",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L340",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_tree_svg",
-      "target": "tui_call_graph_tree_render_layout_edges",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L342",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_tree_svg",
-      "target": "tui_call_graph_tree_render_layout_nodes",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L325",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_325",
-      "target": "tui_call_graph_tree_render_tree_svg",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L370",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_render_html",
-      "target": "tui_call_graph_tree_render_tree_svg",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "rationale_for",
-      "confidence": "EXTRACTED",
-      "source_file": "tui/call_graph_tree.py",
-      "source_location": "L363",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_363",
-      "target": "tui_call_graph_tree_render_html",
       "confidence_score": 1.0
     },
     {
@@ -35680,6 +35584,288 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_render_call_graph_tree",
+      "target": "tui_call_graph_tree_select_roots",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L202",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_rationale_202",
+      "target": "tui_call_graph_tree_build_tree",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L471",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_render_call_graph_tree",
+      "target": "tui_call_graph_tree_build_tree",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L240",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_layout_subtree",
+      "target": "tui_call_graph_tree_node_label_width",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L319",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_render_layout_nodes",
+      "target": "tui_call_graph_tree_node_label_width",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L226",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_subtree_bounds",
+      "target": "tui_call_graph_tree_node_label_width",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L247",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_layout_subtree",
+      "target": "tui_call_graph_tree_subtree_bounds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L272",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_layout_trees",
+      "target": "tui_call_graph_tree_subtree_bounds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L296",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_layouts_bounds",
+      "target": "tui_call_graph_tree_subtree_bounds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L225",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_rationale_225",
+      "target": "tui_call_graph_tree_subtree_bounds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L248",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_layout_subtree",
+      "target": "tui_call_graph_tree_translate_layout",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L271",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_layout_trees",
+      "target": "tui_call_graph_tree_layout_subtree",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L237",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_rationale_237",
+      "target": "tui_call_graph_tree_layout_subtree",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L273",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_layout_trees",
+      "target": "tui_call_graph_tree_translate_layout",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L346",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_render_tree_svg",
+      "target": "tui_call_graph_tree_translate_layout",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L267",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_rationale_267",
+      "target": "tui_call_graph_tree_layout_trees",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L339",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_render_tree_svg",
+      "target": "tui_call_graph_tree_layout_trees",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L300",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_layouts_bounds",
+      "target": "tui_call_graph_tree_layout_extent_y",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L344",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_render_tree_svg",
+      "target": "tui_call_graph_tree_layouts_bounds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L351",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_render_tree_svg",
+      "target": "tui_call_graph_tree_render_layout_edges",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L353",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_render_tree_svg",
+      "target": "tui_call_graph_tree_render_layout_nodes",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L338",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_rationale_338",
+      "target": "tui_call_graph_tree_render_tree_svg",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L382",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_render_html",
+      "target": "tui_call_graph_tree_render_tree_svg",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L375",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_rationale_375",
+      "target": "tui_call_graph_tree_render_html",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tui/call_graph_tree.py",
+      "source_location": "L474",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tui_call_graph_tree_render_call_graph_tree",
       "target": "tui_call_graph_tree_render_html",
       "confidence_score": 1.0
     },
@@ -35688,7 +35874,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L356",
+      "source_location": "L368",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tui_call_graph_tree_render_html",
@@ -35699,10 +35885,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tui/call_graph_tree.py",
-      "source_location": "L446",
+      "source_location": "L458",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tui_call_graph_tree_rationale_446",
+      "source": "tui_call_graph_tree_rationale_458",
       "target": "tui_call_graph_tree_render_call_graph_tree",
       "confidence_score": 1.0
     },
@@ -46568,5 +46754,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "4c5662be44c8b790830be2e92578a2bded7dccd5"
+  "built_at_commit": "c068ad5de96ef749f434d300693df398984235d2"
 }
