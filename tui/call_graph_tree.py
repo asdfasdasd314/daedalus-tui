@@ -38,14 +38,15 @@ class _LayoutNode:
 
 
 # Layout and SVG rendering constants (pixels).
-_CHAR_WIDTH = 7.2
-_H_PADDING = 14
-_V_PADDING = 8
-_NODE_HEIGHT = 28
-_MIN_NODE_WIDTH = 72
-_SIBLING_GAP = 28
-_LEVEL_GAP = 64
-_ROOT_GAP = 56
+_CHAR_WIDTH = 8.4
+_H_PADDING = 16
+_V_PADDING = 10
+_NODE_HEIGHT = 32
+_MIN_NODE_WIDTH = 80
+_SIBLING_GAP = 40
+_LEVEL_GAP = 72
+_ROOT_GAP = 64
+_FONT_SIZE = 14
 
 
 def discover_source_files(
@@ -347,7 +348,7 @@ def render_tree_svg(trees: list[TreeNode]) -> str:
     return (
         f'<svg class="call-tree" xmlns="http://www.w3.org/2000/svg" '
         f'viewBox="0 0 {svg_width:.1f} {svg_height:.1f}" '
-        f'width="100%" height="{svg_height:.1f}" role="img" '
+        f'width="{svg_width:.1f}" height="{svg_height:.1f}" role="img" '
         f'aria-label="Call graph tree diagram">\n  {body}\n</svg>'
     )
 
@@ -384,7 +385,6 @@ def render_html(
     }}
     body {{
       margin: 1.5rem;
-      max-width: 120rem;
     }}
     h1 {{
       font-size: 1.25rem;
@@ -396,12 +396,14 @@ def render_html(
       font-size: 0.9rem;
     }}
     .diagram {{
-      overflow-x: auto;
-      padding-bottom: 0.5rem;
+      overflow: auto;
+      max-height: calc(100vh - 6rem);
+      border: 1px solid rgba(127, 127, 127, 0.25);
+      border-radius: 6px;
+      background: Canvas;
     }}
     svg.call-tree {{
       display: block;
-      min-width: 100%;
     }}
     .edge {{
       fill: none;
@@ -415,7 +417,7 @@ def render_html(
     }}
     .node text {{
       font: inherit;
-      font-size: 12px;
+      font-size: {_FONT_SIZE}px;
       fill: CanvasText;
     }}
     .node.cycle rect {{

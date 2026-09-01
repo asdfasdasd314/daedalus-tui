@@ -46,3 +46,4 @@ open
 - 2026-09-01: Added a pyan3-backed HTML call-tree script that analyzes the CWD project and produces branching static-call evidence for later feature-boundary inference.
 - 2026-09-01: Hardened call-graph analysis against pyan collapse_inner crashes on namespace-less anonymous scopes so import workflows can analyze real Python codebases.
 - 2026-09-01: Call-tree HTML now renders as an SVG top-down tree diagram (n-ary branches, multiple roots) instead of a nested file-tree list.
+- 2026-09-01: Call-tree HTML uses natural-size SVG nodes in a scrollable viewport so large graphs remain readable during import review.

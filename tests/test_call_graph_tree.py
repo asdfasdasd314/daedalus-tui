@@ -78,6 +78,8 @@ class CallGraphTreeTests(unittest.TestCase):
         self.assertIn('<svg class="call-tree"', output)
         self.assertIn('class="edge"', output)
         self.assertIn('class="node"', output)
+        self.assertNotIn('width="100%"', output)
+        self.assertIn('overflow: auto', output)
 
     def test_extract_uses_edges_handles_lambda_scopes_without_namespace(self):
         files = discover_source_files(
