@@ -78,6 +78,20 @@ class CallGraphTreeTests(unittest.TestCase):
         self.assertIn('<ul class="tree roots">', output)
         self.assertIn('<ul class="tree">', output)
 
+    def test_extract_uses_edges_handles_lambda_scopes_without_namespace(self):
+        files = discover_source_files(
+            SAMPLE_PROJECT_ROOT,
+            source_globs=["call_graph_sample/**/*.py"],
+            exclude=["**/cycle_*.py"],
+        )
+        edges, nodes = extract_uses_edges(files, SAMPLE_PROJECT_ROOT, pyan_depth=2)
+
+        self.assertIn("call_graph_sample.lambda_edge.make_runner", nodes)
+        self.assertIn(
+            "call_graph_sample.c.gamma",
+            edges.get("call_graph_sample.lambda_edge.make_runner", []),
+        )
+
     def test_render_call_graph_tree_writes_html_for_fixture(self):
         config = CallGraphConfig(
             source_globs=["call_graph_sample/**/*.py"],

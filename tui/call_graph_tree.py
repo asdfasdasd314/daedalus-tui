@@ -61,6 +61,67 @@ def _collect_node_names(visitor: Any) -> set[str]:
     return names
 
 
+def _collapse_inner_safe(visitor: Any) -> None:
+    """Run pyan's collapse_inner while skipping anonymous nodes pyan cannot parent-resolve."""
+    from pyan.anutils import ANON_SCOPE_NAMES
+
+    anon_nodes = [
+        node
+        for name in list(visitor.nodes)
+        if name.partition(".")[0] in ANON_SCOPE_NAMES
+        for node in visitor.nodes[name]
+    ]
+    anon_nodes.sort(key=lambda node: node.get_name().count("."), reverse=True)
+
+    for node in anon_nodes:
+        if node.namespace is None:
+            node.defined = False
+            continue
+        parent = visitor.get_parent_node(node)
+        if node in visitor.uses_edges:
+            for callee in visitor.uses_edges[node]:
+                if callee is parent:
+                    continue
+                visitor.logger.info(
+                    "Collapsing inner from %s to %s, uses %s",
+                    node,
+                    parent,
+                    callee,
+                )
+                visitor.add_uses_edge(parent, callee)
+        node.defined = False
+
+
+class _SafeCallGraphVisitor:
+    """CallGraphVisitor with a collapse_inner guard for namespace-less anonymous nodes."""
+
+    @classmethod
+    def create(
+        cls,
+        file_paths: list[str],
+        *,
+        project_root: Path,
+    ) -> CallGraphVisitor:
+        from pyan.analyzer import CallGraphVisitor
+        from pyan.postprocessor import (
+            contract_nonexistents,
+            cull_subsumed,
+            expand_unknowns,
+            resolve_imports,
+        )
+
+        class Visitor(CallGraphVisitor):
+            def postprocess(self) -> None:
+                resolve_imports(self)
+                contract_nonexistents(self)
+                expand_unknowns(self)
+                _collapse_inner_safe(self)
+                if self.cull_subsumed_edges:
+                    cull_subsumed(self)
+
+        return Visitor(file_paths, root=str(project_root))
+
+
 def extract_uses_edges(
     file_paths: list[Path],
     project_root: Path,
@@ -70,20 +131,23 @@ def extract_uses_edges(
     if not file_paths:
         return {}, set()
 
-    from pyan.analyzer import CallGraphVisitor
-
     project_root = project_root.resolve()
-    visitor = CallGraphVisitor(
+    visitor = _SafeCallGraphVisitor.create(
         [str(path) for path in file_paths],
-        root=str(project_root),
+        project_root=project_root,
     )
-    visitor.process()
     visitor.filter_by_depth(pyan_depth)
 
     edges: dict[str, list[str]] = {}
     for from_node, to_nodes in visitor.uses_edges.items():
+        if from_node.namespace is None:
+            continue
         caller = from_node.get_name()
-        callees = sorted({to_node.get_name() for to_node in to_nodes})
+        callees = sorted(
+            to_node.get_name()
+            for to_node in to_nodes
+            if to_node.namespace is not None
+        )
         if callees:
             edges[caller] = callees
 
