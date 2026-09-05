@@ -1698,7 +1698,11 @@ class DaedalusTuiApp(App[None]):
 
     def _render_plan_review(self, record: TaskRecord, generation: int) -> None:
         plan_display = self.query_one("#plan-display", Static)
-        plan_display.update(record.plan_text or "Waiting for the agent to return a structured plan.")
+        plan_display.update(
+            record.plan_text
+            or (record.messages[-1] if record.messages else "")
+            or "Waiting for the agent to return a structured plan."
+        )
         questions = tuple(record.plan_questions)
         answers = self._live_plan_answers(record, dict(record.plan_answers))
         clarifications = {

@@ -1024,8 +1024,27 @@ class TaskCoordinator:
                 prompt_history=_string_list(snapshot.get("prompt_history")) or [prompt],
                 resume_from=resume_from,
             )
+            if record.mode == "plan":
+                self._restore_plan_state(record)
             self._tasks[task_id] = record
         self._next_sequence = max(self._next_sequence, maximum_sequence + 1)
+
+    @staticmethod
+    def _restore_plan_state(record: TaskRecord) -> None:
+        """Recover review questions from the last persisted plan response."""
+        # Plan review state predates the persisted task snapshot schema. The
+        # assistant output is still durable, so use the newest response that
+        # can be parsed instead of leaving an awaiting-answers task unusable
+        # after the TUI is restarted.
+        for message in reversed(record.messages):
+            parsed = parse_plan_response(message)
+            if not parsed.valid:
+                continue
+            record.plan_text = parsed.plan
+            record.plan_questions = parsed.questions
+            record.plan_confirmed = parsed.no_more_questions and not parsed.questions
+            record.plan_error = None
+            return
 
     def _notify(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         if self.on_event is not None:

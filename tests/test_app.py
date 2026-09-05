@@ -1237,6 +1237,22 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             )
             self.assertTrue(app.query_one("#plan-question-0", Select).query_one("#label"))
 
+    async def test_plan_review_renders_last_output_when_structured_state_is_missing(self):
+        app, coordinator = self.make_app()
+        last_output = "The plan response was saved before the client stopped."
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Recover this plan")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.messages.append(last_output)
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+
+            self.assertEqual(app.query_one("#plan-display", Static).render().plain, last_output)
+
     async def test_plan_review_renders_choices_and_keeps_implementation_locked(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:
