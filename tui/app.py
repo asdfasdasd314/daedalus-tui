@@ -94,6 +94,7 @@ def _unregister_app_for_thread_exit(app: "DaedalusTuiApp") -> None:
 
 GLOBAL_SHORTCUTS = (
     ("Ctrl+Enter", "Send prompt", "submit_prompt"),
+    ("Tab", "Toggle coding/plan mode", "toggle_plan_mode"),
     ("Ctrl+C", "Copy selected text", "copy_selection"),
     ("Ctrl+Alt+S", "Copy selection", "copy_selection"),
     ("Ctrl+P", "Pause task", "pause_task"),
@@ -786,6 +787,11 @@ class DaedalusTuiApp(App[None]):
 
     def on_key(self, event: events.Key) -> None:
         """Add Vim-like navigation without changing TextArea insert behavior."""
+        if event.key == "tab" and self.screen is self:
+            self.action_toggle_plan_mode()
+            event.stop()
+            return
+
         if isinstance(self.focused, TextArea):
             self._vim_pending_g = False
             return
@@ -891,6 +897,11 @@ class DaedalusTuiApp(App[None]):
 
     def action_submit_prompt(self) -> None:
         self._submit_prompt()
+
+    def action_toggle_plan_mode(self) -> None:
+        if self.screen is not self:
+            return
+        self._toggle_plan_mode()
 
     def action_new_task(self) -> None:
         self._start_new_task()
@@ -1082,6 +1093,22 @@ class DaedalusTuiApp(App[None]):
         self._clear_task_update(self._task_row_key(self._active_project_path, record.task_id))
         self._refresh_task_list()
         self._render_selected_task_safely("prompt submission")
+
+    def _toggle_plan_mode(self) -> None:
+        mode_select = self.query_one("#mode-select", Select)
+        current_mode = str(mode_select.value)
+        if current_mode == "coding":
+            target_mode = "plan"
+        elif current_mode == "plan":
+            target_mode = "coding"
+        else:
+            return
+        available_modes = {option.value for option in self.settings.modes}
+        if target_mode not in available_modes:
+            self._set_status(f"{target_mode.capitalize()} mode unavailable")
+            return
+        mode_select.value = target_mode
+        self._set_status(f"{target_mode.capitalize()} mode")
 
     def _on_topic_created(self, topic: dict | None) -> None:
         """Queue a coding task that writes and expands the requested topic file."""

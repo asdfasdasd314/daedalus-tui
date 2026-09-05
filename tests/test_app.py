@@ -200,6 +200,20 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#output-toggle-button", Button), Button)
             await pilot.pause()
 
+    async def test_tab_toggles_coding_and_plan_modes_on_the_main_screen(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            mode_select = app.query_one("#mode-select", Select)
+            self.assertEqual(mode_select.value, "coding")
+
+            await pilot.press("tab")
+            await pilot.pause()
+            self.assertEqual(mode_select.value, "plan")
+
+            await pilot.press("tab")
+            await pilot.pause()
+            self.assertEqual(mode_select.value, "coding")
+
     @patch("tui.app.remote_exists", return_value=False)
     async def test_push_button_disabled_without_origin(self, _remote_exists):
         app, _ = self.make_app()

@@ -103,7 +103,8 @@ The supported command subset is intentionally incremental so additional Vim
 commands can be added as they become useful. Mouse clicks and standard
 Textual key navigation remain available.
 
-Use the mode selector for Coding, Ask, or Plan. Ask runs are read-only and do
+Use the mode selector for Coding, Ask, or Plan, or press `Tab` on the main
+prompting screen to toggle between Coding and Plan. Ask runs are read-only and do
 not promote file changes. Plan runs are read-only and remain selectable in the
 task list through their `planning`, `questioning`, and answer-review states.
 They return a structured implementation plan and multiple-choice questions;
