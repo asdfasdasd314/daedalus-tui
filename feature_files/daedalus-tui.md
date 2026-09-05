@@ -50,6 +50,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-09-05: Fixed the `Tab` mode toggle to recognize Textual's one-entry main screen stack while leaving modal screens untouched.
 - 2026-09-05: Routed `Tab` from the focused prompt editor to the main-screen mode action so Vim input handling cannot consume the Coding/Plan toggle.
 - 2026-09-05: Added a main-screen `Tab` shortcut that toggles the prompt mode between Coding and Plan and documents the shortcut in the keyboard help.
 - 2026-08-25: Clarified that orchestration may push pending Supabase migrations for target projects while agents remain file-only for DB push and Git remotes.

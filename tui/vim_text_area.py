@@ -134,7 +134,7 @@ class DaedalusVimTextArea(VimTextArea):
             self.app.action_show_shortcuts()
             event.stop()
             return
-        if event.key == "tab" and self.app.screen is self.app:
+        if event.key == "tab" and len(self.app.screen_stack) == 1:
             # The prompt owns keyboard events while focused, so route the
             # main-screen mode toggle before VimTextArea treats Tab as input.
             self.app.action_toggle_plan_mode()

@@ -787,7 +787,7 @@ class DaedalusTuiApp(App[None]):
 
     def on_key(self, event: events.Key) -> None:
         """Add Vim-like navigation without changing TextArea insert behavior."""
-        if event.key == "tab" and self.screen is self:
+        if event.key == "tab" and len(self.screen_stack) == 1:
             self.action_toggle_plan_mode()
             event.stop()
             return
@@ -899,7 +899,7 @@ class DaedalusTuiApp(App[None]):
         self._submit_prompt()
 
     def action_toggle_plan_mode(self) -> None:
-        if self.screen is not self:
+        if len(self.screen_stack) != 1:
             return
         self._toggle_plan_mode()
 
