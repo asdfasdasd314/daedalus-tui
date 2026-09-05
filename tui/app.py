@@ -2008,6 +2008,12 @@ class DaedalusTuiApp(App[None]):
                 selected_value, _saved_custom_text = self._plan_answer_select_value(
                     question, answers.get(question.question_id)
                 )
+                # ``mount`` waits for the selector itself to attach, while
+                # the selector's deferred mount callback may still be queued
+                # behind the current refresh. Initialize it here as well so
+                # restored answers are visible immediately after a rebuild.
+                select = self.query_one(f"#plan-question-{index}", PlanAnswerSelect)
+                select._initialize_after_mount()
                 self._update_plan_custom_answer_visibility(
                     f"plan-question-{index}",
                     selected_value,
