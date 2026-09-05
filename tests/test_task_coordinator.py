@@ -325,6 +325,45 @@ class TaskCoordinatorTests(unittest.TestCase):
             self.assertEqual(legacy.context.branch_name, "agent/task-005-legacy")
             coordinator.shutdown()
 
+    def test_rehydrates_plan_review_from_last_persisted_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "project"
+            project.mkdir()
+            memory_path = root / ".daedalus-memory.json"
+            response = (
+                '{"plan":"Add the selected store.","questions":[{"id":"q1",'
+                '"question":"Which store?","options":[{"id":"a","label":"SQLite"},'
+                '{"id":"b","label":"JSON"}]}],"no_more_questions":false}'
+            )
+            memory = TaskMemoryStore(memory_path)
+            memory.record_task(
+                "task-plan-rehydrated",
+                "Choose a store",
+                "codex",
+                "luna",
+                "medium",
+                "plan",
+                "awaiting_answers",
+                [response],
+                project=project,
+            )
+
+            coordinator = TaskCoordinator(
+                project,
+                object(),
+                OrchestrationSettings(max_concurrent_tasks=1),
+                memory_path=memory_path,
+            )
+            record = coordinator.get("plan-rehydrated")
+
+            self.assertIsNotNone(record)
+            self.assertEqual(record.status, "awaiting_answers")
+            self.assertEqual(record.plan_text, "Add the selected store.")
+            self.assertEqual(record.plan_questions[0].question_id, "q1")
+            self.assertFalse(record.plan_confirmed)
+            coordinator.shutdown()
+
     def test_failed_agent_can_be_retried_with_the_same_request(self):
         class RetryOrchestrator:
             calls = []

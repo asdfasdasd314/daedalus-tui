@@ -33,6 +33,7 @@ from .plan import (
     PlanQuestion,
     custom_answer_text,
     encode_custom_answer,
+    is_valid_plan_answer,
     plan_answer_options,
 )
 from .prompts import build_topic_population_prompt
@@ -167,7 +168,10 @@ class PlanAnswerSelect(Select):
     def _initialize_after_mount(self) -> None:
         if self.is_attached and not self._closing:
             self._setup_options_renderables()
-            self._init_selected_option(self._value)
+            # Follow-up plan rounds can leave a constructor hint that is no
+            # longer among the mounted options; coerce instead of crashing.
+            hint = self._value if self._value in self._legal_values else self.NULL
+            self._init_selected_option(hint)
 
 
 class PlanClarificationScreen(ModalScreen[str | None]):
@@ -1725,7 +1729,11 @@ class DaedalusTuiApp(App[None]):
 
     def _render_plan_review(self, record: TaskRecord, generation: int) -> None:
         plan_display = self.query_one("#plan-display", Static)
-        plan_display.update(record.plan_text or "Waiting for the agent to return a structured plan.")
+        plan_display.update(
+            record.plan_text
+            or (record.messages[-1] if record.messages else "")
+            or "Waiting for the agent to return a structured plan."
+        )
         questions = tuple(record.plan_questions)
         answers = self._live_plan_answers(record, dict(record.plan_answers))
         clarifications = {
@@ -1788,12 +1796,18 @@ class DaedalusTuiApp(App[None]):
                 continue
             selection = nodes[0].value
             custom_text = self._plan_custom_answer_text(index)
-            if self._has_plan_answer(selection, custom_text):
-                answers[question.question_id] = (
-                    encode_custom_answer(custom_text)
-                    if selection == CUSTOM_ANSWER_OPTION_ID
-                    else str(selection)
-                )
+            if not self._has_plan_answer(selection, custom_text):
+                continue
+            if selection == CUSTOM_ANSWER_OPTION_ID:
+                answers[question.question_id] = encode_custom_answer(custom_text)
+                continue
+            # Old widgets may still hold option ids from a prior question round.
+            # Never map those onto revised questions with different option ids.
+            answer_id = str(selection)
+            if is_valid_plan_answer(question, answer_id):
+                answers[question.question_id] = answer_id
+            else:
+                answers.pop(question.question_id, None)
         return answers
 
     def _update_plan_action_buttons(self) -> None:
@@ -1830,6 +1844,18 @@ class DaedalusTuiApp(App[None]):
         if value in (Select.BLANK, "", getattr(Select, "NULL", object())):
             return False
         return value != CUSTOM_ANSWER_OPTION_ID or bool(custom_text.strip())
+
+    @staticmethod
+    def _plan_answer_select_value(
+        question: PlanQuestion, saved_answer: str | None
+    ) -> tuple[object, str | None]:
+        """Resolve a Select value that is legal for the current question options."""
+        saved_custom_text = custom_answer_text(saved_answer)
+        if saved_custom_text:
+            return CUSTOM_ANSWER_OPTION_ID, saved_custom_text
+        if saved_answer and is_valid_plan_answer(question, saved_answer):
+            return saved_answer, None
+        return Select.NULL, None
 
     def _plan_custom_answer_text(self, index: int) -> str:
         nodes = self.query(f"#plan-custom-answer-{index}").nodes
@@ -1927,8 +1953,9 @@ class DaedalusTuiApp(App[None]):
             widgets = [Static("Questions", classes="plan-questions-heading", markup=False)]
             for index, question in enumerate(questions):
                 saved_answer = answers.get(question.question_id)
-                saved_custom_text = custom_answer_text(saved_answer)
-                selected_value = CUSTOM_ANSWER_OPTION_ID if saved_custom_text else saved_answer or Select.NULL
+                selected_value, saved_custom_text = self._plan_answer_select_value(
+                    question, saved_answer
+                )
                 clarifications = list(record.plan_clarifications.get(question.question_id, []))
                 widgets.extend(
                     (
@@ -1978,11 +2005,12 @@ class DaedalusTuiApp(App[None]):
                     )
             await question_container.mount(*widgets)
             for index, question in enumerate(questions):
-                saved_answer = answers.get(question.question_id)
-                saved_custom_text = custom_answer_text(saved_answer)
+                selected_value, _saved_custom_text = self._plan_answer_select_value(
+                    question, answers.get(question.question_id)
+                )
                 self._update_plan_custom_answer_visibility(
                     f"plan-question-{index}",
-                    CUSTOM_ANSWER_OPTION_ID if saved_custom_text else saved_answer or Select.NULL,
+                    selected_value,
                 )
         if self._is_current_plan_review(record, generation):
             self._rendered_plan_question_signature = question_signature

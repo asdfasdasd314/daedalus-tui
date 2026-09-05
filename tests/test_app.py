@@ -1251,6 +1251,22 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             )
             self.assertTrue(app.query_one("#plan-question-0", Select).query_one("#label"))
 
+    async def test_plan_review_renders_last_output_when_structured_state_is_missing(self):
+        app, coordinator = self.make_app()
+        last_output = "The plan response was saved before the client stopped."
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Recover this plan")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.messages.append(last_output)
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+
+            self.assertEqual(app.query_one("#plan-display", Static).render().plain, last_output)
+
     async def test_plan_review_renders_choices_and_keeps_implementation_locked(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:
@@ -1428,6 +1444,53 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
 
             self.assertEqual(app.query_one("#plan-question-0", Select).value, Select.NULL)
             self.assertIsNone(app._exception)
+
+    async def test_revised_plan_options_do_not_remount_stale_select_values(self):
+        """Follow-up questions must not crash when old option ids linger on widgets."""
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Choose how to handle files")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = "Decide how to treat existing files."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "How should existing files be handled?",
+                    (
+                        PlanOption("replace", "Replace (Recommended)"),
+                        PlanOption("keep", "Keep"),
+                    ),
+                ),
+            )
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+            await pilot.pause()
+
+            answer = app.query_one("#plan-question-0", Select)
+            answer.value = "replace"
+            await pilot.pause()
+
+            record.plan_text = "Choose the storage layer next."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "Which storage layer?",
+                    (PlanOption("a", "SQLite (Recommended)"), PlanOption("b", "JSON")),
+                ),
+            )
+            record.plan_answers = {}
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+            await pilot.pause()
+
+            self.assertIsNone(app._exception)
+            remounted = app.query_one("#plan-question-0", Select)
+            self.assertEqual(remounted.value, Select.NULL)
+            self.assertNotEqual(str(app.query_one("#status", Static).render()), "Error")
 
     async def test_plan_review_survives_streamed_completion_event(self):
         app, coordinator = self.make_app()
