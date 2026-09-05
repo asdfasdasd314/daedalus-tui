@@ -117,3 +117,4 @@ HACKING
 - 2026-08-23: Preserved editable prompt drafts across toolbar project switches so a mis-targeted draft can be redirected instead of erased.
 - 2026-08-23: Required plan-mode questions to label exactly one option with (Recommended) via the plan and follow-up system prompts.
 - 2026-08-23: Rendered agent plan and question text as literal Static content (`markup=False`) so square brackets and scientific notation cannot fail Textual markup parsing.
+- 2026-09-05: Stopped remounting stale plan Select values after follow-up option ids change, avoiding InvalidSelectValueError crashes like illegal `'replace'`.
