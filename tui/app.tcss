@@ -27,6 +27,9 @@ Screen {
 
 #task-list {
     height: 1fr;
+    /* The inbox columns have fixed cell widths; never introduce a second
+       layout by horizontally scrolling when an update marker appears. */
+    overflow-x: hidden;
 }
 
 #project-main {

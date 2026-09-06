@@ -181,6 +181,12 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#push-branch-button", Button), Button)
             self.assertIn("/workspace/project", str(app.query_one("#directory", Static).render()))
             self.assertIsInstance(app.query_one("#task-list", DataTable), DataTable)
+            task_list = app.query_one("#task-list", DataTable)
+            self.assertEqual(
+                [column.width for column in task_list.columns.values()],
+                [1, 9, 14, 7],
+            )
+            self.assertTrue(all(not column.auto_width for column in task_list.columns.values()))
             self.assertIsInstance(app.query_one("#prompt-input", TextArea), DaedalusVimTextArea)
             self.assertEqual(app.query_one("#prompt-input", DaedalusVimTextArea).vim_mode, VimMode.INSERT)
             self.assertEqual(app.query("#vim-mode").nodes, [])

@@ -34,5 +34,14 @@ value = "cursor"
 [output]
 width = "95%"
 
+# Fixed content widths for the task-inbox marker, project, task, and status
+# columns. Together with DataTable's cell padding, the defaults fit the
+# fixed 44-cell sidebar and leave room for its vertical scrollbar.
+[task_inbox]
+marker_width = 1
+project_width = 9
+task_width = 14
+status_width = 7
+
 # Fatal Textual exceptions are written to the launch-root debug log
 # (see orchestration `debug_log_filename`) and also printed to stderr.

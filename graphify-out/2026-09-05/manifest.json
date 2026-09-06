@@ -1,7 +1,7 @@
 {
   "pyproject.toml": {
-    "mtime": 1788300418.331757,
-    "ast_hash": "e25180fdb44d1418bd05cc704a1fbec2",
+    "mtime": 1788653965.5326002,
+    "ast_hash": "d98e3fce95182842f50d69a966870c57",
     "semantic_hash": ""
   },
   "tests/__init__.py": {
@@ -150,8 +150,8 @@
     "semantic_hash": ""
   },
   "requirements.txt": {
-    "mtime": 1788300418.3323514,
-    "ast_hash": "9f5e6ad705861de359aa4b291e664f9d",
+    "mtime": 1788653965.5331857,
+    "ast_hash": "cbed30a61c41280e27258b1aed52e8fe",
     "semantic_hash": ""
   },
   "tests/test_memory.py": {
@@ -315,13 +315,13 @@
     "semantic_hash": ""
   },
   "topic_files/project-imports-to-the-daedalus-format.md": {
-    "mtime": 1788305206.215975,
-    "ast_hash": "3e5f2314f8c870f9858a171708b32d94",
+    "mtime": 1788653965.5410366,
+    "ast_hash": "57a720acfc29bf20486e8d65ec4a7124",
     "semantic_hash": ""
   },
   "scripts/render_call_graph_tree.py": {
-    "mtime": 1788300418.332724,
-    "ast_hash": "d20aaa85ed979cbea5f98e6b05d29343",
+    "mtime": 1788653965.5340831,
+    "ast_hash": "89088ac20700e76b0f9beb20f1f7967d",
     "semantic_hash": ""
   },
   "tests/conftest.py": {
@@ -335,18 +335,18 @@
     "semantic_hash": ""
   },
   "tests/fixtures/call_graph_sample/a.py": {
-    "mtime": 1788300418.3338313,
-    "ast_hash": "0b561f98f35903d5136f5b4ba79d01b4",
+    "mtime": 1788653965.535486,
+    "ast_hash": "818d2cf5ba21c047e59380989a216b1a",
     "semantic_hash": ""
   },
   "tests/fixtures/call_graph_sample/b.py": {
-    "mtime": 1788300418.3341508,
-    "ast_hash": "efcb4ef3b9016fdf707bb859448699d1",
+    "mtime": 1788653965.5362422,
+    "ast_hash": "c9b481a971fc6d44ccfec6c9547e5531",
     "semantic_hash": ""
   },
   "tests/fixtures/call_graph_sample/c.py": {
-    "mtime": 1788300418.33431,
-    "ast_hash": "f8d3db4bac708ee23f10d210de82c7ee",
+    "mtime": 1788653965.537396,
+    "ast_hash": "9271499b5c39959108a45c3866513d4f",
     "semantic_hash": ""
   },
   "tests/fixtures/call_graph_sample/cycle_a.py": {
@@ -360,23 +360,38 @@
     "semantic_hash": ""
   },
   "tests/test_call_graph_tree.py": {
-    "mtime": 1788305206.2156782,
-    "ast_hash": "9d88efa79cddb147a0393e01d70ab06e",
+    "mtime": 1788653965.5395615,
+    "ast_hash": "595c1730362062a873e9c6cd15a5524b",
     "semantic_hash": ""
   },
   "tui/call_graph_tree.py": {
-    "mtime": 1788305206.2165637,
-    "ast_hash": "919d38c13d6a52cdbe0cda634b830001",
+    "mtime": 1788653965.5418792,
+    "ast_hash": "fc9c0d737aebac605bbd8803560f2fbb",
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-call-graph-visualization.md": {
-    "mtime": 1788305206.2151315,
-    "ast_hash": "fc549a267cd91a0b77906d9b06c03d8b",
+    "mtime": 1788653965.530804,
+    "ast_hash": "af9e454b911bd891265334524653a3f8",
     "semantic_hash": ""
   },
   "tests/fixtures/call_graph_sample/lambda_edge.py": {
     "mtime": 1788300952.7898448,
     "ast_hash": "ddbaf628c062e34c14a5a07aed021404",
+    "semantic_hash": ""
+  },
+  "tests/fixtures/call_graph_sample/orders.py": {
+    "mtime": 1788653965.5384798,
+    "ast_hash": "305b92b268a8bd2ea9d0d657ad4c3624",
+    "semantic_hash": ""
+  },
+  "tests/fixtures/call_graph_sample/ui.py": {
+    "mtime": 1788653965.539066,
+    "ast_hash": "1648e77a93a0be8b979cc4b245435482",
+    "semantic_hash": ""
+  },
+  "tui/call_graph_similarity.py": {
+    "mtime": 1788653965.5412865,
+    "ast_hash": "3d864d28114efc5750d2e0c8a8f84407",
     "semantic_hash": ""
   }
 }
