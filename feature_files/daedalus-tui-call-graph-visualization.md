@@ -8,7 +8,7 @@ Standalone tooling that statically analyzes a target Python project with pyan3 a
 - **Parameter-file tunables**: `source_globs`, `exclude`, `entry_points`, `output_path`, `max_tree_depth`, `pyan_depth`, and similarity display/scoring knobs live in `parameter_files/daedalus-tui-call-graph-visualization.toml` when analyzing this repo.
 - **Evidence, not intent**: Static analysis misses dynamic dispatch and non-Python code; cycles and partial graphs are expected and marked inline.
 - **Custom HTML tree**: pyan supplies edges only; rendering uses an SVG top-down tree diagram with connector lines (not pyan's Graphviz HTML output or a nested file-tree list).
-- **Edge semantic similarity**: Each symbol gets a descriptor from name, callers, callees, graph siblings, and docs/comments; sklearn TF-IDF + cosine scores parent→child edges (SVG labels/bands) and sibling pairs (sortable table + optional mean tint), with a JSON sidecar for threshold exploration.
+- **Edge semantic similarity**: Each symbol gets a descriptor from terminal symbol names, callers, callees, graph siblings, and docs/comments; sklearn TF-IDF + cosine scores parent→child edges (SVG labels/bands) and sibling pairs (sortable table + optional mean tint), with a JSON sidecar for threshold exploration. Full FQNs remain in graph relations and output metadata, but do not contribute shared module-path tokens to similarity.
 
 ## Relevant Files
 - `tui/call_graph_tree.py`: Source discovery, pyan analysis, tree building, HTML/SVG rendering, and similarity wiring.
@@ -29,3 +29,4 @@ HACKING
 - 2026-09-01: Call-tree HTML now renders at natural pixel size inside a scrollable viewport so nodes stay readable instead of shrinking to fit the page width.
 - 2026-09-01: Call-tree layout now spaces siblings by subtree width and uses full-graph bounds with wider side margins so labels no longer overlap or clip at the edges.
 - 2026-09-05: Added sklearn TF-IDF cosine similarity for parent/child and sibling relations with SVG edge scores, sibling table/histogram, and JSON sidecar; on the fixture, cohesive order siblings outrank cross-feature UI pairs, but absolute scores cluster mid (~0.33–0.50) so display bands stay exploratory at low 0.25 / high 0.55 pending larger-graph review.
+- 2026-09-05: Similarity descriptors now use only terminal symbol names for the subject and graph neighbors, preventing parent/child pairs such as `tui.agent_runner.call` and `tui.agent_runner` from sharing module-path tokens; full FQNs remain relation identifiers.

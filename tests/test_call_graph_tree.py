@@ -176,7 +176,7 @@ class CallGraphTreeTests(unittest.TestCase):
         )
         full = format_descriptor(context, max_neighbors=20)
         self.assertIn("create_order", full)
-        self.assertIn("Calls: pkg.submit_order, pkg.save_order", full)
+        self.assertIn("Calls: submit_order, save_order", full)
         self.assertIn("Docs: Create a customer order.", full)
 
         stripped = format_descriptor(
@@ -184,9 +184,29 @@ class CallGraphTreeTests(unittest.TestCase):
             max_neighbors=20,
             omit={"pkg.submit_order", "pkg.manage_ui"},
         )
-        self.assertNotIn("pkg.submit_order", stripped)
-        self.assertNotIn("pkg.manage_ui", stripped)
-        self.assertIn("pkg.save_order", stripped)
+        self.assertNotIn("submit_order", stripped)
+        self.assertNotIn("manage_ui", stripped)
+        self.assertIn("save_order", stripped)
+
+    def test_format_descriptor_uses_only_terminal_symbol_names(self):
+        context = SymbolContext(
+            fqn="tui.agent_runner.call",
+            short_name="call",
+            callers=("tui.agent_runner",),
+            callees=("tui.agent_runner.run",),
+            siblings=("other.agent_runner",),
+            doc="",
+        )
+
+        descriptor = format_descriptor(context, max_neighbors=20)
+
+        self.assertIn("Symbol call.", descriptor)
+        self.assertIn("Calls: run.", descriptor)
+        self.assertIn("Called by: agent_runner.", descriptor)
+        self.assertIn("Siblings: agent_runner.", descriptor)
+        self.assertNotIn("tui.agent_runner.call", descriptor)
+        self.assertNotIn("tui.agent_runner.run", descriptor)
+        self.assertNotIn("other.agent_runner", descriptor)
 
     def test_score_relationships_bounds_and_kinds(self):
         edges = {

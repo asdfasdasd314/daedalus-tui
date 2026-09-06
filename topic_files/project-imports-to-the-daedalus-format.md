@@ -49,3 +49,4 @@ open
 - 2026-09-01: Call-tree HTML uses natural-size SVG nodes in a scrollable viewport so large graphs remain readable during import review.
 - 2026-09-01: Call-tree SVG layout now prevents overlapping node labels and adds wider side margins so import-review diagrams are not clipped at the edges.
 - 2026-09-05: Call-graph HTML now exposes exploratory TF-IDF cosine similarity on parent/child edges and sibling pairs so import workflows can inspect feature-boundary signal before clustering or feature-file generation.
+- 2026-09-05: Similarity scoring now compares terminal symbol names instead of full call-chain FQNs, removing shared module-path tokens from parent/child feature-boundary evidence while retaining FQNs for relation identity.

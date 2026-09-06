@@ -220,22 +220,29 @@ def format_descriptor(
     max_neighbors: int,
     omit: frozenset[str] | set[str] | None = None,
 ) -> str:
-    """Format a stable prose descriptor, optionally stripping peer names."""
+    """Format a stable descriptor using terminal names for graph peers."""
     omit = set(omit or ())
     callers = [name for name in context.callers if name not in omit]
     callees = [name for name in context.callees if name not in omit]
     siblings = [name for name in context.siblings if name not in omit]
 
-    sections = [
-        f"Symbol {context.fqn} (name {context.short_name}).",
-    ]
-    callee_text = _format_name_list(callees, max_neighbors)
+    sections = [f"Symbol {context.short_name}."]
+    callee_text = _format_name_list(
+        (short_name(name) for name in callees),
+        max_neighbors,
+    )
     if callee_text:
         sections.append(f"Calls: {callee_text}.")
-    caller_text = _format_name_list(callers, max_neighbors)
+    caller_text = _format_name_list(
+        (short_name(name) for name in callers),
+        max_neighbors,
+    )
     if caller_text:
         sections.append(f"Called by: {caller_text}.")
-    sibling_text = _format_name_list(siblings, max_neighbors)
+    sibling_text = _format_name_list(
+        (short_name(name) for name in siblings),
+        max_neighbors,
+    )
     if sibling_text:
         sections.append(f"Siblings: {sibling_text}.")
     if context.doc.strip():
