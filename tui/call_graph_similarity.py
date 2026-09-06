@@ -40,6 +40,27 @@ class ScoredRelation:
     shared_callers: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class CandidateFeatureGroup:
+    """A deterministic connected component of qualifying similarity relations."""
+
+    feature_id: str
+    members: tuple[str, ...]
+    qualifying_relations: tuple[ScoredRelation, ...]
+    relation_kinds: tuple[str, ...]
+    score_stats: dict[str, Any]
+
+    @property
+    def id(self) -> str:
+        """Return the stable identifier using the concise ``id`` spelling."""
+        return self.feature_id
+
+    @property
+    def relations(self) -> tuple[ScoredRelation, ...]:
+        """Compatibility alias for callers that refer to group relations directly."""
+        return self.qualifying_relations
+
+
 @dataclass
 class SimilarityResult:
     relations: list[ScoredRelation]
@@ -47,6 +68,9 @@ class SimilarityResult:
     mean_sibling_score: dict[str, float] = field(default_factory=dict)
     summary: dict[str, Any] = field(default_factory=dict)
     embedding_backend: str = _EMBEDDING_BACKEND
+    feature_similarity_threshold: float = 0.55
+    feature_grouping_mode: str = "undirected_qualifying_relations"
+    candidate_features: list[CandidateFeatureGroup] = field(default_factory=list)
 
 
 def short_name(fqn: str) -> str:
@@ -382,12 +406,95 @@ def summarize_scores(relations: list[ScoredRelation]) -> dict[str, Any]:
     }
 
 
+def candidate_feature_id(members: Iterable[str]) -> str:
+    """Return a stable ID derived solely from a group's sorted member symbols."""
+    ordered = tuple(sorted(set(members)))
+    digest = hashlib.sha256("\0".join(ordered).encode("utf-8")).hexdigest()
+    return f"feature-{digest[:16]}"
+
+
+def group_candidate_features(
+    relations: Iterable[ScoredRelation],
+    *,
+    threshold: float = 0.55,
+) -> list[CandidateFeatureGroup]:
+    """Group symbols connected by inclusive-threshold relations.
+
+    Parent/child direction remains part of each relation, but connectivity is
+    intentionally undirected so qualifying chains form one candidate feature.
+    """
+    ordered_relations = sorted(
+        relations,
+        key=lambda relation: (relation.kind, relation.a, relation.b, relation.score),
+    )
+    qualifying = [
+        relation for relation in ordered_relations if relation.score >= threshold
+    ]
+    if not qualifying:
+        return []
+
+    parent: dict[str, str] = {}
+
+    def find(symbol: str) -> str:
+        root = parent.setdefault(symbol, symbol)
+        while parent[root] != root:
+            parent[root] = parent[parent[root]]
+            root = parent[root]
+        while parent[symbol] != symbol:
+            next_symbol = parent[symbol]
+            parent[symbol] = root
+            symbol = next_symbol
+        return root
+
+    def union(left: str, right: str) -> None:
+        left_root = find(left)
+        right_root = find(right)
+        if left_root == right_root:
+            return
+        # Lexicographic root choice makes the intermediate forest deterministic.
+        if left_root < right_root:
+            parent[right_root] = left_root
+        else:
+            parent[left_root] = right_root
+
+    for relation in qualifying:
+        union(relation.a, relation.b)
+
+    members_by_root: dict[str, set[str]] = defaultdict(set)
+    for symbol in parent:
+        members_by_root[find(symbol)].add(symbol)
+
+    groups: list[CandidateFeatureGroup] = []
+    for members in members_by_root.values():
+        ordered_members = tuple(sorted(members))
+        if len(ordered_members) < 2:
+            continue
+        member_set = set(ordered_members)
+        group_relations = tuple(
+            relation
+            for relation in qualifying
+            if relation.a in member_set and relation.b in member_set
+        )
+        groups.append(
+            CandidateFeatureGroup(
+                feature_id=candidate_feature_id(ordered_members),
+                members=ordered_members,
+                qualifying_relations=group_relations,
+                relation_kinds=tuple(sorted({r.kind for r in group_relations})),
+                score_stats=summarize_scores(list(group_relations)),
+            )
+        )
+
+    return sorted(groups, key=lambda group: group.members)
+
+
 def score_relationships(
     contexts: dict[str, SymbolContext],
     edges: dict[str, list[str]],
     *,
     max_neighbors_in_descriptor: int = 20,
     max_sibling_pairs_per_parent: int = 50,
+    feature_similarity_threshold: float = 0.55,
 ) -> SimilarityResult:
     """Score every unique parent→child edge and capped sibling pairs."""
     base_descriptors = {
@@ -480,12 +587,19 @@ def score_relationships(
         if values
     }
 
+    relations.sort(key=lambda relation: (relation.kind, relation.a, relation.b))
+
     return SimilarityResult(
         relations=relations,
         descriptors=base_descriptors,
         mean_sibling_score=mean_sibling,
         summary=summarize_scores(relations),
         embedding_backend=_EMBEDDING_BACKEND,
+        feature_similarity_threshold=feature_similarity_threshold,
+        candidate_features=group_candidate_features(
+            relations,
+            threshold=feature_similarity_threshold,
+        ),
     )
 
 
@@ -498,20 +612,36 @@ def parent_child_score_map(relations: list[ScoredRelation]) -> dict[tuple[str, s
 
 
 def write_similarity_json(path: Path, result: SimilarityResult) -> None:
+    def relation_payload(relation: ScoredRelation) -> dict[str, Any]:
+        return {
+            "kind": relation.kind,
+            "a": relation.a,
+            "b": relation.b,
+            "score": relation.score,
+            "shared_callers": list(relation.shared_callers),
+        }
+
     payload = {
         "embedding_backend": result.embedding_backend,
         "summary": result.summary,
+        "descriptors": result.descriptors,
         "mean_sibling_score": result.mean_sibling_score,
-        "relations": [
+        "feature_similarity_threshold": result.feature_similarity_threshold,
+        "feature_grouping_mode": result.feature_grouping_mode,
+        "candidate_features": [
             {
-                "kind": relation.kind,
-                "a": relation.a,
-                "b": relation.b,
-                "score": relation.score,
-                "shared_callers": list(relation.shared_callers),
+                "feature_id": group.feature_id,
+                "members": list(group.members),
+                "relations": [
+                    relation_payload(relation)
+                    for relation in group.qualifying_relations
+                ],
+                "relation_kinds": list(group.relation_kinds),
+                "score_stats": group.score_stats,
             }
-            for relation in result.relations
+            for group in result.candidate_features
         ],
+        "relations": [relation_payload(relation) for relation in result.relations],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")

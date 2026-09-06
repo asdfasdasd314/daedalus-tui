@@ -8,6 +8,7 @@ similarity_enabled = true
 embedding_backend = "sklearn-tfidf"
 max_neighbors_in_descriptor = 20
 max_sibling_pairs_per_parent = 50
+feature_similarity_threshold = 0.55
 similarity_display_low = 0.25
 similarity_display_high = 0.55
 similarity_tint_siblings = false

@@ -3,11 +3,15 @@ import unittest
 from pathlib import Path
 
 from tui.call_graph_similarity import (
+    ScoredRelation,
+    SimilarityResult,
     SymbolContext,
     build_symbol_contexts,
     format_descriptor,
+    group_candidate_features,
     score_relationships,
     tokenize_descriptor,
+    write_similarity_json,
 )
 from tui.call_graph_tree import (
     CallGraphConfig,
@@ -276,6 +280,142 @@ class CallGraphTreeTests(unittest.TestCase):
         order_parent = by_key[("parent_child", "pkg.create_order", "pkg.submit_order")]
         self.assertGreater(order_sibling, 0.0)
         self.assertGreater(order_parent, ui_parent)
+
+    def test_candidate_features_join_fully_qualifying_parent_child_chain(self):
+        relations = [
+            ScoredRelation("parent_child", "root", "child", 0.55),
+            ScoredRelation("parent_child", "child", "grandchild", 0.80),
+        ]
+
+        groups = group_candidate_features(relations, threshold=0.55)
+
+        self.assertEqual(
+            [group.members for group in groups],
+            [("child", "grandchild", "root")],
+        )
+        self.assertEqual(groups[0].relation_kinds, ("parent_child",))
+        self.assertEqual(groups[0].score_stats["count"], 2)
+
+    def test_candidate_features_split_at_below_threshold_edge(self):
+        relations = [
+            ScoredRelation("parent_child", "a", "b", 0.90),
+            ScoredRelation("parent_child", "b", "c", 0.54),
+            ScoredRelation("parent_child", "c", "d", 0.90),
+        ]
+
+        groups = group_candidate_features(relations, threshold=0.55)
+
+        self.assertEqual(
+            [group.members for group in groups],
+            [("a", "b"), ("c", "d")],
+        )
+        self.assertTrue(all(len(group.qualifying_relations) == 1 for group in groups))
+
+    def test_candidate_features_are_empty_when_no_relation_qualifies(self):
+        relation = ScoredRelation("parent_child", "a", "b", 0.54)
+
+        self.assertEqual(group_candidate_features([relation], threshold=0.55), [])
+
+    def test_candidate_features_include_qualifying_sibling_pair(self):
+        relations = [
+            ScoredRelation("parent_child", "root", "left", 0.80),
+            ScoredRelation(
+                "sibling",
+                "left",
+                "right",
+                0.55,
+                shared_callers=("root",),
+            ),
+        ]
+
+        groups = group_candidate_features(relations, threshold=0.55)
+
+        self.assertEqual(groups[0].members, ("left", "right", "root"))
+        self.assertEqual(groups[0].relation_kinds, ("parent_child", "sibling"))
+        self.assertEqual(
+            [(relation.kind, relation.a, relation.b) for relation in groups[0].relations],
+            [("parent_child", "root", "left"), ("sibling", "left", "right")],
+        )
+
+    def test_candidate_features_are_deterministic_and_exclude_singletons(self):
+        relations = [
+            ScoredRelation("parent_child", "z", "z", 1.0),
+            ScoredRelation("parent_child", "d", "e", 0.90),
+            ScoredRelation("parent_child", "a", "b", 0.90),
+        ]
+
+        groups = group_candidate_features(reversed(relations), threshold=0.55)
+        repeated = group_candidate_features(relations, threshold=0.55)
+
+        self.assertEqual(
+            [group.members for group in groups],
+            [("a", "b"), ("d", "e")],
+        )
+        self.assertEqual(
+            [group.feature_id for group in groups],
+            [group.feature_id for group in repeated],
+        )
+        self.assertNotIn("z", {member for group in groups for member in group.members})
+
+    def test_similarity_json_serializes_candidate_features_and_threshold(self):
+        relation = ScoredRelation("parent_child", "root", "child", 0.75)
+        group = group_candidate_features([relation], threshold=0.55)[0]
+        result = SimilarityResult(
+            relations=[relation],
+            descriptors={"root": "Symbol root.", "child": "Symbol child."},
+            mean_sibling_score={},
+            summary={"count": 1},
+            feature_similarity_threshold=0.55,
+            candidate_features=[group],
+        )
+
+        with self.subTest("serialization"):
+            output_path = SAMPLE_PROJECT_ROOT / "edge-similarities-test.json"
+            write_similarity_json(output_path, result)
+            try:
+                payload = json.loads(output_path.read_text(encoding="utf-8"))
+            finally:
+                output_path.unlink()
+
+        self.assertEqual(payload["feature_similarity_threshold"], 0.55)
+        self.assertEqual(
+            payload["feature_grouping_mode"],
+            "undirected_qualifying_relations",
+        )
+        self.assertEqual(payload["descriptors"]["root"], "Symbol root.")
+        self.assertEqual(
+            payload["candidate_features"][0]["feature_id"],
+            group.feature_id,
+        )
+        self.assertEqual(payload["candidate_features"][0]["members"], ["child", "root"])
+        self.assertEqual(payload["candidate_features"][0]["relations"][0]["score"], 0.75)
+
+    def test_candidate_feature_widget_and_svg_annotations(self):
+        relation = ScoredRelation("parent_child", "root", "child", 0.75)
+        group = group_candidate_features([relation], threshold=0.55)[0]
+        result = SimilarityResult(
+            relations=[relation],
+            summary={"count": 1},
+            feature_similarity_threshold=0.55,
+            candidate_features=[group],
+        )
+        tree = build_tree("root", {"root": ["child"]}, 4)
+
+        output = render_html([tree], "sample", similarity=result)
+
+        self.assertIn('aria-label="Candidate features"', output)
+        self.assertIn("Candidate features", output)
+        self.assertIn(group.feature_id, output)
+        self.assertIn("Threshold: 0.55", output)
+        self.assertIn(f'data-feature-id="{group.feature_id}"', output)
+
+    def test_similarity_disabled_html_has_no_candidate_feature_widget(self):
+        tree = build_tree("root", {"root": ["child"]}, 4)
+
+        output = render_html([tree], "sample", similarity=None)
+
+        self.assertNotIn("Candidate features", output)
+        self.assertNotIn("data-feature-id", output)
 
     def test_build_symbol_contexts_extracts_fixture_docs(self):
         files = discover_source_files(

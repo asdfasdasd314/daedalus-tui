@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from tui.call_graph_similarity import (
+    CandidateFeatureGroup,
     SimilarityResult,
     build_symbol_contexts,
     parent_child_score_map,
@@ -34,6 +35,7 @@ class CallGraphConfig:
     embedding_backend: str = "sklearn-tfidf"
     max_neighbors_in_descriptor: int = 20
     max_sibling_pairs_per_parent: int = 50
+    feature_similarity_threshold: float = 0.55
     similarity_display_low: float = 0.25
     similarity_display_high: float = 0.55
     similarity_tint_siblings: bool = False
@@ -373,6 +375,7 @@ def _render_layout_nodes(
     tint_siblings: bool = False,
     display_low: float = 0.25,
     display_high: float = 0.55,
+    feature_ids: dict[str, str] | None = None,
 ) -> None:
     label = html.escape(layout.node.name)
     width = _node_label_width(layout.node.name)
@@ -387,8 +390,16 @@ def _render_layout_nodes(
         mean = mean_sibling_score.get(canonical)
         if mean is not None:
             class_names.append(f"sib-{score_band(mean, display_low, display_high)}")
+    canonical = _canonical_tree_name(layout.node.name)
+    feature_id = None if feature_ids is None else feature_ids.get(canonical)
+    feature_attribute = (
+        f' data-feature-id="{html.escape(feature_id, quote=True)}"'
+        if feature_id is not None
+        else ""
+    )
     parts.append(
-        f'<g class="{" ".join(class_names)}" transform="translate({x:.1f},{y:.1f})">'
+        f'<g class="{" ".join(class_names)}"{feature_attribute} '
+        f'transform="translate({x:.1f},{y:.1f})">'
         f'<rect width="{width:.1f}" height="{height:.1f}" rx="6" ry="6"/>'
         f'<text x="{width / 2:.1f}" y="{height / 2:.1f}" '
         f'text-anchor="middle" dominant-baseline="central">{label}</text>'
@@ -402,6 +413,7 @@ def _render_layout_nodes(
             tint_siblings=tint_siblings,
             display_low=display_low,
             display_high=display_high,
+            feature_ids=feature_ids,
         )
 
 
@@ -413,6 +425,7 @@ def render_tree_svg(
     tint_siblings: bool = False,
     display_low: float = 0.25,
     display_high: float = 0.55,
+    feature_ids: dict[str, str] | None = None,
 ) -> str:
     """Render tree nodes as a top-down SVG diagram with connector lines."""
     layouts = _layout_trees(trees)
@@ -442,6 +455,7 @@ def render_tree_svg(
             tint_siblings=tint_siblings,
             display_low=display_low,
             display_high=display_high,
+            feature_ids=feature_ids,
         )
 
     content_width = max_x - min_x
@@ -603,6 +617,76 @@ def _render_similarity_panel(
 """
 
 
+def _feature_ids_by_member(
+    groups: list[CandidateFeatureGroup],
+) -> dict[str, str]:
+    """Map each grouped symbol to its stable candidate-feature ID."""
+    return {
+        member: group.feature_id
+        for group in groups
+        for member in group.members
+    }
+
+
+def _render_candidate_features_panel(result: SimilarityResult) -> str:
+    """Render candidate features independently from the similarity panel."""
+    groups = sorted(result.candidate_features, key=lambda group: group.members)
+
+    def fmt(value: Any) -> str:
+        if value is None:
+            return "—"
+        return f"{float(value):.3f}"
+
+    feature_sections: list[str] = []
+    for group in groups:
+        relation_rows = []
+        for relation in group.qualifying_relations:
+            shared = ", ".join(relation.shared_callers) if relation.shared_callers else "—"
+            relation_rows.append(
+                "<li>"
+                f"<code>{html.escape(relation.kind)}</code> "
+                f"{html.escape(relation.a)} → {html.escape(relation.b)} "
+                f"<span class=\"feature-score\">{relation.score:.3f}</span>"
+                f" <span class=\"feature-shared\">(shared callers: "
+                f"{html.escape(shared)})</span>"
+                "</li>"
+            )
+        relation_body = "\n".join(relation_rows) or '<li class="empty">None</li>'
+        stats = group.score_stats
+        feature_sections.append(
+            f'<article class="candidate-feature" data-feature-id="'
+            f'{html.escape(group.feature_id, quote=True)}">'
+            f"<h3><code>{html.escape(group.feature_id)}</code></h3>"
+            f"<p><strong>Members:</strong> "
+            f"{html.escape(', '.join(group.members))}</p>"
+            f"<p><strong>Relation kinds:</strong> "
+            f"{html.escape(', '.join(group.relation_kinds))}</p>"
+            "<p><strong>Qualifying relations:</strong></p>"
+            f"<ul>{relation_body}</ul>"
+            f"<p class=\"feature-stats\"><strong>Scores:</strong> "
+            f"count {stats.get('count', 0)}; min {fmt(stats.get('min'))}; "
+            f"max {fmt(stats.get('max'))}; mean {fmt(stats.get('mean'))}; "
+            f"p50 {fmt(stats.get('p50'))}; p90 {fmt(stats.get('p90'))}</p>"
+            "</article>"
+        )
+
+    body = "\n".join(feature_sections)
+    if not body:
+        body = '<p class="empty">No candidate features met the threshold.</p>'
+    return f"""
+  <section class="candidate-features" aria-label="Candidate features">
+    <h2>Candidate features</h2>
+    <p class="meta">
+      Threshold: {result.feature_similarity_threshold:.2f} (inclusive);
+      grouping: {html.escape(result.feature_grouping_mode)};
+      features: {len(groups)}.
+      Qualifying parent→child and sibling relations are connected as an undirected graph.
+    </p>
+    {body}
+  </section>
+"""
+
+
 def render_html(
     trees: list[TreeNode],
     project_name: str,
@@ -620,9 +704,11 @@ def render_html(
 
     edge_scores = None
     mean_sibling = None
+    feature_ids = None
     if similarity is not None:
         edge_scores = parent_child_score_map(similarity.relations)
         mean_sibling = similarity.mean_sibling_score
+        feature_ids = _feature_ids_by_member(similarity.candidate_features)
 
     if empty_message:
         body = f"<p class=\"empty\">{html.escape(empty_message)}</p>"
@@ -634,6 +720,7 @@ def render_html(
             tint_siblings=tint_siblings,
             display_low=display_low,
             display_high=display_high,
+            feature_ids=feature_ids,
         )
         body = f'<div class="diagram">{svg}</div>'
     else:
@@ -646,6 +733,7 @@ def render_html(
             display_low=display_low,
             display_high=display_high,
         )
+        similarity_panel += _render_candidate_features_panel(similarity)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -737,6 +825,30 @@ def render_html(
     .similarity {{
       margin-top: 1.5rem;
       max-width: 960px;
+    }}
+    .candidate-features {{
+      margin-top: 1.5rem;
+      max-width: 960px;
+    }}
+    .candidate-feature {{
+      border: 1px solid rgba(127,127,127,0.25);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin: 0 0 0.75rem;
+    }}
+    .candidate-feature h3 {{
+      margin-top: 0;
+    }}
+    .candidate-feature ul {{
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }}
+    .feature-score {{
+      font-weight: 600;
+    }}
+    .feature-shared, .feature-stats {{
+      color: #666;
+      font-size: 0.85rem;
     }}
     .legend {{
       display: flex;
@@ -832,6 +944,7 @@ def render_call_graph_tree(project_root: Path, config: CallGraphConfig) -> Path:
             edges,
             max_neighbors_in_descriptor=config.max_neighbors_in_descriptor,
             max_sibling_pairs_per_parent=config.max_sibling_pairs_per_parent,
+            feature_similarity_threshold=config.feature_similarity_threshold,
         )
 
     if not file_paths:

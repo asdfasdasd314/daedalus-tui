@@ -5,10 +5,11 @@ Standalone tooling that statically analyzes a target Python project with pyan3 a
 
 ## Key Points
 - **CWD-based target selection**: `cd` into the project to analyze, then run `scripts/render_call_graph_tree.py` from the Daedalus TUI checkout.
-- **Parameter-file tunables**: `source_globs`, `exclude`, `entry_points`, `output_path`, `max_tree_depth`, `pyan_depth`, and similarity display/scoring knobs live in `parameter_files/daedalus-tui-call-graph-visualization.toml` when analyzing this repo.
+- **Parameter-file tunables**: `source_globs`, `exclude`, `entry_points`, `output_path`, `max_tree_depth`, `pyan_depth`, and similarity display/scoring knobs live in `parameter_files/daedalus-tui-call-graph-visualization.toml` when analyzing this repo. `feature_similarity_threshold` defaults to `0.55` and is inclusive.
 - **Evidence, not intent**: Static analysis misses dynamic dispatch and non-Python code; cycles and partial graphs are expected and marked inline.
 - **Custom HTML tree**: pyan supplies edges only; rendering uses an SVG top-down tree diagram with connector lines (not pyan's Graphviz HTML output or a nested file-tree list).
 - **Edge semantic similarity**: Each symbol gets a descriptor from terminal symbol names, callers, callees, graph siblings, and docs/comments; sklearn TF-IDF + cosine scores parent→child edges (SVG labels/bands) and sibling pairs (sortable table + optional mean tint), with a JSON sidecar for threshold exploration. Full FQNs remain in graph relations and output metadata, but do not contribute shared module-path tokens to similarity.
+- **Candidate features**: Every parent→child or sibling relation at or above the inclusive `feature_similarity_threshold` participates in an undirected connected-component grouping. Qualifying chains form one deterministic candidate group, while a below-threshold link breaks connectivity; singleton symbols are excluded. Groups are exposed in JSON and a separate HTML widget, and applicable SVG nodes carry the stable feature ID. Sibling pairs are included subject to `max_sibling_pairs_per_parent`.
 
 ## Relevant Files
 - `tui/call_graph_tree.py`: Source discovery, pyan analysis, tree building, HTML/SVG rendering, and similarity wiring.
@@ -30,3 +31,4 @@ HACKING
 - 2026-09-01: Call-tree layout now spaces siblings by subtree width and uses full-graph bounds with wider side margins so labels no longer overlap or clip at the edges.
 - 2026-09-05: Added sklearn TF-IDF cosine similarity for parent/child and sibling relations with SVG edge scores, sibling table/histogram, and JSON sidecar; on the fixture, cohesive order siblings outrank cross-feature UI pairs, but absolute scores cluster mid (~0.33–0.50) so display bands stay exploratory at low 0.25 / high 0.55 pending larger-graph review.
 - 2026-09-05: Similarity descriptors now use only terminal symbol names for the subject and graph neighbors, preventing parent/child pairs such as `tui.agent_runner.call` and `tui.agent_runner` from sharing module-path tokens; full FQNs remain relation identifiers.
+- 2026-09-06: Added inclusive-threshold candidate-feature grouping over qualifying parent→child and sibling relations, with deterministic JSON/HTML/SVG exposure and stable member-derived IDs.
