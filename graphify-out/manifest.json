@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "tests/test_app.py": {
-    "mtime": 1788641884.3663237,
-    "ast_hash": "575ea1822e88df934922ae2e51c69b3d",
+    "mtime": 1788653798.9048748,
+    "ast_hash": "2d564a6fadff82438c500a40c3dcf1c2",
     "semantic_hash": ""
   },
   "tests/test_config.py": {
@@ -65,8 +65,8 @@
     "semantic_hash": "ab7ace38f1dc1969bd9703e112eb0954"
   },
   "tui/__main__.py": {
-    "mtime": 1787011214.5582983,
-    "ast_hash": "1a1ab1d25faea3dfa0740ba39263db6c",
+    "mtime": 1788653798.905857,
+    "ast_hash": "5260216b95927b41299c22b0f867627a",
     "semantic_hash": ""
   },
   "tui/agent_runner.py": {
@@ -75,8 +75,8 @@
     "semantic_hash": ""
   },
   "tui/app.py": {
-    "mtime": 1788641884.3684134,
-    "ast_hash": "c22819a57508dbc871231cbc89156a30",
+    "mtime": 1788653798.9080756,
+    "ast_hash": "0f3ecfdfa1e351fd213bf85b6b3c5be2",
     "semantic_hash": ""
   },
   "tui/clipboard.py": {
@@ -145,8 +145,8 @@
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui.md": {
-    "mtime": 1788641884.3642893,
-    "ast_hash": "f36cd4f4566f6458ea0f03fa81126984",
+    "mtime": 1788653798.902387,
+    "ast_hash": "f8a7dd34ef3babada1f4c93a82767a7d",
     "semantic_hash": ""
   },
   "requirements.txt": {
