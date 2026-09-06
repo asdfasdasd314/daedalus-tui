@@ -64,5 +64,11 @@
   "62": "load_project_worktree_settings",
   "63": ".action_view_topic",
   "64": "PlanClarification",
-  "65": "._render_selected_task"
+  "65": "._render_selected_task",
+  "66": "._render_line_strip",
+  "67": "CreateTopicScreen",
+  "68": "_TimeoutTracker",
+  "69": "FakeStream",
+  "70": "tokenize_descriptor",
+  "71": "_collapse_inner_safe"
 }
