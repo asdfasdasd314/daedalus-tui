@@ -5,14 +5,18 @@ from __future__ import annotations
 import asyncio
 from dataclasses import replace
 from pathlib import Path
+import sys
 import threading
 import uuid
 
+from rich.text import Text
 from textual import events, on
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.css.query import NoMatches
 from textual.screen import ModalScreen
 from textual.widgets import Button, Checkbox, DataTable, Footer, Header, Input, Log, Select, Static, TextArea
+from textual.widgets.select import InvalidSelectValueError
 from .agent_runner import AgentRunner
 from .clipboard import copy_to_system_clipboard, paste_from_system_clipboard
 from .config import (
@@ -51,6 +55,11 @@ from .topics import (
 from .transcript import TranscriptLog
 from .token_usage import calculate_token_usage, merge_usage_entries, task_usage_entry, usage_entries_from_memory
 from .vim_text_area import DaedalusVimTextArea
+
+
+def _literal_select_options(options: list[tuple[str, str]]) -> list[tuple[Text, str]]:
+    """Build Select prompts that Rich will not parse as markup."""
+    return [(Text(label), value) for label, value in options]
 
 
 _THREAD_EXIT_APPS: dict[int, "DaedalusTuiApp"] = {}
@@ -166,12 +175,33 @@ class PlanAnswerSelect(Select):
         self.call_after_refresh(self._initialize_after_mount)
 
     def _initialize_after_mount(self) -> None:
-        if self.is_attached and not self._closing:
+        """Finish Select setup without allowing a stale value to exit the TUI.
+
+        Plan follow-up rounds remount these widgets while a prior
+        ``call_after_refresh`` may still be queued. An illegal constructor
+        hint or a half-removed overlay must not reach Textual's fatal handler
+        (seen in production as ``InvalidSelectValueError: Illegal select value
+        'replace'`` right after a plan returned ``awaiting_answers``).
+        """
+        if not self.is_attached or self._closing:
+            return
+        try:
             self._setup_options_renderables()
-            # Follow-up plan rounds can leave a constructor hint that is no
-            # longer among the mounted options; coerce instead of crashing.
             hint = self._value if self._value in self._legal_values else self.NULL
             self._init_selected_option(hint)
+        except (InvalidSelectValueError, NoMatches, Exception) as error:
+            # call_after_refresh is outside the plan-questions worker, so an
+            # uncaught error here is a hard TUI exit with no on-screen message.
+            log_exception(
+                f"Plan answer Select init failed id={self.id!r} value={self._value!r}",
+                error,
+            )
+            try:
+                if self.is_attached and not self._closing and self.NULL in self._legal_values:
+                    self.value = self.NULL
+            except Exception as recovery_error:
+                log_exception("Plan answer Select recovery failed", recovery_error)
+                self._value = self.NULL
 
 
 class PlanClarificationScreen(ModalScreen[str | None]):
@@ -835,6 +865,21 @@ class DaedalusTuiApp(App[None]):
     def _handle_exception(self, error: Exception) -> None:
         """Persist Textual failures that would otherwise only flash on screen."""
         log_exception("Unhandled Textual application exception", error)
+        debug_path = getattr(self, "debug_log_path", None)
+        message = (
+            f"Daedalus TUI fatal error: {type(error).__name__}: {error}\n"
+            f"Details were written to {debug_path or '(debug log unavailable)'}."
+        )
+        try:
+            print(message, file=sys.stderr, flush=True)
+        except Exception:
+            pass
+        try:
+            if self.is_running and self._accept_task_events:
+                self._set_error(message)
+                self._set_status("Fatal error — see diagnostics / debug log")
+        except Exception as display_error:
+            log_exception("Could not surface fatal error in the TUI", display_error)
         self._shutdown_coordinators("unhandled Textual application exception")
         super()._handle_exception(error)
 
@@ -1016,11 +1061,23 @@ class DaedalusTuiApp(App[None]):
             self._refresh_topic_view_button()
             return
         if event.select.id and event.select.id.startswith("plan-question-"):
-            self._update_plan_custom_answer_visibility(event.select.id, event.value)
-            self._update_plan_action_buttons()
+            try:
+                self._update_plan_custom_answer_visibility(event.select.id, event.value)
+                self._update_plan_action_buttons()
+            except Exception as error:
+                log_exception(
+                    f"Plan answer Select change failed id={event.select.id!r}",
+                    error,
+                )
             return
         if event.select.id and event.select.id.startswith("plan-clarification-select-"):
-            self._update_plan_clarification_answer(event.select.id, event.value)
+            try:
+                self._update_plan_clarification_answer(event.select.id, event.value)
+            except Exception as error:
+                log_exception(
+                    f"Plan clarification Select change failed id={event.select.id!r}",
+                    error,
+                )
             return
         if event.select.id != "provider-select":
             return
@@ -1814,6 +1871,10 @@ class DaedalusTuiApp(App[None]):
         record = self.coordinator.get(self._selected_task_id or "")
         if record is None or record.mode != "plan":
             return
+        answer_nodes = self.query("#answer-plan-button")
+        implement_nodes = self.query("#implement-button")
+        if not answer_nodes.nodes or not implement_nodes.nodes:
+            return
         selected = {
             index: self.query_one(f"#plan-question-{index}", Select).value
             for index, question in enumerate(record.plan_questions)
@@ -1823,14 +1884,14 @@ class DaedalusTuiApp(App[None]):
             self._has_plan_answer(selected.get(index), self._plan_custom_answer_text(index))
             for index in range(len(record.plan_questions))
         )
-        self.query_one("#answer-plan-button", Button).disabled = not (
+        answer_nodes.first().disabled = not (
             bool(record.plan_questions)
             and record.status in {"completed", "awaiting_answers"}
             and len(selected) == len(record.plan_questions)
             and all_answered
             and not record.plan_confirmed
         )
-        implement_button = self.query_one("#implement-button", Button)
+        implement_button = implement_nodes.first()
         implemented = record.plan_implemented
         implement_button.disabled = implemented or not (
             record.plan_confirmed
@@ -1962,10 +2023,12 @@ class DaedalusTuiApp(App[None]):
                         Static(question.text, classes="plan-question", markup=False),
                         Horizontal(
                             PlanAnswerSelect(
-                                [
-                                    (option.label, option.option_id)
-                                    for option in plan_answer_options(question)
-                                ],
+                                _literal_select_options(
+                                    [
+                                        (option.label, option.option_id)
+                                        for option in plan_answer_options(question)
+                                    ]
+                                ),
                                 value=selected_value,
                                 allow_blank=True,
                                 id=f"plan-question-{index}",
@@ -1986,10 +2049,12 @@ class DaedalusTuiApp(App[None]):
                     widgets.extend(
                         (
                             PlanAnswerSelect(
-                                [
-                                    (self._clarification_option_label(item), item.clarification_id)
-                                    for item in clarifications
-                                ],
+                                _literal_select_options(
+                                    [
+                                        (self._clarification_option_label(item), item.clarification_id)
+                                        for item in clarifications
+                                    ]
+                                ),
                                 value=latest.clarification_id,
                                 allow_blank=False,
                                 id=f"plan-clarification-select-{index}",

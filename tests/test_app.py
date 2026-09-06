@@ -1492,6 +1492,86 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(remounted.value, Select.NULL)
             self.assertNotEqual(str(app.query_one("#status", Static).render()), "Error")
 
+    async def test_plan_answer_select_init_coerces_illegal_stale_value(self):
+        """Deferred Select init must not fatal-exit on a leftover option id."""
+        from tui.app import PlanAnswerSelect
+
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Choose how to handle files")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = "Choose the storage layer."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "Which storage layer?",
+                    (PlanOption("a", "SQLite [Q=1e-4]"), PlanOption("b", "JSON")),
+                ),
+            )
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+            await pilot.pause()
+
+            select = app.query_one("#plan-question-0", PlanAnswerSelect)
+            select._value = "replace"
+            select._initialize_after_mount()
+            await pilot.pause()
+
+            self.assertIsNone(app._exception)
+            self.assertEqual(select.value, Select.NULL)
+            self.assertNotEqual(str(app.query_one("#status", Static).render()), "Fatal error — see diagnostics / debug log")
+
+    async def test_plan_completion_transition_does_not_fatal_exit(self):
+        """Clearing questions after confirmation must keep the TUI alive."""
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            app.query_one("#mode-select", Select).value = "plan"
+            app.query_one("#prompt-input", TextArea).insert("Finish the plan")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "awaiting_answers"
+            record.phase = "Questions"
+            record.plan_text = "Use the selected storage layer."
+            record.plan_questions = (
+                PlanQuestion(
+                    "q1",
+                    "How should existing files be handled?",
+                    (
+                        PlanOption("replace", "Replace (Recommended)"),
+                        PlanOption("keep", "Keep"),
+                    ),
+                ),
+            )
+            coordinator.emit(record, "questions", "", "status")
+            await pilot.pause()
+            await pilot.pause()
+
+            answer = app.query_one("#plan-question-0", Select)
+            answer.value = "replace"
+            await pilot.pause()
+
+            record.plan_text = "Implement with the chosen answers."
+            record.plan_questions = ()
+            record.plan_answers = {"q1": "replace"}
+            record.plan_confirmed = True
+            record.status = "completed"
+            record.phase = "Completed"
+            coordinator.emit(record, "completed", "Plan confirmed.", "status")
+            await pilot.pause()
+            await pilot.pause()
+
+            self.assertIsNone(app._exception)
+            self.assertFalse(app.query_one("#implement-button", Button).disabled)
+            question_copy = "\n".join(
+                widget.render().plain
+                for widget in app.query("#plan-questions Static").results(Static)
+            )
+            self.assertIn("No questions from the agent.", question_copy)
+
     async def test_plan_review_survives_streamed_completion_event(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:

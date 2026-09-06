@@ -18,7 +18,8 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Plan-first task route**: Plan tasks remain selectable through `planning` and `questioning` states, support follow-up planning passes, and can promote their preserved context into the normal coding, verification, and integration route.
 - **Plan custom answers**: Plan review renders a software-owned custom-answer choice alongside the agent's reasonable options and collects free text only when that choice is selected; the agent protocol remains unchanged.
 - **Plan question clarifications**: Each plan question exposes a `?` control on the same row as its answer dropdown (dropdown narrowed, button at the trailing end) that opens a side-channel ask about that question alone; answers stay off the plan follow-up transcript and are browsable from a per-question dropdown on the review page.
-- **Literal plan review text**: `#plan-display` and dynamic plan-question Static widgets render agent-generated text with `markup=False` so brackets and scientific notation cannot trigger Textual/Rich markup parsing.
+- **Literal plan review text**: `#plan-display` and dynamic plan-question Static widgets render agent-generated text with `markup=False` so brackets and scientific notation cannot trigger Textual/Rich markup parsing. Plan answer Select option labels are wrapped as literal Rich `Text` for the same reason.
+- **Plan completion crash guard**: Deferred `PlanAnswerSelect` initialization catches illegal leftover option ids and half-removed overlays so a follow-up plan round cannot fatal-exit the TUI; fatal Textual exceptions also print a stderr pointer to the launch-root debug log.
 - **Plan recommended defaults**: Plan and follow-up prompts require every multiple-choice question to mark exactly one option with ` (Recommended)` so a safe default is always visible when the user does not care which answer to pick.
 - **Filtered logs and copying**: The output pane uses Textual's selectable `Log` widget for completed assistant messages; Vim yank commands copy selected transcript or diagnostic text to the system clipboard.
 - **Full-size output toggle**: Agent transcript and task diagnostics share one full-height output panel; a toggle shows either log at the same readable size while preserving selection and copying.
@@ -50,6 +51,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-09-05: Hardened deferred plan-answer Select init and Select change handlers so illegal leftover option ids after plan completion cannot fatal-exit the TUI, and fatal errors now print a stderr pointer to the debug log.
 - 2026-09-05: Fixed the `Tab` mode toggle to recognize Textual's one-entry main screen stack while leaving modal screens untouched.
 - 2026-09-05: Routed `Tab` from the focused prompt editor to the main-screen mode action so Vim input handling cannot consume the Coding/Plan toggle.
 - 2026-09-05: Added a main-screen `Tab` shortcut that toggles the prompt mode between Coding and Plan and documents the shortcut in the keyboard help.
