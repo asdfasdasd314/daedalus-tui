@@ -53,11 +53,15 @@
   "51": "CreateTopicScreen",
   "52": "Daedalus TUI Call Graph Visualization",
   "53": "b.py",
+  "54": "run_verification",
   "55": "conftest.py",
   "56": "cycle_a.py",
+  "57": "TranscriptLog",
   "58": "__init__.py",
   "59": "render_call_graph_tree",
+  "60": "._create_topic",
   "61": "CodingStatisticsScreen",
   "66": "._render_line_strip",
+  "70": "tokenize_descriptor",
   "71": "_collapse_inner_safe"
 }
