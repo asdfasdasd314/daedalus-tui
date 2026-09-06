@@ -1608,7 +1608,16 @@ class DaedalusTuiApp(App[None]):
         """Render actionable history and tasks created during this session."""
         task_list = self.query_one("#task-list", DataTable)
         task_list.clear(columns=True)
-        task_list.add_columns("", "Project", "Task", "Status")
+        marker_width, project_width, task_width, status_width = self.settings.task_inbox_widths
+        for label, width in (
+            ("", marker_width),
+            ("Project", project_width),
+            ("Task", task_width),
+            ("Status", status_width),
+        ):
+            # Explicit widths keep a new update marker from changing the
+            # table's virtual width and moving the visible horizontal slice.
+            task_list.add_column(label, width=width)
         self._task_rows.clear()
 
         project_names = {
@@ -1640,12 +1649,14 @@ class DaedalusTuiApp(App[None]):
         for project_path, record in rows:
             row_key = self._task_row_key(project_path, record.task_id)
             self._task_rows[row_key] = (project_path, record.task_id)
-            project_name = project_names.get(project_path, project_path.name)
+            project_name = self._fit_task_cell(
+                project_names.get(project_path, project_path.name), project_width
+            )
             summary = " ".join(record.prompt.split())
-            if len(summary) > 38:
-                summary = summary[:35] + "..."
+            summary = self._fit_task_cell(summary, task_width)
             marker = "!" if row_key in self._updated_task_rows else ""
-            task_list.add_row(marker, project_name, summary, record.status, key=row_key)
+            status = self._fit_task_cell(record.status, status_width)
+            task_list.add_row(marker, project_name, summary, status, key=row_key)
 
         if self._selected_task_id:
             selected_key = self._task_row_key(self._active_project_path, self._selected_task_id)
@@ -1664,6 +1675,15 @@ class DaedalusTuiApp(App[None]):
     @staticmethod
     def _task_row_key(project_path: Path, task_id: str) -> str:
         return f"{project_path.resolve()}::{task_id}"
+
+    @staticmethod
+    def _fit_task_cell(value: str, width: int) -> str:
+        """Keep inbox cells within their fixed width with a visible ellipsis."""
+        if len(value) <= width:
+            return value
+        if width == 1:
+            return "…"
+        return f"{value[: width - 1]}…"
 
     def _project_for_record(self, record: TaskRecord) -> Path | None:
         for project_path, coordinator in self._coordinators.items():

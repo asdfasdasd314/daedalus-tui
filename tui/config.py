@@ -36,6 +36,9 @@ class TuiSettings:
         ModelOption("Plan", "plan"),
     )
     output_width: str = "95%"
+    # Content widths for the four task-inbox columns, excluding DataTable
+    # cell padding. The defaults leave a cell for the sidebar scrollbar.
+    task_inbox_widths: tuple[int, int, int, int] = (1, 9, 14, 7)
 
 
 @dataclass(frozen=True)
@@ -59,6 +62,18 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
     modes = tuple(_options(values.get("modes", []), "mode")) or TuiSettings.modes
     output = values.get("output", {})
     output_width = str(output.get("width", "95%"))
+    task_inbox = values.get("task_inbox", {})
+    task_inbox_widths = tuple(
+        int(task_inbox.get(name, default))
+        for name, default in (
+            ("marker_width", 1),
+            ("project_width", 9),
+            ("task_width", 14),
+            ("status_width", 7),
+        )
+    )
+    if any(width < 1 for width in task_inbox_widths):
+        raise ValueError(f"{path} task_inbox widths must be positive.")
 
     default_provider = str(defaults.get("provider", "codex"))
     default_model = str(defaults.get("model", "gpt-5.6-luna"))
@@ -75,6 +90,7 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
         cursor_model,
         modes,
         output_width,
+        task_inbox_widths,
     )
 
 
