@@ -48,3 +48,4 @@ open
 - 2026-09-01: Call-tree HTML now renders as an SVG top-down tree diagram (n-ary branches, multiple roots) instead of a nested file-tree list.
 - 2026-09-01: Call-tree HTML uses natural-size SVG nodes in a scrollable viewport so large graphs remain readable during import review.
 - 2026-09-01: Call-tree SVG layout now prevents overlapping node labels and adds wider side margins so import-review diagrams are not clipped at the edges.
+- 2026-09-05: Call-graph HTML now exposes exploratory TF-IDF cosine similarity on parent/child edges and sibling pairs so import workflows can inspect feature-boundary signal before clustering or feature-file generation.

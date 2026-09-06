@@ -24,6 +24,14 @@ CONFIG: dict = {
     "output_path": "call-graph-out/call-tree.html",
     "max_tree_depth": 12,
     "pyan_depth": 2,
+    "similarity_enabled": True,
+    "embedding_backend": "sklearn-tfidf",
+    "max_neighbors_in_descriptor": 20,
+    "max_sibling_pairs_per_parent": 50,
+    "similarity_display_low": 0.25,
+    "similarity_display_high": 0.55,
+    "similarity_tint_siblings": False,
+    "write_similarity_json": True,
 }
 
 
@@ -41,6 +49,14 @@ def load_config(project_root: Path) -> CallGraphConfig:
         output_path=str(values["output_path"]),
         max_tree_depth=int(values["max_tree_depth"]),
         pyan_depth=int(values["pyan_depth"]),
+        similarity_enabled=bool(values.get("similarity_enabled", True)),
+        embedding_backend=str(values.get("embedding_backend", "sklearn-tfidf")),
+        max_neighbors_in_descriptor=int(values.get("max_neighbors_in_descriptor", 20)),
+        max_sibling_pairs_per_parent=int(values.get("max_sibling_pairs_per_parent", 50)),
+        similarity_display_low=float(values.get("similarity_display_low", 0.25)),
+        similarity_display_high=float(values.get("similarity_display_high", 0.55)),
+        similarity_tint_siblings=bool(values.get("similarity_tint_siblings", False)),
+        write_similarity_json=bool(values.get("write_similarity_json", True)),
     )
 
 

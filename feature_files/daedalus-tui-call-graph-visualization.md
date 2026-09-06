@@ -1,20 +1,22 @@
 # Daedalus TUI Call Graph Visualization
 
 ## Summary
-Standalone tooling that statically analyzes a target Python project with pyan3 and writes a self-contained, top-down HTML call tree for import and feature-boundary workflows. The analyzed project is whichever directory is current when the runner script is invoked.
+Standalone tooling that statically analyzes a target Python project with pyan3 and writes a self-contained, top-down HTML call tree for import and feature-boundary workflows. The analyzed project is whichever directory is current when the runner script is invoked. Related call-graph symbols also receive exploratory TF-IDF cosine similarity scores so reviewers can judge whether high similarity tracks cohesive feature neighborhoods.
 
 ## Key Points
 - **CWD-based target selection**: `cd` into the project to analyze, then run `scripts/render_call_graph_tree.py` from the Daedalus TUI checkout.
-- **Parameter-file tunables**: `source_globs`, `exclude`, `entry_points`, `output_path`, `max_tree_depth`, and `pyan_depth` live in `parameter_files/daedalus-tui-call-graph-visualization.toml` when analyzing this repo.
+- **Parameter-file tunables**: `source_globs`, `exclude`, `entry_points`, `output_path`, `max_tree_depth`, `pyan_depth`, and similarity display/scoring knobs live in `parameter_files/daedalus-tui-call-graph-visualization.toml` when analyzing this repo.
 - **Evidence, not intent**: Static analysis misses dynamic dispatch and non-Python code; cycles and partial graphs are expected and marked inline.
 - **Custom HTML tree**: pyan supplies edges only; rendering uses an SVG top-down tree diagram with connector lines (not pyan's Graphviz HTML output or a nested file-tree list).
+- **Edge semantic similarity**: Each symbol gets a descriptor from name, callers, callees, graph siblings, and docs/comments; sklearn TF-IDF + cosine scores parent→child edges (SVG labels/bands) and sibling pairs (sortable table + optional mean tint), with a JSON sidecar for threshold exploration.
 
 ## Relevant Files
-- `tui/call_graph_tree.py`: Source discovery, pyan analysis, tree building, and HTML rendering.
+- `tui/call_graph_tree.py`: Source discovery, pyan analysis, tree building, HTML/SVG rendering, and similarity wiring.
+- `tui/call_graph_similarity.py`: Symbol context, descriptor formatting, TF-IDF cosine scoring, and JSON sidecar helpers.
 - `scripts/render_call_graph_tree.py`: Runnable entrypoint; loads the parameter file from the target project when present.
 - `parameter_files/daedalus-tui-call-graph-visualization.toml`: Tunables for analyzing this TUI repository.
 - `tests/test_call_graph_tree.py`: Unit tests against a small fixture package.
-- `tests/fixtures/call_graph_sample/`: Minimal package with known call edges and a cycle.
+- `tests/fixtures/call_graph_sample/`: Minimal package with known call edges, a cycle, and cohesive vs unrelated branches.
 
 ## Dev Mode
 HACKING
@@ -26,3 +28,4 @@ HACKING
 - 2026-09-01: Replaced nested-list file-tree HTML with an SVG top-down tree diagram supporting n-ary branches and multiple roots.
 - 2026-09-01: Call-tree HTML now renders at natural pixel size inside a scrollable viewport so nodes stay readable instead of shrinking to fit the page width.
 - 2026-09-01: Call-tree layout now spaces siblings by subtree width and uses full-graph bounds with wider side margins so labels no longer overlap or clip at the edges.
+- 2026-09-05: Added sklearn TF-IDF cosine similarity for parent/child and sibling relations with SVG edge scores, sibling table/histogram, and JSON sidecar; on the fixture, cohesive order siblings outrank cross-feature UI pairs, but absolute scores cluster mid (~0.33–0.50) so display bands stay exploratory at low 0.25 / high 0.55 pending larger-graph review.
