@@ -6,27 +6,46 @@ from tui.projects import discover_projects
 
 
 class ProjectDiscoveryTests(unittest.TestCase):
-    def test_finds_root_and_nested_feature_file_projects(self):
+    def test_finds_only_immediate_child_projects_in_deterministic_order(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "feature_files").mkdir()
-            (root / "apps" / "flockdock" / "feature_files").mkdir(parents=True)
-            (root / "apps" / "other" / "feature_files").mkdir(parents=True)
+            (root / "zeta" / "feature_files").mkdir(parents=True)
+            (root / "daedalus" / "feature_files").mkdir(parents=True)
+            (root / "project-initialization" / "feature_files").mkdir(parents=True)
+            (root / "daedalus" / "project-initialization" / "other-project" / "feature_files").mkdir(
+                parents=True
+            )
+            (root / "project-initialization" / "other-project" / "feature_files").mkdir(
+                parents=True
+            )
             (root / ".daedalus-worktrees" / "ignored" / "feature_files").mkdir(parents=True)
             (root / "node_modules" / "dependency" / "feature_files").mkdir(parents=True)
+            (root / ".git" / "ignored" / "feature_files").mkdir(parents=True)
+            (root / ".venv" / "ignored" / "feature_files").mkdir(parents=True)
+            (root / "__pycache__" / "ignored" / "feature_files").mkdir(parents=True)
 
             projects = discover_projects(root)
 
             self.assertEqual(
                 [project.path for project in projects],
                 [
-                    root.resolve(),
-                    (root / "apps" / "flockdock").resolve(),
-                    (root / "apps" / "other").resolve(),
+                    (root / "daedalus").resolve(),
+                    (root / "project-initialization").resolve(),
+                    (root / "zeta").resolve(),
                 ],
             )
-            self.assertEqual(projects[0].display_name, f"{root.name} (root)")
-            self.assertEqual(projects[1].display_name, "apps/flockdock")
+            self.assertEqual(
+                [project.display_name for project in projects],
+                ["daedalus", "project-initialization", "zeta"],
+            )
+
+    def test_ignores_launch_root_feature_files_when_no_child_is_eligible(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "feature_files").mkdir()
+
+            self.assertEqual(discover_projects(root), ())
 
     def test_returns_no_projects_for_missing_root(self):
         with tempfile.TemporaryDirectory() as directory:

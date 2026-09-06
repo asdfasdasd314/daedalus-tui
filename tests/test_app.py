@@ -390,6 +390,47 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 ["main", "main"],
             )
 
+    @patch("tui.app.discover_projects")
+    async def test_project_selector_uses_basenames_and_refresh_drops_nested_projects(self, discover):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            direct = root / "daedalus"
+            sibling = root / "other-project"
+            nested = direct / "project-initialization" / "other-project"
+            discover.return_value = (
+                DaedalusProject(direct, root),
+                DaedalusProject(nested, root),
+                DaedalusProject(sibling, root),
+            )
+
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=root,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+            app._coordinators[nested.resolve()] = FakeCoordinator()
+            app.projects = (*app.projects, DaedalusProject(nested, root))
+            discover.return_value = (
+                DaedalusProject(direct, root),
+                DaedalusProject(sibling, root),
+            )
+
+            async with app.run_test() as pilot:
+                await pilot.pause()
+                project_select = app.query_one("#project-select", Select)
+                labels = [str(label) for label, _value in project_select._options]
+                self.assertEqual(labels, ["daedalus", "other-project"])
+                self.assertNotIn("project-initialization/other-project", labels)
+
+                app._reload_projects()
+                refreshed_paths = {project.path.resolve() for project in app.projects}
+                self.assertNotIn(nested.resolve(), refreshed_paths)
+                refreshed_labels = [
+                    str(label) for label, _value in project_select._options
+                ]
+                self.assertEqual(refreshed_labels, ["daedalus", "other-project"])
+
     @patch("tui.app.TaskCoordinator")
     @patch("tui.app.list_local_branches")
     @patch("tui.app.discover_projects")

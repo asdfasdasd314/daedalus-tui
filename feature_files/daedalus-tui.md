@@ -25,7 +25,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Full-size output toggle**: Agent transcript and task diagnostics share one full-height output panel; a toggle shows either log at the same readable size while preserving selection and copying.
 - **Readable streamed output**: Assistant messages are separated by a blank line, transcript lines reflow at word boundaries with hyphenation only for overlong words, and the output pane keeps a small width buffer so long responses remain visible.
 - **Incremental Vim input**: The prompt uses a modal VimTextArea with a practical command subset; additional Vim commands can be added as they become useful instead of implementing the entire Vim language up front.
-- **Project selection**: Launching from a root directory recursively discovers supported projects by their `feature_files` folders; the task toolbar selects the project for new submissions, editable prompt drafts survive project switches, and focusing an inbox row synchronizes the active project without mixing transcripts or worktrees. Each project's remembered operating branch is restored independently when focus returns.
+- **Project selection**: Launching from a root directory discovers only immediate child directories with `feature_files` folders; nested descendants are excluded, and the launch root is used only as a fallback when no eligible child exists. The task toolbar selects the project for new submissions, editable prompt drafts survive project switches, and focusing an inbox row synchronizes the active project without mixing transcripts or worktrees. Each project's remembered operating branch is restored independently when focus returns.
 - **Project initialization**: New Project materializes bundled Daedalus templates (including a scaffold `.daedalus` TOML) under the launch root, runs Graphify/Git setup, optionally creates a private GitHub repo, then refreshes discovery onto the new project.
 - **Actionable task history**: The task inbox keeps every failed task, active or paused work, and all tasks from the current TUI session while hiding older completed, blocked, and cancelled tasks.
 - **Retryable failures**: Failed agent tasks expose their diagnostics and a Retry action so transient connectivity or service failures can be recovered in place.
@@ -81,7 +81,7 @@ HACKING
 - 2026-08-14: Added non-modal Vim-style output navigation and system clipboard y/p shortcuts without intercepting prompt editor typing.
 - 2026-08-14: Added a modal VimTextArea prompt with multiline Insert mode, Normal/Visual commands, system clipboard yank/paste, and an intentionally incremental command subset for future additions.
 - 2026-08-14: Removed Vim status and shortcut hints from the rendered interface and added Shift+V whole-line visual selection to the prompt editor.
-- 2026-08-14: Added recursive Daedalus project discovery from the launch root and a sidebar that preserves independent task coordinators for each supported project.
+- 2026-08-14: Added Daedalus project discovery from the launch root and a sidebar that preserves independent task coordinators for each supported project.
 - 2026-08-16: Removed copy buttons and dedicated full-output/error copy actions in favor of Vim yank commands.
 - 2026-08-16: Added standalone `AGENTS.md` and task-mode profiles so the TUI retains its operating instructions when moved into its own repository.
 - 2026-08-16: Preserved submitted prompts in an immutable task view and added an explicit New Task action to unlock a blank prompt editor.
@@ -125,3 +125,4 @@ HACKING
 - 2026-08-23: Rendered agent plan and question text as literal Static content (`markup=False`) so square brackets and scientific notation cannot fail Textual markup parsing.
 - 2026-09-05: Restored plan review questions from the latest persisted agent output and rendered that output as a fallback after a TUI restart leaves a task awaiting answers.
 - 2026-09-05: Stopped remounting stale plan Select values after follow-up option ids change, avoiding InvalidSelectValueError crashes like illegal `'replace'`.
+- 2026-09-05: Limited project discovery and selector refreshes to immediate launch-root children, using directory basenames and excluding nested project paths.

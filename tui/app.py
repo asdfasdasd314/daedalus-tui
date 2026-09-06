@@ -30,7 +30,7 @@ from .debug_log import LOGGER, close_fault_handler, configure_debug_logging, ins
 from .git_worktree import GitWorktreeError, list_local_branches, push_branch, remote_exists
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .project_initializer import initialize_project, load_initializer_settings, validate_project_name
-from .projects import DaedalusProject, discover_projects
+from .projects import DaedalusProject, discover_projects, is_direct_child_project
 from .plan import (
     CUSTOM_ANSWER_OPTION_ID,
     PlanClarification,
@@ -664,7 +664,11 @@ class DaedalusTuiApp(App[None]):
         self.debug_log_path = self.launch_root / self.orchestration_settings.debug_log_filename
         self._fault_log_file = None
         self.runner = runner or AgentRunner()
-        discovered = list(discover_projects(self.launch_root))
+        discovered = [
+            project
+            for project in discover_projects(self.launch_root)
+            if is_direct_child_project(project.path, self.launch_root)
+        ]
         if not discovered:
             # Keep the app usable when launched in a new or test directory;
             # orchestration will provide the actionable Git error if needed.
@@ -716,7 +720,10 @@ class DaedalusTuiApp(App[None]):
                     with Horizontal(id="task-bar"):
                         yield Static("Project", id="project-label")
                         yield Select(
-                            [(project.display_name, str(project.path)) for project in self.projects],
+                            [
+                                (project.display_name, str(project.path))
+                                for project in self._selector_projects()
+                            ],
                             value=self._project_select_value(),
                             id="project-select",
                         )
@@ -1121,7 +1128,9 @@ class DaedalusTuiApp(App[None]):
             self._set_status("Error")
             return
         selected_project = Path(str(project_value)).expanduser().resolve()
-        if selected_project not in {project.path.resolve() for project in self.projects}:
+        if selected_project not in {
+            project.path.resolve() for project in self._selector_projects()
+        }:
             self._set_error("The selected project is no longer available.")
             self._set_status("Error")
             return
@@ -1512,7 +1521,9 @@ class DaedalusTuiApp(App[None]):
         project_path = project_path.expanduser().resolve()
         if project_path == self._active_project_path:
             return
-        if project_path not in {project.path.resolve() for project in self.projects}:
+        if project_path not in {
+            project.path.resolve() for project in self._selector_projects()
+        }:
             return
         # Keep in-progress editable drafts when changing projects so a
         # mis-targeted prompt can be redirected instead of erased.
@@ -1556,13 +1567,21 @@ class DaedalusTuiApp(App[None]):
         self._start_new_task()
 
     def _reload_projects(self, preferred: Path | None = None) -> None:
-        discovered = list(discover_projects(self.launch_root))
+        discovered = [
+            project
+            for project in discover_projects(self.launch_root)
+            if is_direct_child_project(project.path, self.launch_root)
+        ]
         if not discovered:
             discovered = [DaedalusProject(self.launch_root, self.launch_root)]
         discovered_paths = {project.path.resolve() for project in discovered}
         for known in self.projects:
             path = known.path.resolve()
-            if path not in discovered_paths and path in self._coordinators:
+            if (
+                path not in discovered_paths
+                and path in self._coordinators
+                and is_direct_child_project(path, self.launch_root)
+            ):
                 discovered.append(known)
                 discovered_paths.add(path)
         self.projects = tuple(
@@ -1583,7 +1602,7 @@ class DaedalusTuiApp(App[None]):
     def _refresh_project_selector(self) -> None:
         project_select = self.query_one("#project-select", Select)
         options = []
-        for project in self.projects:
+        for project in self._selector_projects():
             project_path = project.path.resolve()
             task_count = (
                 len(self._coordinators[project_path].tasks())
@@ -1595,10 +1614,29 @@ class DaedalusTuiApp(App[None]):
         project_select.set_options(options)
         project_select.value = self._project_select_value()
 
+    def _selector_projects(self) -> tuple[DaedalusProject, ...]:
+        """Return only direct-child projects, or the empty-root fallback."""
+
+        direct_children = tuple(
+            project
+            for project in self.projects
+            if is_direct_child_project(project.path, self.launch_root)
+        )
+        if direct_children:
+            return direct_children
+        return tuple(
+            project
+            for project in self.projects
+            if project.path.resolve() == self.launch_root
+        )[:1]
+
     def _project_select_value(self) -> str:
-        for project in self.projects:
+        selector_projects = self._selector_projects()
+        for project in selector_projects:
             if project.path.resolve() == self._active_project_path:
                 return str(project.path)
+        if selector_projects:
+            return str(selector_projects[0].path)
         return str(self._active_project_path)
 
     def _directory_text(self) -> str:

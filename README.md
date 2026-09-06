@@ -17,11 +17,12 @@ projects:
 python3 -m tui
 ```
 
-The launch directory is treated as a project-root workspace. The TUI
-recursively discovers every directory containing a `feature_files/` folder
-and lists those projects in the left sidebar. Each project has its own task
-coordinator, task numbering, Git worktrees, and transcripts; switching the
-sidebar does not interrupt tasks running in another project.
+The launch directory is treated as a project workspace. The TUI discovers only
+its immediate child directories that contain a `feature_files/` folder; nested
+descendants are not traversed or listed. If no eligible child project exists,
+the launch directory remains available as a usability fallback. Each project
+has its own task coordinator, task numbering, Git worktrees, and transcripts;
+switching the sidebar does not interrupt tasks running in another project.
 
 For Cursor CLI, edit the included `.env` file (or copy `.env.example` to a
 new `.env`) and set your key:
