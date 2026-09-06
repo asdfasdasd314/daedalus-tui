@@ -33,3 +33,6 @@ value = "cursor"
 
 [output]
 width = "95%"
+
+# Fatal Textual exceptions are written to the launch-root debug log
+# (see orchestration `debug_log_filename`) and also printed to stderr.
