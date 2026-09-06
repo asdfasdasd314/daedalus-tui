@@ -725,6 +725,7 @@ class DaedalusTuiApp(App[None]):
                                 for project in self._selector_projects()
                             ],
                             value=self._project_select_value(),
+                            allow_blank=False,
                             id="project-select",
                         )
                         yield Button("New Project", id="new-project-button")

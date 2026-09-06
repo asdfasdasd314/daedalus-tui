@@ -126,3 +126,4 @@ HACKING
 - 2026-09-05: Restored plan review questions from the latest persisted agent output and rendered that output as a fallback after a TUI restart leaves a task awaiting answers.
 - 2026-09-05: Stopped remounting stale plan Select values after follow-up option ids change, avoiding InvalidSelectValueError crashes like illegal `'replace'`.
 - 2026-09-05: Limited project discovery and selector refreshes to immediate launch-root children, using directory basenames and excluding nested project paths.
+- 2026-09-05: Removed the blank option from the project selector so direct-child labels are the only displayed project choices.
