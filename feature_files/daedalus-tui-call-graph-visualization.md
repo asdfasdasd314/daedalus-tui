@@ -37,3 +37,4 @@ HACKING
 - 2026-09-05: Similarity descriptors now use only terminal symbol names for the subject and graph neighbors, preventing parent/child pairs such as `tui.agent_runner.call` and `tui.agent_runner` from sharing module-path tokens; full FQNs remain relation identifiers.
 - 2026-09-06: Added inclusive-threshold candidate-feature grouping over qualifying parent→child and sibling relations, with deterministic JSON/HTML/SVG exposure and stable member-derived IDs.
 - 2026-09-07: Added an AST variable-lineage pass that builds scoped Name/Attribute graphs and function summaries, computes function/read/mutation/derived stats, and surfaces them on the call-graph HTML review page with a JSON sidecar for later import resource detection.
+- 2026-09-07: Made the variable-lineage stats table horizontally pannable with a focusable labeled scroll region and readable minimum-width node/name columns.

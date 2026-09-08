@@ -935,9 +935,16 @@ def render_html(
       margin-top: 1.5rem;
       max-width: 1100px;
     }}
+    .lineage-table-scroll {{
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+    }}
     .lineage-table {{
       border-collapse: collapse;
-      width: 100%;
+      width: max-content;
+      min-width: 100%;
       font-size: 0.85rem;
     }}
     .lineage-table th, .lineage-table td {{
@@ -949,9 +956,19 @@ def render_html(
     .lineage-table th {{
       background: rgba(127,127,127,0.08);
     }}
+    .lineage-table th:nth-child(1), .lineage-table td:nth-child(1) {{
+      min-width: 24rem;
+      white-space: nowrap;
+    }}
+    .lineage-table th:nth-child(7), .lineage-table td:nth-child(7),
+    .lineage-table th:nth-child(8), .lineage-table td:nth-child(8) {{
+      min-width: 20rem;
+      white-space: nowrap;
+    }}
     .lineage-table code {{
       font-size: 0.8rem;
-      word-break: break-all;
+      word-break: normal;
+      overflow-wrap: normal;
     }}
   </style>
 </head>

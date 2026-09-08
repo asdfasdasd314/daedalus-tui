@@ -467,6 +467,9 @@ class CallGraphTreeTests(unittest.TestCase):
         self.assertRegex(content, r'class="edge edge-(low|mid|high)"')
         self.assertIn("Variable lineage", content)
         self.assertIn("lineage-table", content)
+        self.assertIn("lineage-table-scroll", content)
+        self.assertIn('aria-label="Variable lineage table"', content)
+        self.assertIn("overflow-x: auto", content)
 
         json_path = output.with_name("edge-similarities.json")
         self.assertTrue(json_path.is_file())

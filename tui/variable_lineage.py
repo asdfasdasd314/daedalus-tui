@@ -1628,22 +1628,25 @@ def render_variable_lineage_panel(
       <div>edges: {summary.get("edge_count", 0)}</div>
       <div>stats rows: {len(result.stats)}</div>
     </div>
-    <table class="lineage-table" id="lineage-table">
-      <thead>
-        <tr>
-          <th>node</th>
-          <th>kind</th>
-          <th>functions</th>
-          <th>reads</th>
-          <th>mutations</th>
-          <th>derived</th>
-          <th>derivatives</th>
-          <th>enclosing functions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {table_body}
-      </tbody>
-    </table>
+    <div class="lineage-table-scroll" role="region"
+         aria-label="Variable lineage table" tabindex="0">
+      <table class="lineage-table" id="lineage-table">
+        <thead>
+          <tr>
+            <th>node</th>
+            <th>kind</th>
+            <th>functions</th>
+            <th>reads</th>
+            <th>mutations</th>
+            <th>derived</th>
+            <th>derivatives</th>
+            <th>enclosing functions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {table_body}
+        </tbody>
+      </table>
+    </div>
   </section>
 """

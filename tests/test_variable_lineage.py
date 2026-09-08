@@ -238,9 +238,26 @@ class VariableLineageTests(unittest.TestCase):
             variable_stats_row_limit=50,
         )
         self.assertIn('aria-label="Variable lineage"', output)
+        self.assertIn(
+            'class="lineage-table-scroll" role="region"',
+            output,
+        )
+        self.assertIn('aria-label="Variable lineage table"', output)
+        self.assertIn('tabindex="0"', output)
         self.assertIn("Variable lineage", output)
         self.assertIn("lineage-table", output)
+        self.assertIn("overflow-x: auto", output)
+        self.assertIn("overflow-y: visible", output)
+        self.assertIn("width: max-content", output)
+        self.assertIn("min-width: 24rem", output)
+        self.assertIn("min-width: 20rem", output)
+        self.assertIn("white-space: nowrap", output)
+        self.assertIn("word-break: normal", output)
         self.assertIn("variable_lineage_sample.trading::capital", output)
+        self.assertIn(
+            "variable_lineage_sample.trading.Portfolio.apply_cost::self.capital",
+            output,
+        )
 
     def test_render_call_graph_tree_writes_lineage_json(self) -> None:
         config = CallGraphConfig(
