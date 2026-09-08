@@ -315,13 +315,13 @@
     "semantic_hash": ""
   },
   "topic_files/project-imports-to-the-daedalus-format.md": {
-    "mtime": 1788673569.6970124,
-    "ast_hash": "2318ff7d0e8f3b58b2c415713b88e5e4",
+    "mtime": 1788836980.5753548,
+    "ast_hash": "0b3438251b836b382c920d649f57fe2a",
     "semantic_hash": ""
   },
   "scripts/render_call_graph_tree.py": {
-    "mtime": 1788673569.696025,
-    "ast_hash": "b63de0a49a443a723bba878b9727c8ac",
+    "mtime": 1788836980.571033,
+    "ast_hash": "75d8d1a9b716f24ee8b82cfcbe5c2976",
     "semantic_hash": ""
   },
   "tests/conftest.py": {
@@ -360,18 +360,18 @@
     "semantic_hash": ""
   },
   "tests/test_call_graph_tree.py": {
-    "mtime": 1788673569.6965017,
-    "ast_hash": "e6ba4071887cf6d4b0550bff19238924",
+    "mtime": 1788836980.5743742,
+    "ast_hash": "d2269376bf25ce417c475beb72e43f64",
     "semantic_hash": ""
   },
   "tui/call_graph_tree.py": {
-    "mtime": 1788673569.6983924,
-    "ast_hash": "fca5d245768c753f4856f6e5af4b87e9",
+    "mtime": 1788836980.5758939,
+    "ast_hash": "bd2afa455223ed0e75f13673abfdd974",
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-call-graph-visualization.md": {
-    "mtime": 1788673569.6947834,
-    "ast_hash": "d154b9d196718a9224a64fcf56db87b7",
+    "mtime": 1788836980.5703237,
+    "ast_hash": "4b0fe7842c48de35464aec715e6138c9",
     "semantic_hash": ""
   },
   "tests/fixtures/call_graph_sample/lambda_edge.py": {
@@ -392,6 +392,46 @@
   "tui/call_graph_similarity.py": {
     "mtime": 1788673569.6976392,
     "ast_hash": "487c4207b11a9b748a7f4686ddbacd6e",
+    "semantic_hash": ""
+  },
+  "tests/fixtures/variable_lineage_sample/__init__.py": {
+    "mtime": 1788836980.5714033,
+    "ast_hash": "cf0bd11817faec6f913827e22bf42c5a",
+    "semantic_hash": ""
+  },
+  "tests/fixtures/variable_lineage_sample/ambiguous_a.py": {
+    "mtime": 1788836980.571616,
+    "ast_hash": "995639279072da7bcc23e1e463477ba3",
+    "semantic_hash": ""
+  },
+  "tests/fixtures/variable_lineage_sample/ambiguous_b.py": {
+    "mtime": 1788836980.5718315,
+    "ast_hash": "f0a24b48171378d8148f9de53792ed69",
+    "semantic_hash": ""
+  },
+  "tests/fixtures/variable_lineage_sample/module_resource.py": {
+    "mtime": 1788836980.573191,
+    "ast_hash": "7882f869a57862d61318137f32313ff7",
+    "semantic_hash": ""
+  },
+  "tests/fixtures/variable_lineage_sample/scopes.py": {
+    "mtime": 1788836980.573581,
+    "ast_hash": "59c4bd223dca97bb06e49b2f2e473940",
+    "semantic_hash": ""
+  },
+  "tests/fixtures/variable_lineage_sample/trading.py": {
+    "mtime": 1788836980.5737422,
+    "ast_hash": "8737156fd43082ae701e3fa11eddf836",
+    "semantic_hash": ""
+  },
+  "tests/test_variable_lineage.py": {
+    "mtime": 1788836980.574835,
+    "ast_hash": "4277584512201301c64a449d36f99015",
+    "semantic_hash": ""
+  },
+  "tui/variable_lineage.py": {
+    "mtime": 1788836980.5763025,
+    "ast_hash": "5402117dfa114d343d0d4de3570a9a81",
     "semantic_hash": ""
   }
 }

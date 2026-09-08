@@ -1,7 +1,7 @@
 # Graph Report - daedalus-tui  (2026-09-07)
 
 ## Corpus Check
-- 86 files · ~64,589 words
+- 86 files · ~64,720 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `48585eea`
+- Built from commit: `4b391b7b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
