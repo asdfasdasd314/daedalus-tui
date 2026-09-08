@@ -13,3 +13,6 @@ similarity_display_low = 0.25
 similarity_display_high = 0.55
 similarity_tint_siblings = false
 write_similarity_json = true
+variable_lineage_enabled = true
+write_variable_lineage_json = true
+variable_stats_row_limit = 200

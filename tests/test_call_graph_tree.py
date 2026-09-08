@@ -450,6 +450,8 @@ class CallGraphTreeTests(unittest.TestCase):
             similarity_enabled=True,
             write_similarity_json=True,
             similarity_tint_siblings=True,
+            variable_lineage_enabled=True,
+            write_variable_lineage_json=True,
         )
         output = render_call_graph_tree(SAMPLE_PROJECT_ROOT, config)
         self.assertTrue(output.is_file())
@@ -463,6 +465,8 @@ class CallGraphTreeTests(unittest.TestCase):
         self.assertIn("edge-score", content)
         self.assertIn("histogram", content)
         self.assertRegex(content, r'class="edge edge-(low|mid|high)"')
+        self.assertIn("Variable lineage", content)
+        self.assertIn("lineage-table", content)
 
         json_path = output.with_name("edge-similarities.json")
         self.assertTrue(json_path.is_file())
@@ -475,9 +479,24 @@ class CallGraphTreeTests(unittest.TestCase):
         self.assertIn("parent_child", kinds)
         self.assertIn("sibling", kinds)
 
+        lineage_json = output.with_name("variable-lineage.json")
+        self.assertTrue(lineage_json.is_file())
+
         output.unlink()
         json_path.unlink()
+        lineage_json.unlink()
         output.parent.rmdir()
+
+    def test_render_html_includes_variable_lineage_when_provided(self):
+        from tui.variable_lineage import analyze_sources
+
+        lineage_root = FIXTURE_ROOT / "variable_lineage_sample"
+        lineage = analyze_sources(sorted(lineage_root.glob("*.py")), FIXTURE_ROOT)
+        tree = build_tree("root", {"root": ["child"]}, 4)
+        output = render_html([tree], "sample", variable_lineage=lineage)
+        self.assertIn("Variable lineage", output)
+        self.assertIn("lineage-table", output)
+        self.assertIn('aria-label="Variable lineage"', output)
 
 
 if __name__ == "__main__":

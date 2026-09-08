@@ -33,6 +33,9 @@ CONFIG: dict = {
     "similarity_display_high": 0.55,
     "similarity_tint_siblings": False,
     "write_similarity_json": True,
+    "variable_lineage_enabled": True,
+    "write_variable_lineage_json": True,
+    "variable_stats_row_limit": 200,
 }
 
 
@@ -59,6 +62,11 @@ def load_config(project_root: Path) -> CallGraphConfig:
         similarity_display_high=float(values.get("similarity_display_high", 0.55)),
         similarity_tint_siblings=bool(values.get("similarity_tint_siblings", False)),
         write_similarity_json=bool(values.get("write_similarity_json", True)),
+        variable_lineage_enabled=bool(values.get("variable_lineage_enabled", True)),
+        write_variable_lineage_json=bool(
+            values.get("write_variable_lineage_json", True)
+        ),
+        variable_stats_row_limit=int(values.get("variable_stats_row_limit", 200)),
     )
 
 

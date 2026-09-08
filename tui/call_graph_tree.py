@@ -18,6 +18,13 @@ from tui.call_graph_similarity import (
     similarity_json_path,
     write_similarity_json,
 )
+from tui.variable_lineage import (
+    VariableLineageResult,
+    analyze_sources,
+    render_variable_lineage_panel,
+    variable_lineage_json_path,
+    write_variable_lineage_json,
+)
 
 if TYPE_CHECKING:
     from pyan.analyzer import CallGraphVisitor
@@ -40,6 +47,9 @@ class CallGraphConfig:
     similarity_display_high: float = 0.55
     similarity_tint_siblings: bool = False
     write_similarity_json: bool = True
+    variable_lineage_enabled: bool = True
+    write_variable_lineage_json: bool = True
+    variable_stats_row_limit: int = 200
 
 
 @dataclass
@@ -697,6 +707,8 @@ def render_html(
     display_low: float = 0.25,
     display_high: float = 0.55,
     tint_siblings: bool = False,
+    variable_lineage: VariableLineageResult | None = None,
+    variable_stats_row_limit: int = 200,
 ) -> str:
     """Render a self-contained HTML page for the call trees."""
     timestamp = (generated_at or datetime.now(timezone.utc)).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -734,6 +746,13 @@ def render_html(
             display_high=display_high,
         )
         similarity_panel += _render_candidate_features_panel(similarity)
+
+    lineage_panel = ""
+    if variable_lineage is not None:
+        lineage_panel = render_variable_lineage_panel(
+            variable_lineage,
+            row_limit=variable_stats_row_limit,
+        )
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -912,6 +931,28 @@ def render_html(
     .score-low {{ color: #c45c26; }}
     .score-mid {{ color: inherit; }}
     .score-high {{ color: #2a7a4b; font-weight: 600; }}
+    .variable-lineage {{
+      margin-top: 1.5rem;
+      max-width: 1100px;
+    }}
+    .lineage-table {{
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.85rem;
+    }}
+    .lineage-table th, .lineage-table td {{
+      border: 1px solid rgba(127,127,127,0.25);
+      padding: 0.35rem 0.5rem;
+      text-align: left;
+      vertical-align: top;
+    }}
+    .lineage-table th {{
+      background: rgba(127,127,127,0.08);
+    }}
+    .lineage-table code {{
+      font-size: 0.8rem;
+      word-break: break-all;
+    }}
   </style>
 </head>
 <body>
@@ -919,6 +960,7 @@ def render_html(
   <p class="meta">Generated {html.escape(timestamp)}</p>
   {body}
   {similarity_panel}
+  {lineage_panel}
 </body>
 </html>
 """
@@ -947,6 +989,10 @@ def render_call_graph_tree(project_root: Path, config: CallGraphConfig) -> Path:
             feature_similarity_threshold=config.feature_similarity_threshold,
         )
 
+    variable_lineage: VariableLineageResult | None = None
+    if config.variable_lineage_enabled and file_paths:
+        variable_lineage = analyze_sources(file_paths, project_root)
+
     if not file_paths:
         trees: list[TreeNode] = []
         message = "No Python source files matched the configured source_globs."
@@ -965,6 +1011,8 @@ def render_call_graph_tree(project_root: Path, config: CallGraphConfig) -> Path:
         display_low=config.similarity_display_low,
         display_high=config.similarity_display_high,
         tint_siblings=config.similarity_tint_siblings,
+        variable_lineage=variable_lineage,
+        variable_stats_row_limit=config.variable_stats_row_limit,
     )
     output_path = (project_root / config.output_path).resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -972,5 +1020,11 @@ def render_call_graph_tree(project_root: Path, config: CallGraphConfig) -> Path:
 
     if similarity is not None and config.write_similarity_json:
         write_similarity_json(similarity_json_path(output_path), similarity)
+
+    if variable_lineage is not None and config.write_variable_lineage_json:
+        write_variable_lineage_json(
+            variable_lineage_json_path(output_path),
+            variable_lineage,
+        )
 
     return output_path
