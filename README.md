@@ -10,6 +10,14 @@ Install it into the Python environment used from the target repository:
 python3 -m pip install -e /path/to/tui
 ```
 
+The standalone call-graph visualizer can inspect the configured Lotus or
+Medley checkout without adding Daedalus files first. Edit
+`scripts/render_call_graph_tree.py` and set `ANALYSIS_PROJECT` to `"lotus"` or
+`"medley"` (and adjust `PROJECT_ROOTS` if needed), then run the script. Leave
+it as `"current"` to analyze the current working directory. The named profiles
+discover Python files recursively and target-local call-graph parameters take
+precedence when available.
+
 Launch it from a directory containing one or more Daedalus-supported
 projects:
 

@@ -1,11 +1,12 @@
 # Daedalus TUI Call Graph Visualization
 
 ## Summary
-Standalone tooling that statically analyzes a target Python project with pyan3 and writes a self-contained, top-down HTML call tree for import and feature-boundary workflows. The analyzed project is whichever directory is current when the runner script is invoked. Related call-graph symbols also receive exploratory TF-IDF cosine similarity scores so reviewers can judge whether high similarity tracks cohesive feature neighborhoods. A first-pass AST variable-lineage analysis adds scoped variable/attribute usage stats as additional import evidence for later resource and key-point detection.
+Standalone tooling that statically analyzes a target Python project with pyan3 and writes a self-contained, top-down HTML call tree for import and feature-boundary workflows. The runner can preserve current-directory analysis or select manually configured Lotus and Medley checkouts. Related call-graph symbols also receive exploratory TF-IDF cosine similarity scores so reviewers can judge whether high similarity tracks cohesive feature neighborhoods. A first-pass AST variable-lineage analysis adds scoped variable/attribute usage stats as additional import evidence for later resource and key-point detection.
 
 ## Key Points
-- **CWD-based target selection**: `cd` into the project to analyze, then run `scripts/render_call_graph_tree.py` from the Daedalus TUI checkout.
-- **Parameter-file tunables**: `source_globs`, `exclude`, `entry_points`, `output_path`, `max_tree_depth`, `pyan_depth`, similarity display/scoring knobs, and variable-lineage toggles (`variable_lineage_enabled`, `write_variable_lineage_json`, `variable_stats_row_limit`) live in `parameter_files/daedalus-tui-call-graph-visualization.toml` when analyzing this repo. `feature_similarity_threshold` defaults to `0.55` and is inclusive.
+- **Manual target selection**: `scripts/render_call_graph_tree.py` uses the `ANALYSIS_PROJECT` variable (`current`, `lotus`, or `medley`) instead of CLI arguments. Lotus and Medley roots default to `~/Projects/{name}` through `PROJECT_ROOTS`; adjust those variables for another checkout layout.
+- **Project profiles and overrides**: Lotus and Medley profiles use recursive Python discovery with common generated/dependency/test exclusions. The runner loads these profiles from the TUI parameter file, then lets an analyzed project's own `parameter_files/daedalus-tui-call-graph-visualization.toml` override them when present.
+- **Parameter-file tunables**: `source_globs`, `exclude`, `entry_points`, `output_path`, `max_tree_depth`, `pyan_depth`, similarity display/scoring knobs, and variable-lineage toggles (`variable_lineage_enabled`, `write_variable_lineage_json`, `variable_stats_row_limit`) live in `parameter_files/daedalus-tui-call-graph-visualization.toml`. `feature_similarity_threshold` defaults to `0.55` and is inclusive.
 - **Evidence, not intent**: Static analysis misses dynamic dispatch and non-Python code; cycles and partial graphs are expected and marked inline.
 - **Custom HTML tree**: pyan supplies edges only; rendering uses an SVG top-down tree diagram with connector lines (not pyan's Graphviz HTML output or a nested file-tree list).
 - **Edge semantic similarity**: Each symbol gets a descriptor from terminal symbol names, callers, callees, graph siblings, and docs/comments; sklearn TF-IDF + cosine scores parent→child edges (SVG labels/bands) and sibling pairs (sortable table + optional mean tint), with a JSON sidecar for threshold exploration. Full FQNs remain in graph relations and output metadata, but do not contribute shared module-path tokens to similarity.
@@ -16,9 +17,10 @@ Standalone tooling that statically analyzes a target Python project with pyan3 a
 - `tui/call_graph_tree.py`: Source discovery, pyan analysis, tree building, HTML/SVG rendering, similarity wiring, and variable-lineage panel integration.
 - `tui/call_graph_similarity.py`: Symbol context, descriptor formatting, TF-IDF cosine scoring, and JSON sidecar helpers.
 - `tui/variable_lineage.py`: AST variable-lineage visitor, graph/stats aggregation, JSON sidecar, and HTML panel renderer.
-- `scripts/render_call_graph_tree.py`: Runnable entrypoint; loads the parameter file from the target project when present.
-- `parameter_files/daedalus-tui-call-graph-visualization.toml`: Tunables for analyzing this TUI repository.
+- `scripts/render_call_graph_tree.py`: Runnable entrypoint; resolves the manually selected target and merges the named profile with target-local parameters.
+- `parameter_files/daedalus-tui-call-graph-visualization.toml`: Defaults for this TUI repository plus Lotus and Medley import profiles.
 - `tests/test_call_graph_tree.py`: Unit tests against a small fixture package.
+- `tests/test_call_graph_runner.py`: Regression tests for named profiles, fallback defaults, target-local overrides, and root selection.
 - `tests/test_variable_lineage.py`: Unit tests for scoped IDs, LEGB, edges, summaries, stats, and HTML/JSON output.
 - `tests/fixtures/call_graph_sample/`: Minimal package with known call edges, a cycle, and cohesive vs unrelated branches.
 - `tests/fixtures/variable_lineage_sample/`: Fixture covering assignment lineage, mutations, unique/ambiguous calls, returns, and scope rules.
@@ -38,3 +40,4 @@ HACKING
 - 2026-09-06: Added inclusive-threshold candidate-feature grouping over qualifying parent→child and sibling relations, with deterministic JSON/HTML/SVG exposure and stable member-derived IDs.
 - 2026-09-07: Added an AST variable-lineage pass that builds scoped Name/Attribute graphs and function summaries, computes function/read/mutation/derived stats, and surfaces them on the call-graph HTML review page with a JSON sidecar for later import resource detection.
 - 2026-09-07: Made the variable-lineage stats table horizontally pannable with a focusable labeled scroll region and readable minimum-width node/name columns.
+- 2026-09-10: Added manual Lotus and Medley project profiles with configurable roots, recursive Python discovery, common exclusions, and target-local parameter overrides.

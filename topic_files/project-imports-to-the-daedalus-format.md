@@ -53,3 +53,4 @@ open
 - 2026-09-06: Call-graph similarity now emits deterministic candidate feature groups from inclusive-threshold parent/child and sibling connectivity, exposing member-derived IDs in JSON, the review widget, and SVG node annotations for later feature-file verification.
 - 2026-09-07: Call-graph review now includes AST variable-lineage stats (scoped usage, mutations, transitive derivatives) as additional structural evidence toward identifying resource-like key points during import feature-file generation.
 - 2026-09-07: Variable-lineage review tables now preserve long node and function names through horizontal scrolling and focusable accessibility markup.
+- 2026-09-10: Added manually selectable Lotus and Medley call-graph profiles so non-Daedalus Python checkouts can be analyzed with broad discovery before local parameter files exist.
