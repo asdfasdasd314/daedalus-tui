@@ -41,3 +41,4 @@ HACKING
 - 2026-09-07: Added an AST variable-lineage pass that builds scoped Name/Attribute graphs and function summaries, computes function/read/mutation/derived stats, and surfaces them on the call-graph HTML review page with a JSON sidecar for later import resource detection.
 - 2026-09-07: Made the variable-lineage stats table horizontally pannable with a focusable labeled scroll region and readable minimum-width node/name columns.
 - 2026-09-10: Added manual Lotus and Medley project profiles with configurable roots, recursive Python discovery, common exclusions, and target-local parameter overrides.
+- 2026-09-10: Preserved the caller's path spelling when resolving the current project so macOS symlink normalization does not break working-directory comparisons.

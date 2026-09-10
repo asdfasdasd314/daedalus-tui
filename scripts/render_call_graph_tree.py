@@ -55,7 +55,10 @@ def resolve_project_root(
 ) -> Path:
     """Resolve ``current`` or one of the manually configured project roots."""
     if project_name == "current":
-        return (working_directory or Path.cwd()).resolve()
+        # Preserve the caller's path spelling.  On macOS, ``resolve()`` turns
+        # paths such as /var/folders into /private/var/folders, which makes a
+        # supplied working directory compare unequal to the resolved result.
+        return (working_directory or Path.cwd()).absolute()
     try:
         configured_root = PROJECT_ROOTS[project_name]
     except KeyError as error:
