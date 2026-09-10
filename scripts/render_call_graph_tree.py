@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render a top-down HTML call tree for a manually selected Python project."""
+"""Render a top-down HTML call tree for a parameter-selected Python project."""
 
 from __future__ import annotations
 
@@ -17,15 +17,8 @@ from tui.call_graph_tree import CallGraphConfig, render_call_graph_tree
 
 PARAMETER_FILENAME = "daedalus-tui-call-graph-visualization.toml"
 
-# Manual, intentionally non-CLI project selection.  ``current`` preserves the
-# original behavior; the named projects resolve from the user's Projects
-# directory and can be adjusted when a checkout lives elsewhere.
-ANALYSIS_PROJECT = "current"
-PROJECT_ROOTS: dict[str, Path] = {
-    "lotus": Path.home() / "Projects" / "lotus",
-    "medley": Path.home() / "Projects" / "medley",
-}
-
+# Fallbacks keep the imported module useful if the parameter file is absent.
+# Normal execution reads the values from parameter_files/ instead.
 CONFIG: dict = {
     "source_globs": ["src/**/*.py"],
     "exclude": ["tests/**", "**/test_*.py", ".venv/**"],
@@ -47,26 +40,72 @@ CONFIG: dict = {
     "variable_stats_row_limit": 200,
 }
 
+_PROJECT_METADATA_KEYS = frozenset(
+    {"analysis_project", "projects_root", "projects", "project_defaults", "profiles"}
+)
+
+
+def load_runner_parameters() -> dict:
+    """Load the runner-owned parameter file, if it is available."""
+    parameter_path = SCRIPT_ROOT / "parameter_files" / PARAMETER_FILENAME
+    return _load_parameter_values(parameter_path) if parameter_path.is_file() else {}
+
+
+def _project_table(parameters: dict, project_name: str) -> dict:
+    """Return optional settings for *project_name* after validating the table."""
+    projects = parameters.get("projects", {})
+    if not isinstance(projects, dict):
+        raise ValueError("The projects parameter must be a TOML table.")
+    settings = projects.get(project_name, {})
+    if not isinstance(settings, dict):
+        raise ValueError(f"Project settings for {project_name!r} must be a TOML table.")
+    return settings
+
+
+def _project_root_setting(parameters: dict) -> str | None:
+    projects_root = parameters.get("projects_root")
+    if projects_root is None:
+        return None
+    if not isinstance(projects_root, str) or not projects_root.strip():
+        raise ValueError("projects_root must be a non-empty path string.")
+    return projects_root
+
 
 def resolve_project_root(
     project_name: str,
     *,
     working_directory: Path | None = None,
+    projects_root: str | Path | None = None,
+    projects: dict | None = None,
 ) -> Path:
-    """Resolve ``current`` or one of the manually configured project roots."""
+    """Resolve ``current`` or a named project from parameterized path rules.
+
+    Named projects use an explicit ``projects.<name>.root`` when provided;
+    otherwise they resolve to ``projects_root/<name>``.  This keeps adding a
+    sibling checkout a parameter-only operation while still supporting
+    projects stored elsewhere.
+    """
+    working_directory = (working_directory or Path.cwd()).absolute()
     if project_name == "current":
         # Preserve the caller's path spelling.  On macOS, ``resolve()`` turns
         # paths such as /var/folders into /private/var/folders, which makes a
         # supplied working directory compare unequal to the resolved result.
-        return (working_directory or Path.cwd()).absolute()
-    try:
-        configured_root = PROJECT_ROOTS[project_name]
-    except KeyError as error:
-        available = ", ".join(["current", *sorted(PROJECT_ROOTS)])
-        raise ValueError(
-            f"Unknown ANALYSIS_PROJECT {project_name!r}; choose one of: {available}."
-        ) from error
-    project_root = configured_root.expanduser().resolve()
+        return working_directory
+
+    settings = (projects or {}).get(project_name, {})
+    if not isinstance(settings, dict):
+        raise ValueError(f"Project settings for {project_name!r} must be a TOML table.")
+    configured_root = settings.get("root")
+    if configured_root is None:
+        configured_root = (projects_root or Path.home() / "Projects")
+        configured_root = Path(configured_root).expanduser() / project_name
+    elif not isinstance(configured_root, str) or not configured_root.strip():
+        raise ValueError(f"Project root for {project_name!r} must be a non-empty path string.")
+
+    project_root = Path(configured_root).expanduser()
+    if not project_root.is_absolute():
+        project_root = working_directory / project_root
+    project_root = project_root.resolve()
     if not project_root.is_dir():
         raise FileNotFoundError(
             f"Configured root for {project_name!r} does not exist: {project_root}"
@@ -75,8 +114,12 @@ def resolve_project_root(
 
 
 def _flat_parameter_values(values: dict) -> dict:
-    """Return runner settings while keeping named profiles out of the flat config."""
-    return {key: value for key, value in values.items() if key != "profiles"}
+    """Return call-graph settings while keeping routing tables out of config."""
+    return {
+        key: value
+        for key, value in values.items()
+        if key not in _PROJECT_METADATA_KEYS and key != "root"
+    }
 
 
 def _load_parameter_values(path: Path) -> dict:
@@ -86,39 +129,41 @@ def _load_parameter_values(path: Path) -> dict:
 
 def load_config(
     project_root: Path,
-    profile_name: str = ANALYSIS_PROJECT,
+    project_name: str = "current",
 ) -> CallGraphConfig:
-    """Load defaults, a named project profile, and target-local overrides."""
+    """Load runner defaults, project settings, and target-local overrides."""
     parameter_path = project_root / "parameter_files" / PARAMETER_FILENAME
     runner_parameter_path = SCRIPT_ROOT / "parameter_files" / PARAMETER_FILENAME
-    runner_parameters = (
-        _load_parameter_values(runner_parameter_path)
-        if runner_parameter_path.is_file()
-        else {}
-    )
+    runner_parameters = load_runner_parameters()
+    project_defaults = runner_parameters.get("project_defaults", {})
+    if not isinstance(project_defaults, dict):
+        raise ValueError(f"{runner_parameter_path} project_defaults must be a table.")
+    project_settings = _project_table(runner_parameters, project_name)
+
     # For an arbitrary project selected as ``current``, retain the generic
-    # runner defaults unless that project is this checkout.  Otherwise this
+    # project defaults unless that project is this checkout.  Otherwise this
     # repository's ``tui/**/*.py`` source glob would hide an external project
     # that has no local parameter file yet.
-    use_runner_parameters = (
-        profile_name != "current"
-        or project_root.resolve() == SCRIPT_ROOT.resolve()
-    )
+    is_runner_checkout = project_root.resolve() == SCRIPT_ROOT.resolve()
     values = {**CONFIG}
-    if use_runner_parameters:
+    if project_name == "current" and is_runner_checkout:
         values.update(_flat_parameter_values(runner_parameters))
+    else:
+        values.update(_flat_parameter_values(project_defaults))
+        values.update(_flat_parameter_values(project_settings))
 
-    profiles = runner_parameters.get("profiles", {})
-    if not isinstance(profiles, dict):
-        raise ValueError(f"{runner_parameter_path} profiles must be a table.")
-    if profile_name != "current":
-        profile = profiles.get(profile_name)
-        if not isinstance(profile, dict):
-            available = ", ".join(sorted(str(name) for name in profiles)) or "none"
-            raise ValueError(
-                f"No call-graph profile named {profile_name!r}; available profiles: {available}."
-            )
-        values.update(profile)
+        # Keep older parameter files readable while projects migrate from
+        # profiles.<name> to projects.<name>.
+        projects = runner_parameters.get("projects", {})
+        profiles = runner_parameters.get("profiles", {})
+        if (
+            isinstance(projects, dict)
+            and project_name not in projects
+            and isinstance(profiles, dict)
+        ):
+            legacy_profile = profiles.get(project_name)
+            if isinstance(legacy_profile, dict):
+                values.update(_flat_parameter_values(legacy_profile))
 
     # A target repository may provide its own flat parameter file.  The
     # runner's file is already included above, so avoid applying it twice when
@@ -151,8 +196,20 @@ def load_config(
 
 
 def main() -> None:
-    project_root = resolve_project_root(ANALYSIS_PROJECT)
-    config = load_config(project_root, ANALYSIS_PROJECT)
+    runner_parameters = load_runner_parameters()
+    analysis_project = runner_parameters.get("analysis_project", "current")
+    if not isinstance(analysis_project, str) or not analysis_project.strip():
+        raise ValueError("analysis_project must be a non-empty project name.")
+    analysis_project = analysis_project.strip()
+    projects = runner_parameters.get("projects", {})
+    if not isinstance(projects, dict):
+        raise ValueError("The projects parameter must be a TOML table.")
+    project_root = resolve_project_root(
+        analysis_project,
+        projects_root=_project_root_setting(runner_parameters),
+        projects=projects,
+    )
+    config = load_config(project_root, analysis_project)
     output_path = render_call_graph_tree(project_root, config)
     print(output_path)
 

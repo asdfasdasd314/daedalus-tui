@@ -1,3 +1,8 @@
+# Select the checkout to analyze.  ``current`` uses the launch directory;
+# any other name defaults to <projects_root>/<name> below.
+analysis_project = "current"
+projects_root = "~/Projects"
+
 source_globs = ["tui/**/*.py"]
 exclude = ["tests/**", "**/test_*.py", "graphify-out/**", ".venv/**"]
 entry_points = ["tui.__main__.main"]
@@ -17,10 +22,11 @@ variable_lineage_enabled = true
 write_variable_lineage_json = true
 variable_stats_row_limit = 200
 
-# Named profiles let the standalone runner inspect non-Daedalus checkouts
-# before those projects have their own parameter_files directory.  Keep the
-# source set broad for import evidence; target-local parameters can narrow it.
-[profiles.lotus]
+# These defaults make an arbitrary non-Daedalus Python checkout analyzable
+# without first adding Daedalus files.  A [projects."name"] table below can
+# override the root or any of these settings for a project with an unusual
+# layout.  Target-local parameters still take final precedence.
+[project_defaults]
 source_globs = ["**/*.py"]
 exclude = [
   "tests/**",
@@ -37,19 +43,9 @@ exclude = [
 ]
 entry_points = []
 
-[profiles.medley]
-source_globs = ["**/*.py"]
-exclude = [
-  "tests/**",
-  "**/test_*.py",
-  ".git/**",
-  ".venv/**",
-  "venv/**",
-  "__pycache__/**",
-  "**/__pycache__/**",
-  "build/**",
-  "dist/**",
-  "node_modules/**",
-  "vendor/**",
-]
-entry_points = []
+# Example for a checkout outside projects_root or with project-specific
+# analysis settings:
+# [projects."my-project"]
+# root = "/absolute/path/to/my-project"
+# source_globs = ["python/**/*.py"]
+# entry_points = ["my_project.app.main"]
