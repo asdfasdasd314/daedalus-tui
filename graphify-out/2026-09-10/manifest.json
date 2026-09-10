@@ -135,8 +135,8 @@
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1789066611.9916472,
-    "ast_hash": "58550d22d6ca8b0097da9db55c3aabcd",
+    "mtime": 1788654746.7028253,
+    "ast_hash": "449fe7e86153d64c3edde500fd5d39e5",
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-orchestration.md": {
@@ -315,13 +315,13 @@
     "semantic_hash": ""
   },
   "topic_files/project-imports-to-the-daedalus-format.md": {
-    "mtime": 1789066611.9938009,
-    "ast_hash": "13747d46249f09cb05d034cb58fb5645",
+    "mtime": 1788837890.2171643,
+    "ast_hash": "2f0f72164848bb1fadb112ff54da0dd2",
     "semantic_hash": ""
   },
   "scripts/render_call_graph_tree.py": {
-    "mtime": 1789066611.993181,
-    "ast_hash": "cbb766d4444c7c81c48c7dbd5bef6dd5",
+    "mtime": 1788836980.571033,
+    "ast_hash": "75d8d1a9b716f24ee8b82cfcbe5c2976",
     "semantic_hash": ""
   },
   "tests/conftest.py": {
@@ -370,8 +370,8 @@
     "semantic_hash": ""
   },
   "feature_files/daedalus-tui-call-graph-visualization.md": {
-    "mtime": 1789066611.9921508,
-    "ast_hash": "854628a31c9031d891aac80fadf3ce8e",
+    "mtime": 1788837890.2154284,
+    "ast_hash": "0d11ba75edbdb460923190106fbf3738",
     "semantic_hash": ""
   },
   "tests/fixtures/call_graph_sample/lambda_edge.py": {
@@ -432,11 +432,6 @@
   "tui/variable_lineage.py": {
     "mtime": 1788837890.2183316,
     "ast_hash": "2398a36ea6ce2f81d73b78491f790129",
-    "semantic_hash": ""
-  },
-  "tests/test_call_graph_runner.py": {
-    "mtime": 1789066611.9934797,
-    "ast_hash": "1420d84b7fd819a9b24ec6382b8a7871",
     "semantic_hash": ""
   }
 }
