@@ -993,7 +993,7 @@ class DaedalusTuiApp(App[None]):
             self._apply_responsive_layout(width, height)
 
     def _wide_controls_overflow(self) -> bool:
-        """Return whether a visible wide-layout control is clipped by its bar."""
+        """Return whether wide-layout controls are clipped or too narrow."""
         for selector in ("#task-bar", "#settings"):
             containers = self.query(selector)
             if not containers:
@@ -1005,6 +1005,12 @@ class DaedalusTuiApp(App[None]):
             for child in container.children:
                 region = child.region
                 if region.width <= 0 or region.height <= 0:
+                    return True
+                if (
+                    selector == "#settings"
+                    and isinstance(child, Select)
+                    and region.width < self.settings.layout.wide_control_min_width
+                ):
                     return True
                 if (
                     region.x < available.x

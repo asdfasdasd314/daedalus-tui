@@ -79,6 +79,7 @@ class ConfigTests(unittest.TestCase):
                 codex_reasoning = [{ label = "High", value = "high" }]
                 [layout]
                 compact_width = 88
+                wide_control_min_width = 14
                 short_height = 24
                 compact_task_sidebar_height = 6
                 compact_prompt_height = 3
@@ -88,7 +89,7 @@ class ConfigTests(unittest.TestCase):
 
             self.assertEqual(
                 load_tui_settings(path).layout,
-                LayoutSettings(88, 24, 6, 3),
+                LayoutSettings(88, 24, 6, 3, 14),
             )
 
 
