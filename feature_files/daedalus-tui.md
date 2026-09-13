@@ -64,6 +64,9 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-09-13: Fixed the measured settings-overflow path to pass its compact
+  decision into the responsive layout, so a 125-column terminal now keeps the
+  provider, model, and reasoning controls available through the compact picker.
 - 2026-09-13: Added a measured minimum width for wide settings selectors so
   resize events switch to the compact picker before fractional controls hide
   their labels and dropdown affordances.
