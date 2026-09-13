@@ -76,5 +76,6 @@
   "74": "ComposeResult",
   "75": "CallGraphRunnerTests",
   "76": ".on_data_table_row_selected",
-  "77": ".enter_insert_mode"
+  "77": ".enter_insert_mode",
+  "78": ".nav_word_end"
 }
