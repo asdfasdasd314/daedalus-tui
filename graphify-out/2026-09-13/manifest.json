@@ -120,8 +120,8 @@
     "semantic_hash": ""
   },
   "tui/task_coordinator.py": {
-    "mtime": 1788641329.0210028,
-    "ast_hash": "00cc2ae0f1149b7e08fcda02c16d3890",
+    "mtime": 1789333755.3672466,
+    "ast_hash": "d78e9b7ca195cb46b28bdb1dfa674496",
     "semantic_hash": ""
   },
   "tui/verification.py": {

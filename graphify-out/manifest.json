@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "tests/test_app.py": {
-    "mtime": 1789329142.1649392,
-    "ast_hash": "7d4245c4609388a03ed51a2ca3ce621a",
+    "mtime": 1789334754.2170486,
+    "ast_hash": "a6a4e5a9667cff54c2d71b12f27992c4",
     "semantic_hash": ""
   },
   "tests/test_config.py": {
@@ -130,8 +130,8 @@
     "semantic_hash": ""
   },
   "tui/vim_text_area.py": {
-    "mtime": 1788641884.3694024,
-    "ast_hash": "f36e401c0cdbcc6d6b7cacd968fca77b",
+    "mtime": 1789334883.8563402,
+    "ast_hash": "743f09d870784ad8800c4665a62b2e2b",
     "semantic_hash": ""
   },
   "README.md": {

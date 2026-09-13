@@ -1170,6 +1170,54 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             prompt.insert("second line")
             self.assertEqual(prompt.text, "first line\nsecond line")
 
+    async def test_prompt_accepts_typing_after_resume_and_new_task(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("resumed task")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "paused"
+            record.phase = "Paused"
+            coordinator.emit(record, "paused", "Progress preserved.", "status")
+            await pilot.pause()
+
+            app.action_resume_task()
+            app.action_new_task()
+            await pilot.pause()
+            await pilot.press("a")
+
+            self.assertEqual(prompt.text, "a")
+            self.assertIsNone(app._exception)
+
+    async def test_prompt_accepts_typing_while_resumed_task_streams_updates(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+            prompt.insert("resumed task")
+            app.action_submit_prompt()
+            record = coordinator.records[0]
+            record.status = "paused"
+            record.phase = "Paused"
+            coordinator.emit(record, "paused", "Progress preserved.", "status")
+            await pilot.pause()
+
+            app.action_resume_task()
+            app.action_new_task()
+
+            def stream_updates():
+                for index in range(100):
+                    coordinator.emit(record, "agent", f"update {index}", "message")
+
+            worker = threading.Thread(target=stream_updates)
+            worker.start()
+            await pilot.press("a")
+            worker.join()
+            await pilot.pause()
+
+            self.assertEqual(prompt.text, "a")
+            self.assertIsNone(app._exception)
+
     async def test_prompt_e_advances_to_the_end_of_each_word(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:
