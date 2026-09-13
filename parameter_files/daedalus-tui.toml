@@ -34,8 +34,10 @@ value = "cursor"
 [output]
 width = "95%"
 
-# Responsive viewport breakpoints and compact dimensions. Compact mode uses a
-# vertical workspace; short mode reduces vertical chrome independently.
+# Responsive safety guard and compact dimensions. Above the guard, the TUI
+# measures the wide controls' laid-out regions and enters compact mode if any
+# control is clipped. Compact mode uses a vertical workspace; short mode
+# reduces vertical chrome independently.
 [layout]
 compact_width = 100
 short_height = 32

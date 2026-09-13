@@ -12,10 +12,12 @@ The standalone Daedalus TUI is an installable Textual application that runs from
   operator Push control that publishes that branch to `origin`.
 - **Responsive layouts**: Terminal resize events switch narrow screens to a
   vertical workspace with a compact full-width task inbox and stacked toolbar
-  actions. A compact category/value picker keeps provider, model, reasoning,
-  mode, topic, and operating-branch choices available, while short terminals
-  reduce prompt and surrounding vertical chrome. Breakpoints and compact
-  dimensions are parameterized.
+  actions. The wide task and settings bars are measured after layout, so the
+  compact category/value picker appears when a control is actually clipped;
+  a conservative parameterized safety guard covers very narrow or not-yet-
+  laid-out terminals. The picker keeps provider, model, reasoning, mode, topic,
+  and operating-branch choices available, while short terminals reduce prompt
+  and surrounding vertical chrome.
 - **Optional Topics**: A Topic Select lists `(None)` plus `topic_files/*.md`
   stems so related tasks can share goal/status/state-log memory without
   requiring a topic on every submission.
@@ -61,6 +63,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-09-13: Made compact mode respond to measured task/settings control bounds after layout, with a conservative width guard and deferred re-measurement when restoring the wide layout.
 - 2026-09-13: Added resize-aware compact and short-height layouts with a two-level settings picker that preserves provider cascades, task metadata snapshots, and project topic/branch persistence on narrow terminals.
 - 2026-09-13: Routed every new task submission through the shared task-focus path so Coding, Ask, Plan, and topic-created tasks select their running task immediately.
 - 2026-09-05: Fixed task-inbox columns and bounded their displayed values so update markers do not change the sidebar's horizontal layout or hide the project, task, status, or exclamation mark until hover.

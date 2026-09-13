@@ -222,7 +222,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(app.query_one("#compact-settings").styles.display, "block")
             self.assertEqual(app.query_one("#new-project-button").styles.display, "block")
 
-            await pilot.resize_terminal(120, 40)
+            await pilot.resize_terminal(180, 40)
             await pilot.pause()
             self.assertFalse(app._compact_mode)
             self.assertFalse(app._short_height_mode)
@@ -230,7 +230,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(app.query_one("#prompt-input").styles.height.value, 7)
             self.assertEqual(app.query_one("#compact-settings").styles.display, "none")
 
-            await pilot.resize_terminal(120, 20)
+            await pilot.resize_terminal(180, 20)
             await pilot.pause()
             self.assertFalse(app._compact_mode)
             self.assertTrue(app._short_height_mode)

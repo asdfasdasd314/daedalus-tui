@@ -752,6 +752,7 @@ class DaedalusTuiApp(App[None]):
         self._push_in_flight = False
         self._compact_mode = False
         self._short_height_mode = False
+        self._responsive_measure_pending = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -931,7 +932,13 @@ class DaedalusTuiApp(App[None]):
         self._apply_responsive_layout(event.size.width, event.size.height)
 
     def _apply_responsive_layout(self, width: int | None = None, height: int | None = None) -> None:
-        """Toggle compact and short-height classes and their tunable dimensions."""
+        """Toggle responsive classes and dimensions after a viewport change.
+
+        ``compact_width`` is a lower safety guard, not the primary wide-layout
+        breakpoint. Above it, the actual laid-out controls are measured after
+        Textual has processed the style change so a clipped toolbar switches
+        to the compact settings picker immediately.
+        """
         if not all(
             self.query(selector)
             for selector in ("#screen", "#task-sidebar", "#prompt-input", "#output")
@@ -959,6 +966,47 @@ class DaedalusTuiApp(App[None]):
         )
         output.styles.width = "1fr" if compact else self.settings.output_width
         self._refresh_compact_setting_value()
+        if not compact:
+            self._queue_responsive_measurement()
+
+    def _queue_responsive_measurement(self) -> None:
+        """Measure wide controls after their current layout pass completes."""
+        if self._responsive_measure_pending:
+            return
+        self._responsive_measure_pending = True
+        self.call_after_refresh(self._apply_measured_responsive_layout)
+
+    def _apply_measured_responsive_layout(self) -> None:
+        """Switch to compact mode when wide controls extend past their bars."""
+        self._responsive_measure_pending = False
+        if not self.query("#screen"):
+            return
+        width = self.size.width
+        height = self.size.height
+        compact = width < self.settings.layout.compact_width or self._wide_controls_overflow()
+        if compact != self._compact_mode:
+            self._apply_responsive_layout(width, height)
+
+    def _wide_controls_overflow(self) -> bool:
+        """Return whether a visible wide-layout control is clipped by its bar."""
+        for selector in ("#task-bar", "#settings"):
+            containers = self.query(selector)
+            if not containers:
+                continue
+            container = containers.first()
+            available = container.content_region
+            if available.width <= 0:
+                return True
+            for child in container.children:
+                region = child.region
+                if region.width <= 0 or region.height <= 0:
+                    return True
+                if (
+                    region.x < available.x
+                    or region.x + region.width > available.x + available.width
+                ):
+                    return True
+        return False
 
     def exit(self, *args, **kwargs) -> None:
         """Stop agents before an explicit Textual exit begins."""

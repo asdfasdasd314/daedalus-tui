@@ -23,7 +23,12 @@ class ModelOption:
 
 @dataclass(frozen=True)
 class LayoutSettings:
-    """Viewport breakpoints and dimensions used by the responsive TUI."""
+    """Safety guard and dimensions used by the responsive TUI.
+
+    The wide controls are measured against their laid-out regions above this
+    width; the guard keeps very narrow terminals in compact mode while those
+    regions are not usable yet.
+    """
 
     compact_width: int = 100
     short_height: int = 32

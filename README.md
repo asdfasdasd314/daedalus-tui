@@ -34,13 +34,14 @@ the launch directory remains available as a usability fallback. Each project
 has its own task coordinator, task numbering, Git worktrees, and transcripts;
 switching the sidebar does not interrupt tasks running in another project.
 
-The layout adapts to terminal size. Below the configured compact-width
-breakpoint, the task inbox becomes a short full-width panel, the main workspace
-stacks vertically, and the task toolbar's project and action controls remain
-available without clipping. The wide settings row is replaced by a category
-and value picker covering provider, model, reasoning, mode, topic, and
-operating branch. Short terminals also use a smaller prompt and reduced
-vertical chrome. Tune these defaults in the `[layout]` table of
+The layout adapts to terminal size. Below the configured compact-width safety
+guard, or whenever a wide task/settings control is actually clipped, the task
+inbox becomes a short full-width panel, the main workspace stacks vertically,
+and the task toolbar's project and action controls remain available without
+clipping. The wide settings row is replaced by a category and value picker
+covering provider, model, reasoning, mode, topic, and operating branch. Short
+terminals also use a smaller prompt and reduced vertical chrome. Tune these
+defaults in the `[layout]` table of
 `parameter_files/daedalus-tui.toml` (`compact_width`, `short_height`,
 `compact_task_sidebar_height`, and `compact_prompt_height`).
 
