@@ -31,6 +31,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Stable task inbox layout**: The task inbox uses fixed, parameterized marker/project/task/status widths and visible ellipses so background update markers cannot resize or horizontally scroll the sidebar.
 - **Retryable failures**: Failed agent tasks expose their diagnostics and a Retry action so transient connectivity or service failures can be recovered in place.
 - **Prompt mode toggle**: On the main prompting screen, `Tab` toggles the new-task mode between Coding and Plan; the existing Ask mode remains available from the selector.
+- **Submission focus**: Every newly submitted task becomes the selected task immediately, regardless of mode, so its status, transcript, plan review, and task context are visible while it runs.
 
 ## Relevant Files
 - `tui/app.py`: Textual layout, selectors, task list, transcript replay, and task controls.
@@ -52,6 +53,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-09-13: Routed every new task submission through the shared task-focus path so Coding, Ask, Plan, and topic-created tasks select their running task immediately.
 - 2026-09-05: Fixed task-inbox columns and bounded their displayed values so update markers do not change the sidebar's horizontal layout or hide the project, task, status, or exclamation mark until hover.
 - 2026-09-05: Hardened deferred plan-answer Select init and Select change handlers so illegal leftover option ids after plan completion cannot fatal-exit the TUI, and fatal errors now print a stderr pointer to the debug log.
 - 2026-09-05: Fixed the `Tab` mode toggle to recognize Textual's one-entry main screen stack while leaving modal screens untouched.
