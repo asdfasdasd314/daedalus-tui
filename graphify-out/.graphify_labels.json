@@ -66,7 +66,6 @@
   "64": "module_resource.py",
   "65": "scopes.py",
   "67": "__init__.py",
-  "68": "CodingStatisticsScreen",
   "71": "_collapse_inner_safe",
   "72": "render_call_graph_tree.py",
   "73": "CandidateFeatureGroup",
