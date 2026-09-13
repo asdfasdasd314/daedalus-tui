@@ -220,20 +220,13 @@ class CompactSettingsSelect(Select):
     def _watch_value(self, value) -> None:
         super()._watch_value(value)
         self._latest_value = value
-        if self.id != "compact-settings-category" or value not in dict(COMPACT_SETTING_CATEGORIES):
-            if self.id == "compact-settings-value" and value not in (self.BLANK, self.NULL):
-                try:
-                    app = self.app
-                    if app is not None and not app._suppress_compact_setting_change:
-                        app._apply_compact_setting(str(value))
-                except Exception:
-                    return
+        if self.id != "compact-settings-category" or value not in dict(COMPACT_SETTING_CATEGORIES).values():
             return
         try:
             app = self.app
             if app is not None and not app._suppress_compact_setting_change:
                 app._compact_setting_category = str(value)
-                app._refresh_compact_setting_value(str(value))
+                app._refresh_compact_setting_value(str(value), sync_category=False)
         except Exception:
             # The category watcher also runs while the app is mounting, before
             # the sibling value control is available.
@@ -1195,11 +1188,17 @@ class DaedalusTuiApp(App[None]):
                 self._open_plan_clarification(int(index_text))
 
     def on_select_changed(self, event: Select.Changed) -> None:
+        # Select.Changed is posted by the reactive watcher and may be
+        # delivered after another refresh has already changed the control.
+        # Such an event describes stale state and must not re-enter a refresh
+        # or switch projects/providers behind the user's back.
+        if event.value != event.select.value:
+            return
         if event.select.id == "compact-settings-category":
             if event.value != getattr(event.select, "_latest_value", event.value):
                 return
             category = str(event.value)
-            if category not in dict(COMPACT_SETTING_CATEGORIES):
+            if category not in dict(COMPACT_SETTING_CATEGORIES).values():
                 return
             self._compact_setting_category = category
             if not self._suppress_compact_setting_change:
@@ -1282,21 +1281,51 @@ class DaedalusTuiApp(App[None]):
         reasoning_select = self.query_one("#reasoning-select", Select)
         is_cursor = provider == "cursor"
         if is_cursor:
-            model_select.set_options([(self.settings.cursor_model.label, self.settings.cursor_model.value)])
-            model_select.value = self.settings.cursor_model.value
+            model_options = [(self.settings.cursor_model.label, self.settings.cursor_model.value)]
+            reasoning_options = [("Not applicable", "")]
+            model_value = self.settings.cursor_model.value
+            reasoning_value = ""
             model_select.disabled = True
-            reasoning_select.set_options([("Not applicable", "")])
-            reasoning_select.value = ""
             reasoning_select.disabled = True
         else:
-            model_select.set_options([(option.label, option.value) for option in self.settings.codex_models])
-            model_select.value = self.settings.default_model
+            model_options = [(option.label, option.value) for option in self.settings.codex_models]
+            reasoning_options = [(option.label, option.value) for option in self.settings.codex_reasoning]
+            model_value = self.settings.default_model
+            reasoning_value = self.settings.default_reasoning
             model_select.disabled = False
-            reasoning_select.set_options([(option.label, option.value) for option in self.settings.codex_reasoning])
-            reasoning_select.value = self.settings.default_reasoning
             reasoning_select.disabled = False
+        self._set_select_options_if_changed(model_select, model_options)
+        if model_select.value != model_value:
+            model_select.value = model_value
+        self._set_select_options_if_changed(reasoning_select, reasoning_options)
+        if reasoning_select.value != reasoning_value:
+            reasoning_select.value = reasoning_value
+        # The wide provider selector is the source of truth even when the
+        # compact controls were used earlier in the session.
+        self._compact_setting_values["provider"] = provider
+        self._compact_setting_values.pop("model", None)
+        self._compact_setting_values.pop("reasoning", None)
         if self.query("#compact-settings-category"):
             self._refresh_compact_setting_value()
+
+    @staticmethod
+    def _set_select_options_if_changed(
+        select: Select,
+        options: list[tuple[str, str]],
+        *,
+        compare_labels: bool = False,
+    ) -> None:
+        """Avoid posting Select.Changed events when the options are unchanged."""
+        current_options = tuple(getattr(select, "_options", ()))
+        next_options = tuple(options)
+        if compare_labels:
+            unchanged = current_options == next_options
+        else:
+            unchanged = tuple(value for _label, value in current_options) == tuple(
+                value for _label, value in next_options
+            )
+        if not unchanged:
+            select.set_options(options)
 
     def _compact_setting_options(self, category: str) -> list[tuple[str, str]]:
         """Return labels and values for one compact settings category."""
@@ -1340,14 +1369,19 @@ class DaedalusTuiApp(App[None]):
         value = self.query_one(f"#{ids[category]}", Select).value
         return "" if value in (Select.BLANK, getattr(Select, "NULL", None)) else str(value)
 
-    def _refresh_compact_setting_value(self, category: str | None = None) -> None:
+    def _refresh_compact_setting_value(
+        self,
+        category: str | None = None,
+        *,
+        sync_category: bool = True,
+    ) -> None:
         """Populate the compact value Select while retaining its active category."""
         if not self.query("#compact-settings-category"):
             return
         category_select = self.query_one("#compact-settings-category", Select)
         if category is None:
             category = self._compact_setting_category
-        if category not in dict(COMPACT_SETTING_CATEGORIES):
+        if category not in dict(COMPACT_SETTING_CATEGORIES).values():
             category = "provider"
         self._compact_setting_category = category
         value_select = self.query_one("#compact-settings-value", Select)
@@ -1359,10 +1393,14 @@ class DaedalusTuiApp(App[None]):
         effective = current if current in values else options[0][1]
         self._suppress_compact_setting_change = True
         try:
-            if category_select.value != category:
+            if sync_category and category_select.value != category:
                 category_select.value = category
-            value_select.set_options(_literal_select_options(options))
-            value_select.value = effective
+            current_values = tuple(value for _label, value in getattr(value_select, "_options", ()))
+            next_values = tuple(value for _label, value in options)
+            if current_values != next_values:
+                value_select.set_options(_literal_select_options(options))
+            if value_select.value != effective:
+                value_select.value = effective
         finally:
             self._suppress_compact_setting_change = False
 
@@ -1686,8 +1724,10 @@ class DaedalusTuiApp(App[None]):
         branch_select = self.query_one("#target-branch-select", Select)
         self._suppress_target_branch_change = True
         try:
-            branch_select.set_options([(name, name) for name in options])
-            branch_select.value = effective
+            branch_options = [(name, name) for name in options]
+            self._set_select_options_if_changed(branch_select, branch_options)
+            if branch_select.value != effective:
+                branch_select.value = effective
         finally:
             self._suppress_target_branch_change = False
         self._apply_primary_branch(project_path, effective)
@@ -1780,8 +1820,9 @@ class DaedalusTuiApp(App[None]):
         topic_select = self.query_one("#topic-select", Select)
         self._suppress_topic_change = True
         try:
-            topic_select.set_options(options)
-            topic_select.value = effective
+            self._set_select_options_if_changed(topic_select, options)
+            if topic_select.value != effective:
+                topic_select.value = effective
         finally:
             self._suppress_topic_change = False
         self._refresh_topic_view_button()
@@ -1921,8 +1962,10 @@ class DaedalusTuiApp(App[None]):
             )
             suffix = f" · {task_count} tasks" if task_count else ""
             options.append((f"{project.display_name}{suffix}", str(project.path)))
-        project_select.set_options(options)
-        project_select.value = self._project_select_value()
+        self._set_select_options_if_changed(project_select, options, compare_labels=True)
+        effective = self._project_select_value()
+        if project_select.value != effective:
+            project_select.value = effective
 
     def _selector_projects(self) -> tuple[DaedalusProject, ...]:
         """Return only direct-child projects, or the empty-root fallback."""

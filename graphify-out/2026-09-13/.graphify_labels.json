@@ -65,10 +65,20 @@
   "63": "ambiguous_b.py",
   "64": "module_resource.py",
   "65": "scopes.py",
+  "66": "task_coordinator.py",
   "67": "__init__.py",
-  "68": "CodingStatisticsScreen",
+  "68": "PlanQuestion",
+  "69": "._set_status",
+  "70": "debug_log.py",
   "71": "_collapse_inner_safe",
   "72": "render_call_graph_tree.py",
   "73": "CandidateFeatureGroup",
-  "75": "CallGraphRunnerTests"
+  "74": "__init__.py",
+  "75": "CallGraphRunnerTests",
+  "76": ".action_view_topic",
+  "77": ".cursor_shape",
+  "78": ".enter_insert_mode",
+  "79": ".nav_word_end",
+  "80": ".edit_paste_after",
+  "81": ".edit_paste_before"
 }
