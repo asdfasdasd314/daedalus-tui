@@ -217,24 +217,24 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
         async with app.run_test() as pilot:
             self.assertTrue(app._compact_mode)
             self.assertTrue(app._short_height_mode)
-            self.assertEqual(app.query_one("#task-sidebar").styles.height, 6)
-            self.assertEqual(app.query_one("#prompt-input").styles.height, 3)
+            self.assertEqual(app.query_one("#task-sidebar").styles.height.value, 6)
+            self.assertEqual(app.query_one("#prompt-input").styles.height.value, 3)
             self.assertEqual(app.query_one("#compact-settings").styles.display, "block")
             self.assertEqual(app.query_one("#new-project-button").styles.display, "block")
 
-            await pilot.resize(120, 40)
+            await pilot.resize_terminal(120, 40)
             await pilot.pause()
             self.assertFalse(app._compact_mode)
             self.assertFalse(app._short_height_mode)
-            self.assertEqual(app.query_one("#task-sidebar").styles.height, "1fr")
-            self.assertEqual(app.query_one("#prompt-input").styles.height, 7)
+            self.assertEqual(app.query_one("#task-sidebar").styles.height.value, 1)
+            self.assertEqual(app.query_one("#prompt-input").styles.height.value, 7)
             self.assertEqual(app.query_one("#compact-settings").styles.display, "none")
 
-            await pilot.resize(120, 20)
+            await pilot.resize_terminal(120, 20)
             await pilot.pause()
             self.assertFalse(app._compact_mode)
             self.assertTrue(app._short_height_mode)
-            self.assertEqual(app.query_one("#prompt-input").styles.height, 3)
+            self.assertEqual(app.query_one("#prompt-input").styles.height.value, 3)
 
     async def test_compact_settings_cascade_and_submission_snapshot(self):
         app, coordinator = self.make_app()

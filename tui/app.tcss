@@ -363,7 +363,7 @@ Screen {
 #screen.compact-width #task-bar {
     layout: vertical;
     height: auto;
-    align: left stretch;
+    align: left top;
 }
 
 #screen.compact-width #task-bar > * {

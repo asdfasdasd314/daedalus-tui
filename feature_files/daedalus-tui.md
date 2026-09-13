@@ -138,3 +138,4 @@ HACKING
 - 2026-09-05: Stopped remounting stale plan Select values after follow-up option ids change, avoiding InvalidSelectValueError crashes like illegal `'replace'`.
 - 2026-09-05: Limited project discovery and selector refreshes to immediate launch-root children, using directory basenames and excluding nested project paths.
 - 2026-09-05: Removed the blank option from the project selector so direct-child labels are the only displayed project choices.
+- 2026-09-13: Repaired Textual 8.2 compatibility for responsive styling and compact selector cascades, including delayed event filtering and Scalar-aware resize assertions.

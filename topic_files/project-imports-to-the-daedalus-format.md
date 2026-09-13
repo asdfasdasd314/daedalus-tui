@@ -57,3 +57,4 @@ open
 - 2026-09-10: Added manually selectable Lotus and Medley call-graph profiles so non-Daedalus Python checkouts can be analyzed with broad discovery before local parameter files exist.
 - 2026-09-10: Kept current-project paths lexically stable so import analysis remains compatible with macOS temporary-directory paths.
 - 2026-09-10: Made import target selection parameter-driven with automatic projects-root/name resolution and optional per-project overrides, reducing arbitrary-project setup to configuration rather than runner edits.
+- 2026-09-13: Hardened the TUI’s responsive import-review surface against Textual resize and delayed compact-setting events.

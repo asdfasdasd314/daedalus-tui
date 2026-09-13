@@ -213,6 +213,37 @@ class PlanAnswerSelect(Select):
                 self._value = self.NULL
 
 
+class CompactSettingsSelect(Select):
+    """Keep only the latest value-change event for rebuilt compact controls."""
+
+    def _watch_value(self, value) -> None:
+        super()._watch_value(value)
+        self._latest_value = value
+        if self.id != "compact-settings-category" or value not in dict(COMPACT_SETTING_CATEGORIES):
+            if self.id == "compact-settings-value" and value not in (self.BLANK, self.NULL):
+                try:
+                    app = self.app
+                    if app is not None and not app._suppress_compact_setting_change:
+                        app._apply_compact_setting(str(value))
+                except Exception:
+                    return
+            return
+        try:
+            app = self.app
+            if app is not None and not app._suppress_compact_setting_change:
+                app._compact_setting_category = str(value)
+                app._refresh_compact_setting_value(str(value))
+        except Exception:
+            # The category watcher also runs while the app is mounting, before
+            # the sibling value control is available.
+            return
+
+    def _validate_value(self, value):
+        if self.id == "compact-settings-value" and isinstance(value, str):
+            return value
+        return super()._validate_value(value)
+
+
 class PlanClarificationScreen(ModalScreen[str | None]):
     """Collect a clarification about one plan question."""
 
@@ -716,6 +747,8 @@ class DaedalusTuiApp(App[None]):
         self._suppress_target_branch_change = False
         self._suppress_topic_change = False
         self._suppress_compact_setting_change = False
+        self._compact_setting_category = "provider"
+        self._compact_setting_values: dict[str, str] = {}
         self._push_in_flight = False
         self._compact_mode = False
         self._short_height_mode = False
@@ -782,14 +815,16 @@ class DaedalusTuiApp(App[None]):
                         )
                         yield Button("Push", id="push-branch-button")
                     with Vertical(id="compact-settings"):
-                        yield Select(
+                        yield CompactSettingsSelect(
                             _literal_select_options(list(COMPACT_SETTING_CATEGORIES)),
                             value="provider",
+                            allow_blank=False,
                             id="compact-settings-category",
                         )
-                        yield Select(
+                        yield CompactSettingsSelect(
                             [(option.label, option.value) for option in self.settings.providers],
                             value=self.settings.default_provider,
+                            allow_blank=False,
                             id="compact-settings-value",
                         )
                     yield Static(self._directory_text(), id="directory")
@@ -1108,10 +1143,34 @@ class DaedalusTuiApp(App[None]):
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.select.id == "compact-settings-category":
+            if event.value != getattr(event.select, "_latest_value", event.value):
+                return
+            category = str(event.value)
+            if category not in dict(COMPACT_SETTING_CATEGORIES):
+                return
+            self._compact_setting_category = category
             if not self._suppress_compact_setting_change:
-                self._refresh_compact_setting_value(str(event.value))
+                self._refresh_compact_setting_value(category)
             return
         if event.select.id == "compact-settings-value":
+            if event.value != getattr(event.select, "_latest_value", event.value):
+                return
+            if event.value in (Select.BLANK, "", getattr(Select, "NULL", None)):
+                return
+            value_select = self.query_one("#compact-settings-value", Select)
+            if event.value not in value_select._legal_values:
+                categories = [
+                    self._compact_setting_category,
+                    *[setting for _label, setting in COMPACT_SETTING_CATEGORIES],
+                ]
+                for category in dict.fromkeys(categories):
+                    if str(event.value) in {
+                        option_value for _label, option_value in self._compact_setting_options(category)
+                    }:
+                        self._compact_setting_category = category
+                        break
+                else:
+                    return
             if not self._suppress_compact_setting_change:
                 self._apply_compact_setting(str(event.value))
             return
@@ -1234,9 +1293,10 @@ class DaedalusTuiApp(App[None]):
             return
         category_select = self.query_one("#compact-settings-category", Select)
         if category is None:
-            category = str(category_select.value)
+            category = self._compact_setting_category
         if category not in dict(COMPACT_SETTING_CATEGORIES):
             category = "provider"
+        self._compact_setting_category = category
         value_select = self.query_one("#compact-settings-value", Select)
         options = self._compact_setting_options(category)
         if not options:
@@ -1255,13 +1315,20 @@ class DaedalusTuiApp(App[None]):
 
     def _apply_compact_setting(self, value: str) -> None:
         """Apply a compact value through the existing wide-control state."""
-        category = str(self.query_one("#compact-settings-category", Select).value)
+        category = self._compact_setting_category
+        self._compact_setting_values[category] = value
         if category == "provider":
             self._apply_provider_selection(value)
         elif category == "model":
-            self.query_one("#model-select", Select).value = value
+            model_select = self.query_one("#model-select", Select)
+            if value not in model_select._legal_values:
+                self._apply_provider_selection(str(self.query_one("#provider-select", Select).value))
+            model_select.value = value
         elif category == "reasoning":
-            self.query_one("#reasoning-select", Select).value = value
+            reasoning_select = self.query_one("#reasoning-select", Select)
+            if value not in reasoning_select._legal_values:
+                self._apply_provider_selection(str(self.query_one("#provider-select", Select).value))
+            reasoning_select.value = value
         elif category == "mode":
             self.query_one("#mode-select", Select).value = value
         elif category == "topic":
@@ -1277,11 +1344,20 @@ class DaedalusTuiApp(App[None]):
 
     def _current_submission_settings(self) -> tuple[str, str, str, str]:
         """Return provider metadata from the shared controls for a new task."""
-        provider = str(self.query_one("#provider-select", Select).value)
-        model = str(self.query_one("#model-select", Select).value)
+        provider = self._compact_setting_values.get(
+            "provider", str(self.query_one("#provider-select", Select).value)
+        )
+        model = self._compact_setting_values.get(
+            "model", str(self.query_one("#model-select", Select).value)
+        )
         reasoning_value = self.query_one("#reasoning-select", Select).value
-        reasoning = "" if reasoning_value in (Select.BLANK, getattr(Select, "NULL", None)) else str(reasoning_value)
-        mode = str(self.query_one("#mode-select", Select).value)
+        reasoning = self._compact_setting_values.get(
+            "reasoning",
+            "" if reasoning_value in (Select.BLANK, getattr(Select, "NULL", None)) else str(reasoning_value),
+        )
+        mode = self._compact_setting_values.get(
+            "mode", str(self.query_one("#mode-select", Select).value)
+        )
         return provider, model, reasoning, mode
 
     def on_text_area_changed(self, event: TextArea.Changed) -> None:
