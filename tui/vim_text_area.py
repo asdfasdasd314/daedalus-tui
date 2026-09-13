@@ -140,6 +140,12 @@ class DaedalusVimTextArea(VimTextArea):
             self.app.action_toggle_plan_mode()
             event.stop()
             return
+        if self.vim_mode == VimMode.INSERT and event.is_printable:
+            # Textual's TextArea._on_key runs after this handler and owns
+            # native printable insertion. Do not pass ordinary prompt text
+            # through the Vim router first; that router intentionally has no
+            # insert-mode implementation for printable keys.
+            return
         previous_register = self.yank_register
         if event.key == "escape":
             super().on_key(event)
