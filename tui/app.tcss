@@ -73,6 +73,11 @@ Screen {
     align: left middle;
 }
 
+#compact-settings {
+    display: none;
+    height: auto;
+}
+
 #task-bar {
     height: 3;
     align: left middle;
@@ -311,6 +316,97 @@ Screen {
 
 #status {
     color: $text-muted;
+}
+
+/* Narrow terminals use a vertical workspace and a two-level settings picker. */
+#screen.compact-width {
+    padding: 1;
+}
+
+#screen.compact-width #workspace {
+    layout: vertical;
+}
+
+#screen.compact-width #task-sidebar {
+    width: 1fr;
+    min-width: 0;
+    height: 8;
+    padding: 1;
+}
+
+#screen.compact-width #project-main {
+    width: 1fr;
+    height: 1fr;
+    min-height: 1;
+    padding-left: 0;
+}
+
+#screen.compact-width #settings {
+    display: none;
+}
+
+#screen.compact-width #compact-settings {
+    display: block;
+    width: 1fr;
+    height: 7;
+}
+
+#screen.compact-width #compact-settings Select {
+    width: 1fr;
+    margin-bottom: 0;
+}
+
+#screen.compact-width #compact-settings-category {
+    margin-bottom: 1;
+}
+
+#screen.compact-width #task-bar {
+    layout: vertical;
+    height: auto;
+    align: left stretch;
+}
+
+#screen.compact-width #task-bar > * {
+    width: 1fr;
+    margin-right: 0;
+}
+
+#screen.compact-width #task-bar #project-label {
+    height: 1;
+    margin-right: 0;
+}
+
+#screen.compact-width #task-bar Button {
+    height: 3;
+}
+
+#screen.compact-width #output {
+    width: 1fr;
+}
+
+/* Short terminals keep the output flexible by reducing surrounding chrome. */
+#screen.short-height #task-context {
+    height: 1;
+}
+
+#screen.short-height #output-toolbar,
+#screen.short-height #actions,
+#screen.short-height #plan-actions {
+    height: 2;
+}
+
+#screen.short-height #resume-notes-panel {
+    height: 4;
+}
+
+#screen.short-height #resume-notes {
+    height: 2;
+}
+
+#screen.short-height #actions Button,
+#screen.short-height #output-toggle-button,
+#screen.short-height #plan-actions Button {
+    height: 2;
 }
 
 KeyboardShortcutsScreen {

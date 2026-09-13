@@ -2,6 +2,7 @@ import json
 import tempfile
 import threading
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -17,7 +18,7 @@ from tui.app import (
     KeyboardShortcutsScreen,
     TopicViewerScreen,
 )
-from tui.config import ModelOption, TuiSettings
+from tui.config import LayoutSettings, ModelOption, TuiSettings
 from tui.projects import DaedalusProject
 from tui.plan import CUSTOM_ANSWER_OPTION_ID, PlanOption, PlanQuestion, encode_custom_answer
 from tui.task_coordinator import TaskRecord
@@ -205,6 +206,76 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.query_one("#view-topic-button", Button).disabled)
             self.assertIsInstance(app.query_one("#output-toggle-button", Button), Button)
             await pilot.pause()
+
+    async def test_responsive_layout_transitions_restore_wide_dimensions(self):
+        app = DaedalusTuiApp(
+            runner=FakeRunner(),
+            directory=Path("/workspace/project"),
+            settings=replace(settings(), layout=LayoutSettings(100, 30, 6, 3)),
+            coordinator=FakeCoordinator(),
+        )
+        async with app.run_test() as pilot:
+            self.assertTrue(app._compact_mode)
+            self.assertTrue(app._short_height_mode)
+            self.assertEqual(app.query_one("#task-sidebar").styles.height, 6)
+            self.assertEqual(app.query_one("#prompt-input").styles.height, 3)
+            self.assertEqual(app.query_one("#compact-settings").styles.display, "block")
+            self.assertEqual(app.query_one("#new-project-button").styles.display, "block")
+
+            await pilot.resize(120, 40)
+            await pilot.pause()
+            self.assertFalse(app._compact_mode)
+            self.assertFalse(app._short_height_mode)
+            self.assertEqual(app.query_one("#task-sidebar").styles.height, "1fr")
+            self.assertEqual(app.query_one("#prompt-input").styles.height, 7)
+            self.assertEqual(app.query_one("#compact-settings").styles.display, "none")
+
+            await pilot.resize(120, 20)
+            await pilot.pause()
+            self.assertFalse(app._compact_mode)
+            self.assertTrue(app._short_height_mode)
+            self.assertEqual(app.query_one("#prompt-input").styles.height, 3)
+
+    async def test_compact_settings_cascade_and_submission_snapshot(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            category = app.query_one("#compact-settings-category", Select)
+            value = app.query_one("#compact-settings-value", Select)
+            self.assertEqual(
+                {setting for _label, setting in category._options},
+                {"provider", "model", "reasoning", "mode", "topic", "branch"},
+            )
+
+            category.value = "provider"
+            value.value = "cursor"
+            await pilot.pause()
+            self.assertEqual(app.query_one("#provider-select", Select).value, "cursor")
+            self.assertTrue(app.query_one("#model-select", Select).disabled)
+            self.assertTrue(app.query_one("#reasoning-select", Select).disabled)
+            self.assertEqual(value.value, "cursor")
+
+            value.value = "codex"
+            await pilot.pause()
+            category.value = "model"
+            await pilot.pause()
+            value.value = "gpt-5.6-terra"
+            await pilot.pause()
+            category.value = "reasoning"
+            await pilot.pause()
+            value.value = "high"
+            await pilot.pause()
+            category.value = "mode"
+            await pilot.pause()
+            value.value = "ask"
+            await pilot.pause()
+
+            app.query_one("#prompt-input", TextArea).insert("Snapshot compact settings")
+            app.action_submit_prompt()
+            self.assertEqual(
+                (coordinator.records[-1].provider, coordinator.records[-1].model,
+                 coordinator.records[-1].reasoning, coordinator.records[-1].mode),
+                ("codex", "gpt-5.6-terra", "high", "ask"),
+            )
 
     async def test_tab_toggles_coding_and_plan_modes_on_the_main_screen(self):
         app, _ = self.make_app()

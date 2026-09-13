@@ -10,6 +10,12 @@ The standalone Daedalus TUI is an installable Textual application that runs from
   model and reasoning disabled. The settings bar also exposes a per-project
   Branch Select for the operating branch used by new task worktrees, with an
   operator Push control that publishes that branch to `origin`.
+- **Responsive layouts**: Terminal resize events switch narrow screens to a
+  vertical workspace with a compact full-width task inbox and stacked toolbar
+  actions. A compact category/value picker keeps provider, model, reasoning,
+  mode, topic, and operating-branch choices available, while short terminals
+  reduce prompt and surrounding vertical chrome. Breakpoints and compact
+  dimensions are parameterized.
 - **Optional Topics**: A Topic Select lists `(None)` plus `topic_files/*.md`
   stems so related tasks can share goal/status/state-log memory without
   requiring a topic on every submission.
@@ -35,6 +41,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 ## Relevant Files
 - `tui/app.py`: Textual layout, selectors, task list, transcript replay, and task controls.
 - `tui/app.tcss`: Shared full-height output-panel layout and readable transcript/diagnostic styling.
+- `tui/config.py`: Read-only provider and responsive-layout configuration models and loaders.
 - `tui/git_worktree.py`: Local Git helpers including operating-branch push for the operator Push control.
 - `tui/prompts.py`: Task, repair, and resolver prompt wrappers, including plan-mode recommended-option instructions.
 - `tui/topics.py`: Optional topic discovery, load, and prompt embedding.
@@ -43,6 +50,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - `tui/agent_runner.py`: Independent Codex and Cursor subprocess adapter.
 - `tui/task_coordinator.py`: Concurrent task executor, serialized integration gate, and plan-question clarification workers.
 - `parameter_files/daedalus-tui.toml`: Provider, model, reasoning, and default UI settings.
+- `tests/test_config.py`, `tests/test_app.py`: Configuration validation and responsive layout/compact-selection coverage.
 - `feature_files/daedalus-tui-orchestration.md`: Local orchestration ownership boundary.
 - `feature_files/daedalus-tui-topics.md`: Optional topic umbrellas and shared State Log memory.
 - `feature_files/daedalus-tui-project-initialization.md`: Launch-root project scaffolding.
@@ -52,6 +60,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-09-13: Added resize-aware compact and short-height layouts with a two-level settings picker that preserves provider cascades, task metadata snapshots, and project topic/branch persistence on narrow terminals.
 - 2026-09-05: Fixed task-inbox columns and bounded their displayed values so update markers do not change the sidebar's horizontal layout or hide the project, task, status, or exclamation mark until hover.
 - 2026-09-05: Hardened deferred plan-answer Select init and Select change handlers so illegal leftover option ids after plan completion cannot fatal-exit the TUI, and fatal errors now print a stderr pointer to the debug log.
 - 2026-09-05: Fixed the `Tab` mode toggle to recognize Textual's one-entry main screen stack while leaving modal screens untouched.

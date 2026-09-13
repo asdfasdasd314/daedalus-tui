@@ -161,6 +161,15 @@ SHORTCUT_SECTIONS = (
     ),
 )
 
+COMPACT_SETTING_CATEGORIES = (
+    ("Model provider", "provider"),
+    ("Model", "model"),
+    ("Reasoning", "reasoning"),
+    ("Mode", "mode"),
+    ("Topic", "topic"),
+    ("Operating branch", "branch"),
+)
+
 
 class PlanAnswerSelect(Select):
     """Initialize dynamic plan selectors after their nested children mount."""
@@ -706,7 +715,10 @@ class DaedalusTuiApp(App[None]):
         self._rendered_plan_question_signature: tuple[object, ...] | None = None
         self._suppress_target_branch_change = False
         self._suppress_topic_change = False
+        self._suppress_compact_setting_change = False
         self._push_in_flight = False
+        self._compact_mode = False
+        self._short_height_mode = False
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -769,6 +781,17 @@ class DaedalusTuiApp(App[None]):
                             id="target-branch-select",
                         )
                         yield Button("Push", id="push-branch-button")
+                    with Vertical(id="compact-settings"):
+                        yield Select(
+                            _literal_select_options(list(COMPACT_SETTING_CATEGORIES)),
+                            value="provider",
+                            id="compact-settings-category",
+                        )
+                        yield Select(
+                            [(option.label, option.value) for option in self.settings.providers],
+                            value=self.settings.default_provider,
+                            id="compact-settings-value",
+                        )
                     yield Static(self._directory_text(), id="directory")
                     yield Static("Phase: Idle", id="phase")
                     yield Static("Task branch: —    Worktree: —", id="task-context")
@@ -819,10 +842,13 @@ class DaedalusTuiApp(App[None]):
         self._install_exit_diagnostics()
         self._accept_task_events = True
         self.query_one("#output", TranscriptLog).styles.width = self.settings.output_width
+        self._apply_provider_selection(str(self.query_one("#provider-select", Select).value))
         self._refresh_target_branch_select()
         self._refresh_topic_select()
         self._refresh_push_button()
         self._refresh_task_list()
+        self._refresh_compact_setting_value()
+        self._apply_responsive_layout()
         prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
         prompt.enter_insert_mode()
         prompt.focus()
@@ -864,6 +890,40 @@ class DaedalusTuiApp(App[None]):
         if shutdown_complete:
             close_fault_handler(self._fault_log_file)
         self._remove_exit_diagnostics()
+
+    def on_resize(self, event: events.Resize) -> None:
+        """Apply the viewport-aware layout whenever the terminal changes size."""
+        self._apply_responsive_layout(event.size.width, event.size.height)
+
+    def _apply_responsive_layout(self, width: int | None = None, height: int | None = None) -> None:
+        """Toggle compact and short-height classes and their tunable dimensions."""
+        if not all(
+            self.query(selector)
+            for selector in ("#screen", "#task-sidebar", "#prompt-input", "#output")
+        ):
+            return
+        width = self.size.width if width is None else width
+        height = self.size.height if height is None else height
+        compact = width < self.settings.layout.compact_width
+        short = height < self.settings.layout.short_height
+        self._compact_mode = compact
+        self._short_height_mode = short
+        screen = self.query_one("#screen", Vertical)
+        screen.set_class(compact, "compact-width")
+        screen.set_class(short, "short-height")
+        task_sidebar = self.query_one("#task-sidebar", Vertical)
+        prompt = self.query_one("#prompt-input", DaedalusVimTextArea)
+        output = self.query_one("#output", TranscriptLog)
+        task_sidebar.styles.height = (
+            self.settings.layout.compact_task_sidebar_height if compact else "1fr"
+        )
+        prompt.styles.height = (
+            self.settings.layout.compact_prompt_height
+            if compact or short
+            else 7
+        )
+        output.styles.width = "1fr" if compact else self.settings.output_width
+        self._refresh_compact_setting_value()
 
     def exit(self, *args, **kwargs) -> None:
         """Stop agents before an explicit Textual exit begins."""
@@ -1047,6 +1107,14 @@ class DaedalusTuiApp(App[None]):
                 self._open_plan_clarification(int(index_text))
 
     def on_select_changed(self, event: Select.Changed) -> None:
+        if event.select.id == "compact-settings-category":
+            if not self._suppress_compact_setting_change:
+                self._refresh_compact_setting_value(str(event.value))
+            return
+        if event.select.id == "compact-settings-value":
+            if not self._suppress_compact_setting_change:
+                self._apply_compact_setting(str(event.value))
+            return
         if event.select.id == "project-select":
             if event.value not in (Select.BLANK, ""):
                 self._switch_project(Path(str(event.value)))
@@ -1057,6 +1125,7 @@ class DaedalusTuiApp(App[None]):
             if event.value not in (Select.BLANK, ""):
                 self._on_target_branch_selected(str(event.value))
             self._refresh_push_button()
+            self._refresh_compact_setting_value()
             return
         if event.select.id == "topic-select":
             if self._suppress_topic_change:
@@ -1067,6 +1136,7 @@ class DaedalusTuiApp(App[None]):
             else:
                 self._on_topic_selected(str(value))
             self._refresh_topic_view_button()
+            self._refresh_compact_setting_value()
             return
         if event.select.id and event.select.id.startswith("plan-question-"):
             try:
@@ -1089,9 +1159,16 @@ class DaedalusTuiApp(App[None]):
             return
         if event.select.id != "provider-select":
             return
-        is_cursor = event.value == "cursor"
+        self._apply_provider_selection(str(event.value))
+
+    def _apply_provider_selection(self, provider: str) -> None:
+        """Apply provider-specific model and reasoning choices to all controls."""
+        provider_select = self.query_one("#provider-select", Select)
+        if provider_select.value != provider:
+            provider_select.value = provider
         model_select = self.query_one("#model-select", Select)
         reasoning_select = self.query_one("#reasoning-select", Select)
+        is_cursor = provider == "cursor"
         if is_cursor:
             model_select.set_options([(self.settings.cursor_model.label, self.settings.cursor_model.value)])
             model_select.value = self.settings.cursor_model.value
@@ -1106,6 +1183,106 @@ class DaedalusTuiApp(App[None]):
             reasoning_select.set_options([(option.label, option.value) for option in self.settings.codex_reasoning])
             reasoning_select.value = self.settings.default_reasoning
             reasoning_select.disabled = False
+        if self.query("#compact-settings-category"):
+            self._refresh_compact_setting_value()
+
+    def _compact_setting_options(self, category: str) -> list[tuple[str, str]]:
+        """Return labels and values for one compact settings category."""
+        if category == "provider":
+            return [(option.label, option.value) for option in self.settings.providers]
+        if category == "model":
+            provider = str(self.query_one("#provider-select", Select).value)
+            if provider == "cursor":
+                return [(self.settings.cursor_model.label, self.settings.cursor_model.value)]
+            return [(option.label, option.value) for option in self.settings.codex_models]
+        if category == "reasoning":
+            provider = str(self.query_one("#provider-select", Select).value)
+            if provider == "cursor":
+                return [("Not applicable", "")]
+            return [(option.label, option.value) for option in self.settings.codex_reasoning]
+        if category == "mode":
+            return [(option.label, option.value) for option in self.settings.modes]
+        if category == "topic":
+            return [(str(label), str(value)) for label, value in topic_select_options(self._active_project_path)]
+        if category == "branch":
+            options = list_local_branches(self._active_project_path)
+            default = self.orchestration_settings.primary_branch
+            if default not in options:
+                options.insert(0, default)
+            effective = self._selected_operating_branch() or default
+            if effective not in options:
+                options.insert(0, effective)
+            return [(name, name) for name in options]
+        return []
+
+    def _compact_setting_current_value(self, category: str) -> str:
+        """Read the current value from the same selectors used for submission."""
+        ids = {
+            "provider": "provider-select",
+            "model": "model-select",
+            "reasoning": "reasoning-select",
+            "mode": "mode-select",
+            "topic": "topic-select",
+            "branch": "target-branch-select",
+        }
+        value = self.query_one(f"#{ids[category]}", Select).value
+        return "" if value in (Select.BLANK, getattr(Select, "NULL", None)) else str(value)
+
+    def _refresh_compact_setting_value(self, category: str | None = None) -> None:
+        """Populate the compact value Select while retaining its active category."""
+        if not self.query("#compact-settings-category"):
+            return
+        category_select = self.query_one("#compact-settings-category", Select)
+        if category is None:
+            category = str(category_select.value)
+        if category not in dict(COMPACT_SETTING_CATEGORIES):
+            category = "provider"
+        value_select = self.query_one("#compact-settings-value", Select)
+        options = self._compact_setting_options(category)
+        if not options:
+            return
+        current = self._compact_setting_current_value(category)
+        values = {value for _, value in options}
+        effective = current if current in values else options[0][1]
+        self._suppress_compact_setting_change = True
+        try:
+            if category_select.value != category:
+                category_select.value = category
+            value_select.set_options(_literal_select_options(options))
+            value_select.value = effective
+        finally:
+            self._suppress_compact_setting_change = False
+
+    def _apply_compact_setting(self, value: str) -> None:
+        """Apply a compact value through the existing wide-control state."""
+        category = str(self.query_one("#compact-settings-category", Select).value)
+        if category == "provider":
+            self._apply_provider_selection(value)
+        elif category == "model":
+            self.query_one("#model-select", Select).value = value
+        elif category == "reasoning":
+            self.query_one("#reasoning-select", Select).value = value
+        elif category == "mode":
+            self.query_one("#mode-select", Select).value = value
+        elif category == "topic":
+            topic = None if value in ("", TOPIC_NONE_VALUE) else value
+            self.query_one("#topic-select", Select).value = value
+            self._on_topic_selected(topic)
+            self._refresh_topic_view_button()
+        elif category == "branch":
+            self.query_one("#target-branch-select", Select).value = value
+            self._on_target_branch_selected(value)
+            self._refresh_push_button()
+        self._refresh_compact_setting_value()
+
+    def _current_submission_settings(self) -> tuple[str, str, str, str]:
+        """Return provider metadata from the shared controls for a new task."""
+        provider = str(self.query_one("#provider-select", Select).value)
+        model = str(self.query_one("#model-select", Select).value)
+        reasoning_value = self.query_one("#reasoning-select", Select).value
+        reasoning = "" if reasoning_value in (Select.BLANK, getattr(Select, "NULL", None)) else str(reasoning_value)
+        mode = str(self.query_one("#mode-select", Select).value)
+        return provider, model, reasoning, mode
 
     def on_text_area_changed(self, event: TextArea.Changed) -> None:
         if event.text_area.id and event.text_area.id.startswith("plan-custom-answer-"):
@@ -1140,11 +1317,7 @@ class DaedalusTuiApp(App[None]):
             # the toolbar project even before its Select.Changed event runs.
             self._switch_project(selected_project)
 
-        provider = str(self.query_one("#provider-select", Select).value)
-        model = str(self.query_one("#model-select", Select).value)
-        reasoning_value = self.query_one("#reasoning-select", Select).value
-        reasoning = "" if reasoning_value is Select.BLANK else str(reasoning_value)
-        mode = str(self.query_one("#mode-select", Select).value)
+        provider, model, reasoning, mode = self._current_submission_settings()
         topic_value = self.query_one("#topic-select", Select).value
         topic: str | None = None
         if topic_value not in (Select.BLANK, "", TOPIC_NONE_VALUE, getattr(Select, "NULL", None)):
@@ -1179,6 +1352,7 @@ class DaedalusTuiApp(App[None]):
             self._set_status(f"{target_mode.capitalize()} mode unavailable")
             return
         mode_select.value = target_mode
+        self._refresh_compact_setting_value()
         self._set_status(f"{target_mode.capitalize()} mode")
 
     def _on_topic_created(self, topic: dict | None) -> None:
@@ -1186,10 +1360,7 @@ class DaedalusTuiApp(App[None]):
         if topic is None:
             return
         try:
-            provider = str(self.query_one("#provider-select", Select).value)
-            model = str(self.query_one("#model-select", Select).value)
-            reasoning_value = self.query_one("#reasoning-select", Select).value
-            reasoning = "" if reasoning_value is Select.BLANK else str(reasoning_value)
+            provider, model, reasoning, _mode = self._current_submission_settings()
             prompt = build_topic_population_prompt(
                 topic["name"],
                 topic["slug"],
@@ -1385,6 +1556,7 @@ class DaedalusTuiApp(App[None]):
             self._suppress_target_branch_change = False
         self._apply_primary_branch(project_path, effective)
         self._refresh_push_button()
+        self._refresh_compact_setting_value()
 
     def _selected_operating_branch(self) -> str:
         value = self.query_one("#target-branch-select", Select).value
@@ -1477,6 +1649,7 @@ class DaedalusTuiApp(App[None]):
         finally:
             self._suppress_topic_change = False
         self._refresh_topic_view_button()
+        self._refresh_compact_setting_value()
 
     def _selected_topic(self) -> str | None:
         """Return the selected topic slug, or None for the blank option."""

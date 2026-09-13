@@ -34,6 +34,16 @@ the launch directory remains available as a usability fallback. Each project
 has its own task coordinator, task numbering, Git worktrees, and transcripts;
 switching the sidebar does not interrupt tasks running in another project.
 
+The layout adapts to terminal size. Below the configured compact-width
+breakpoint, the task inbox becomes a short full-width panel, the main workspace
+stacks vertically, and the task toolbar's project and action controls remain
+available without clipping. The wide settings row is replaced by a category
+and value picker covering provider, model, reasoning, mode, topic, and
+operating branch. Short terminals also use a smaller prompt and reduced
+vertical chrome. Tune these defaults in the `[layout]` table of
+`parameter_files/daedalus-tui.toml` (`compact_width`, `short_height`,
+`compact_task_sidebar_height`, and `compact_prompt_height`).
+
 For Cursor CLI, edit the included `.env` file (or copy `.env.example` to a
 new `.env`) and set your key:
 
@@ -128,8 +138,9 @@ branch.
 
 Optional Topics group closely related tasks under shared markdown in
 `topic_files/` (Topic Goal, Topic Status, State Log). Create or edit those
-files outside the TUI; the settings-bar Topic Select lists existing stems and
-defaults to `(None)`. When tagged, coding/plan/ask prompts embed the topic
+files outside the TUI; the wide settings row and compact settings picker both
+list existing stems and default to `(None)`. When tagged, coding/plan/ask
+prompts embed the topic
 plus usage instructions; coding tasks may append the topic State Log the same
 way they update feature files.
 

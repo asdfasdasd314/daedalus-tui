@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tui.config import load_coding_statistics_settings, load_orchestration_settings, load_tui_settings
+from tui.config import LayoutSettings, load_coding_statistics_settings, load_orchestration_settings, load_tui_settings
 
 
 class ConfigTests(unittest.TestCase):
@@ -22,6 +22,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual([item.value for item in settings.modes], ["coding", "ask", "plan"])
         self.assertEqual(settings.output_width, "95%")
         self.assertEqual(settings.task_inbox_widths, (1, 9, 14, 7))
+        self.assertEqual(settings.layout, LayoutSettings(100, 32, 8, 4))
         self.assertEqual(orchestration.primary_branch, "main")
         self.assertEqual(orchestration.resolver_attempt_limit, 3)
         self.assertEqual(orchestration.max_concurrent_tasks, 4)
@@ -50,6 +51,45 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(statistics.recent_window_hours, 1)
         self.assertEqual(statistics.forecast_days, 7)
         self.assertEqual(statistics.thirty_day_forecast_days, 30)
+
+    def test_rejects_non_positive_layout_settings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "layout.toml"
+            path.write_text(
+                """
+                providers = [{ label = "Codex", value = "codex" }]
+                codex_models = [{ label = "Model", value = "model" }]
+                codex_reasoning = [{ label = "High", value = "high" }]
+                [layout]
+                compact_width = 0
+                """,
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "layout values must be positive"):
+                load_tui_settings(path)
+
+    def test_loads_custom_layout_settings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "layout.toml"
+            path.write_text(
+                """
+                providers = [{ label = "Codex", value = "codex" }]
+                codex_models = [{ label = "Model", value = "model" }]
+                codex_reasoning = [{ label = "High", value = "high" }]
+                [layout]
+                compact_width = 88
+                short_height = 24
+                compact_task_sidebar_height = 6
+                compact_prompt_height = 3
+                """,
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                load_tui_settings(path).layout,
+                LayoutSettings(88, 24, 6, 3),
+            )
 
 
 if __name__ == "__main__":

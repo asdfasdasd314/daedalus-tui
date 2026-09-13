@@ -34,6 +34,14 @@ value = "cursor"
 [output]
 width = "95%"
 
+# Responsive viewport breakpoints and compact dimensions. Compact mode uses a
+# vertical workspace; short mode reduces vertical chrome independently.
+[layout]
+compact_width = 100
+short_height = 32
+compact_task_sidebar_height = 8
+compact_prompt_height = 4
+
 # Fixed content widths for the task-inbox marker, project, task, and status
 # columns. Together with DataTable's cell padding, the defaults fit the
 # fixed 44-cell sidebar and leave room for its vertical scrollbar.

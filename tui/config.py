@@ -22,6 +22,16 @@ class ModelOption:
 
 
 @dataclass(frozen=True)
+class LayoutSettings:
+    """Viewport breakpoints and dimensions used by the responsive TUI."""
+
+    compact_width: int = 100
+    short_height: int = 32
+    compact_task_sidebar_height: int = 8
+    compact_prompt_height: int = 4
+
+
+@dataclass(frozen=True)
 class TuiSettings:
     default_provider: str
     default_model: str
@@ -39,6 +49,7 @@ class TuiSettings:
     # Content widths for the four task-inbox columns, excluding DataTable
     # cell padding. The defaults leave a cell for the sidebar scrollbar.
     task_inbox_widths: tuple[int, int, int, int] = (1, 9, 14, 7)
+    layout: LayoutSettings = LayoutSettings()
 
 
 @dataclass(frozen=True)
@@ -75,6 +86,21 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
     if any(width < 1 for width in task_inbox_widths):
         raise ValueError(f"{path} task_inbox widths must be positive.")
 
+    layout_values = values.get("layout", {})
+    layout = LayoutSettings(
+        compact_width=int(layout_values.get("compact_width", 100)),
+        short_height=int(layout_values.get("short_height", 32)),
+        compact_task_sidebar_height=int(layout_values.get("compact_task_sidebar_height", 8)),
+        compact_prompt_height=int(layout_values.get("compact_prompt_height", 4)),
+    )
+    if any(value < 1 for value in (
+        layout.compact_width,
+        layout.short_height,
+        layout.compact_task_sidebar_height,
+        layout.compact_prompt_height,
+    )):
+        raise ValueError(f"{path} layout values must be positive.")
+
     default_provider = str(defaults.get("provider", "codex"))
     default_model = str(defaults.get("model", "gpt-5.6-luna"))
     default_reasoning = str(defaults.get("reasoning", "high"))
@@ -91,6 +117,7 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
         modes,
         output_width,
         task_inbox_widths,
+        layout,
     )
 
 
