@@ -1407,12 +1407,7 @@ class DaedalusTuiApp(App[None]):
             self._set_error(str(error))
             self._set_status("Error")
             return
-        self._session_task_rows.add(self._task_row_key(self._active_project_path, record.task_id))
-        self._selected_task_id = record.task_id
-        self._new_task_mode = False
-        self._clear_task_update(self._task_row_key(self._active_project_path, record.task_id))
-        self._refresh_task_list()
-        self._render_selected_task_safely("prompt submission")
+        self._focus_submitted_task(record, "prompt submission")
 
     def _toggle_plan_mode(self) -> None:
         mode_select = self.query_one("#mode-select", Select)
@@ -1454,12 +1449,7 @@ class DaedalusTuiApp(App[None]):
             self._set_error(str(error))
             self._set_status("Error")
             return
-        self._session_task_rows.add(self._task_row_key(self._active_project_path, record.task_id))
-        self._selected_task_id = record.task_id
-        self._new_task_mode = False
-        self._clear_task_update(self._task_row_key(self._active_project_path, record.task_id))
-        self._refresh_task_list()
-        self._render_selected_task_safely("topic creation submission")
+        self._focus_submitted_task(record, "topic creation submission")
         self._set_status(f"Creating topic: {topic['slug']}")
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
@@ -2004,6 +1994,21 @@ class DaedalusTuiApp(App[None]):
         self._refresh_task_list()
         self._render_selected_task_safely("task selection")
 
+    def _focus_submitted_task(self, record: TaskRecord, source: str) -> None:
+        """Make a newly submitted task the visible task in every mode."""
+        self._mark_task_current_session(record)
+        project_path = self._project_for_record(record)
+        if project_path is None:
+            # Submission normally comes from the active coordinator, but keep
+            # the UI recoverable if a custom coordinator returns an unknown
+            # record instead of silently leaving the previous task selected.
+            self._selected_task_id = record.task_id
+            self._new_task_mode = False
+            self._refresh_task_list()
+            self._render_selected_task_safely(source)
+            return
+        self._focus_task(project_path, record.task_id)
+
     def _render_selected_task_safely(self, source: str) -> None:
         """Keep one bad dynamic widget update from closing the entire TUI."""
         try:
@@ -2440,15 +2445,11 @@ class DaedalusTuiApp(App[None]):
         if coding_record is None:
             self._set_status("The agent must confirm no more questions")
             return
-        self._mark_task_current_session(coding_record)
         implement_button = self.query_one("#implement-button", Button)
         implement_button.disabled = True
         implement_button.add_class("implemented")
         implement_button.label = "Implemented"
-        self._selected_task_id = coding_record.task_id
-        self._new_task_mode = False
-        self._refresh_task_list()
-        self._render_selected_task_safely("plan implementation")
+        self._focus_submitted_task(coding_record, "plan implementation")
         self._set_status("Implementation queued")
 
     def _start_new_task(self) -> None:

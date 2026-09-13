@@ -43,6 +43,7 @@ open
 
 ## State Log
 - 2026-09-13: The standalone TUI now remains usable across narrow and short viewports, preserving project/task metadata choices through responsive compact controls without changing import or orchestration boundaries.
+- 2026-09-13: Updated the TUI submission handoff so newly imported-project tasks immediately focus their running task view across all modes.
 - Topic initialized: existing non-Daedalus projects need infrastructure initialization plus call-graph-assisted, AI-verified feature-file generation; parameter files are not required by default, historical state need not be replicated initially, and the intended end state is an arbitrary-project import that provides reliable semantic context for Daedalus agents.
 - 2026-09-01: Added a pyan3-backed HTML call-tree script that analyzes the CWD project and produces branching static-call evidence for later feature-boundary inference.
 - 2026-09-01: Hardened call-graph analysis against pyan collapse_inner crashes on namespace-less anonymous scopes so import workflows can analyze real Python codebases.

@@ -1077,6 +1077,30 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.query_one("#send-button", Button).disabled)
             self.assertEqual(coordinator.records[0].prompt, prompt.text)
 
+    async def test_submitted_task_becomes_selected_for_every_mode(self):
+        app, coordinator = self.make_app()
+        async with app.run_test() as pilot:
+            for mode in ("coding", "ask", "plan"):
+                if coordinator.records:
+                    app.action_new_task()
+                    await pilot.pause()
+                app.query_one("#mode-select", Select).value = mode
+                prompt = app.query_one("#prompt-input", DaedalusVimTextArea)
+                prompt.insert(f"Run a {mode} task")
+                app.action_submit_prompt()
+                record = coordinator.records[-1]
+                await pilot.pause()
+
+                self.assertEqual(app._selected_task_id, record.task_id)
+                self.assertFalse(app._new_task_mode)
+                task_list = app.query_one("#task-list", DataTable)
+                self.assertEqual(
+                    task_list.cursor_row,
+                    list(app._task_rows).index(
+                        app._task_row_key(app._active_project_path, record.task_id)
+                    ),
+                )
+
     async def test_new_task_unlocks_a_blank_prompt_after_viewing_submitted_task(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:
