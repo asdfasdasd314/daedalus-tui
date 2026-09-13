@@ -54,6 +54,7 @@ from .topics import (
 )
 from .transcript import TranscriptLog
 from .token_usage import calculate_token_usage, merge_usage_entries, task_usage_entry, usage_entries_from_memory
+from .verification import truncate_diagnostic
 from .vim_text_area import DaedalusVimTextArea
 
 
@@ -739,6 +740,9 @@ class DaedalusTuiApp(App[None]):
         self._showing_error_output = False
         self._plan_review_generation = 0
         self._accept_task_events = False
+        self._task_event_lock = threading.Lock()
+        self._pending_task_events: dict[str, tuple[TaskRecord, str, str, str]] = {}
+        self._task_event_flush_scheduled = False
         self._shutdown_lock = threading.Lock()
         self._shutdown_started = False
         self._textual_unmounted = False
@@ -752,6 +756,7 @@ class DaedalusTuiApp(App[None]):
         self._push_in_flight = False
         self._compact_mode = False
         self._short_height_mode = False
+        self._displayed_error = ""
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -1475,15 +1480,32 @@ class DaedalusTuiApp(App[None]):
         if threading.current_thread() is threading.main_thread():
             self._apply_task_event(record, phase, message, kind)
         else:
+            with self._task_event_lock:
+                self._pending_task_events[record.task_id] = (record, phase, message, kind)
+                if self._task_event_flush_scheduled:
+                    return
+                self._task_event_flush_scheduled = True
             try:
-                self.call_from_thread(self._apply_task_event, record, phase, message, kind)
+                self.call_from_thread(self._flush_task_events)
             except RuntimeError as error:
+                with self._task_event_lock:
+                    self._task_event_flush_scheduled = False
+                    self._pending_task_events.pop(record.task_id, None)
                 # A worker can race with Textual's final shutdown transition.
                 # Do not let a late event print an exception after the UI closes.
                 if "App is not running" not in str(error):
                     log_exception("Could not forward task event into Textual", error)
                     raise
                 LOGGER.info("Dropped task event after Textual stopped task=%s", record.task_id)
+
+    def _flush_task_events(self) -> None:
+        """Apply only the newest event per task to keep the UI responsive."""
+        with self._task_event_lock:
+            events_to_apply = tuple(self._pending_task_events.values())
+            self._pending_task_events.clear()
+            self._task_event_flush_scheduled = False
+        for record, phase, message, kind in events_to_apply:
+            self._apply_task_event(record, phase, message, kind)
 
     def _apply_task_event(self, record: TaskRecord, phase: str, message: str, kind: str) -> None:
         try:
@@ -1499,9 +1521,9 @@ class DaedalusTuiApp(App[None]):
                 self._updated_task_rows.add(row_key)
             elif is_selected:
                 self._updated_task_rows.discard(row_key)
-            self._refresh_project_selector()
-            self._refresh_topic_select()
-            self._refresh_task_list()
+            if kind != "message":
+                self._refresh_project_selector()
+                self._refresh_task_list()
             if is_selected:
                 self._render_selected_task_safely(f"task event phase={phase}")
         except Exception as error:
@@ -2634,7 +2656,11 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#status", Static).update(status)
 
     def _set_error(self, error: str) -> None:
+        error = truncate_diagnostic(error) if error else ""
+        if error == self._displayed_error:
+            return
         error_widget = self.query_one("#task-error", Log)
         error_widget.clear()
         if error:
             error_widget.write(error)
+        self._displayed_error = error

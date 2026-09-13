@@ -9,6 +9,8 @@ from pathlib import Path
 import tempfile
 from threading import Lock
 
+from .verification import truncate_diagnostic
+
 
 DEFAULT_MEMORY_FILE = ".daedalus-memory.json"
 LAST_OPENED_PROJECT_KEY = "last_opened_project"
@@ -233,7 +235,7 @@ class TaskMemoryStore:
             "mode": mode,
             "state": state,
             "outputs": list(outputs),
-            "error": error,
+            "error": truncate_diagnostic(error) if isinstance(error, str) else error,
             "tokens": max(0, int(tokens)) if tokens is not None else None,
             "project": str(project.expanduser().resolve()) if project is not None else None,
         }

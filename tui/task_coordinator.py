@@ -214,6 +214,7 @@ class TaskCoordinator:
         self._next_sequence = 1
         self._tasks: dict[str, TaskRecord] = {}
         self._closed = False
+        self._last_persist_at: dict[str, float] = {}
         self.memory = TaskMemoryStore(memory_path or self.repository / DEFAULT_MEMORY_FILE)
         self._restore_tasks()
 
@@ -907,11 +908,14 @@ class TaskCoordinator:
             if branch and worktree:
                 record.branch_name = branch
                 record.worktree_path = Path(worktree)
-        self._persist_task(record)
+        self._persist_task(record, force=kind != "message")
         self._notify(record, phase, message, kind)
 
-    def _persist_task(self, record: TaskRecord) -> None:
-        """Persist the latest task state without affecting task execution."""
+    def _persist_task(self, record: TaskRecord, *, force: bool = True) -> None:
+        """Persist task state, coalescing high-frequency streamed messages."""
+        now = time.monotonic()
+        if not force and now - self._last_persist_at.get(record.task_id, 0.0) < 0.25:
+            return
         task_id = record.worktree_path.name if record.worktree_path is not None else f"task-{record.task_id}"
         previous_task_id = record.memory_task_id
         try:
@@ -941,6 +945,7 @@ class TaskCoordinator:
             LOGGER.warning("Could not persist task task=%s error=%s", record.task_id, error)
             return
         record.memory_task_id = task_id
+        self._last_persist_at[record.task_id] = now
 
     def _restore_tasks(self) -> None:
         """Rehydrate this project's persisted tasks after a TUI restart."""

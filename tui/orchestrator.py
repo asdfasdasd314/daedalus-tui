@@ -21,7 +21,7 @@ from .prompts import (
 )
 from .supabase_migrations import migrations_pending, push_migrations
 from .topics import load_topic_text, topic_path
-from .verification import discover_commands, run_verification
+from .verification import discover_commands, run_verification, truncate_diagnostic
 
 
 EventCallback = Callable[[str, str, str], None]
@@ -311,12 +311,14 @@ class LocalOrchestrator:
         while True:
             self.emit("verification", "Running verification checks.")
             self._raise_if_stopped(control)
-            result = run_verification(context.path, commands)
+            result = run_verification(context.path, commands, control=control)
             self._raise_if_stopped(control)
             if result.succeeded:
                 return
             attempts += 1
-            reason = result.output.strip() or "Verification produced no diagnostic output."
+            reason = truncate_diagnostic(
+                result.output.strip() or "Verification produced no diagnostic output."
+            )
             attempt_summary = f"Verification attempt {attempts}/{limit} failed.\n\n{reason}"
             failure_log.append(attempt_summary)
             self.emit("verification", attempt_summary, "error")
@@ -431,7 +433,7 @@ class LocalOrchestrator:
             context.path,
             [list(command) for command in self.settings.verification_commands],
         )
-        result = run_verification(context.path, commands)
+        result = run_verification(context.path, commands, control=control)
         self._raise_if_stopped(control)
         if not result.succeeded:
             self.resolve_integration(
@@ -484,7 +486,7 @@ class LocalOrchestrator:
                     context.path,
                     [list(command) for command in self.settings.verification_commands],
                 )
-                verification = run_verification(context.path, commands)
+                verification = run_verification(context.path, commands, control=control)
                 self._raise_if_stopped(control)
                 if verification.succeeded:
                     return
