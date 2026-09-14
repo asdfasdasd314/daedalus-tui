@@ -50,6 +50,7 @@
   "48": "discover_projects",
   "49": "._render_line_strip",
   "50": ".test_plan_review_renders_literal_markup_like_agent_text",
+  "51": "CompactSettingsSelect",
   "52": "Daedalus TUI Call Graph Visualization",
   "53": "b.py",
   "54": "update_repository",
@@ -78,6 +79,5 @@
   "77": ".cursor_shape",
   "78": ".enter_insert_mode",
   "79": ".nav_word_end",
-  "80": ".edit_paste_after",
-  "81": ".edit_paste_before"
+  "80": ".edit_paste_after"
 }

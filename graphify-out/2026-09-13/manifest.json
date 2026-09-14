@@ -75,8 +75,8 @@
     "semantic_hash": ""
   },
   "tui/app.py": {
-    "mtime": 1789343283.2428439,
-    "ast_hash": "36dffff6c6d5be79b3c62157819d2941",
+    "mtime": 1789343430.9198098,
+    "ast_hash": "5283f40cd97423ac3b9ba15b044e32e5",
     "semantic_hash": ""
   },
   "tui/clipboard.py": {
