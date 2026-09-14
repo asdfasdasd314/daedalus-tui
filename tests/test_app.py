@@ -1070,6 +1070,25 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.query_one("#reasoning-select", Select).disabled)
             self.assertEqual(app.query_one("#model-select", Select).value, "cursor")
 
+    async def test_provider_switch_stays_stable_while_task_is_active(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            prompt = app.query_one("#prompt-input", TextArea)
+            prompt.insert("Keep the provider switch responsive")
+            app.action_submit_prompt()
+            await pilot.pause()
+
+            provider = app.query_one("#provider-select", Select)
+            for value in ("cursor", "codex", "cursor", "codex"):
+                provider.value = value
+                await pilot.pause()
+
+            self.assertEqual(provider.value, "codex")
+            self.assertEqual(app.query_one("#model-select", Select).value, "gpt-5.6-luna")
+            self.assertEqual(app.query_one("#reasoning-select", Select).value, "medium")
+            self.assertFalse(app.query_one("#model-select", Select).disabled)
+            self.assertFalse(app.query_one("#reasoning-select", Select).disabled)
+
     async def test_empty_prompt_is_rejected(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:

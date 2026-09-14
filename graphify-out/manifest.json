@@ -15,8 +15,8 @@
     "semantic_hash": ""
   },
   "tests/test_app.py": {
-    "mtime": 1789335799.5598748,
-    "ast_hash": "29901600213fab629c3650df952d86ec",
+    "mtime": 1789343031.2801456,
+    "ast_hash": "329872806d33f8d15a7cf7bc114e5b28",
     "semantic_hash": ""
   },
   "tests/test_config.py": {
@@ -75,8 +75,8 @@
     "semantic_hash": ""
   },
   "tui/app.py": {
-    "mtime": 1789335799.5622885,
-    "ast_hash": "12255da69ffed58ed47d0f7cf773c642",
+    "mtime": 1789343430.9198098,
+    "ast_hash": "5283f40cd97423ac3b9ba15b044e32e5",
     "semantic_hash": ""
   },
   "tui/clipboard.py": {
