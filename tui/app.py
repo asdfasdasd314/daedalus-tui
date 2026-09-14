@@ -984,7 +984,11 @@ class DaedalusTuiApp(App[None]):
         if self._responsive_measure_pending:
             return
         self._responsive_measure_pending = True
-        self.call_after_refresh(self._apply_measured_responsive_layout)
+        self.set_timer(1 / 120, self._schedule_responsive_measurement)
+
+    def _schedule_responsive_measurement(self) -> None:
+        """Run the wide-layout measurement after the next screen refresh."""
+        self.screen.call_after_refresh(self._apply_measured_responsive_layout)
 
     def _apply_measured_responsive_layout(self) -> None:
         """Switch to compact mode when wide controls extend past their bars."""

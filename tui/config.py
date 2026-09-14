@@ -36,7 +36,7 @@ class LayoutSettings:
     short_height: int = 32
     compact_task_sidebar_height: int = 8
     compact_prompt_height: int = 4
-    wide_control_min_width: int = 14
+    wide_control_min_width: int = 13
 
 
 @dataclass(frozen=True)

@@ -64,6 +64,9 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-09-13: Adjusted the default readable selector floor to 13 cells to
+  account for Textual's fractional-width rounding, allowing the wide settings
+  row to restore at 180 columns while retaining compact mode at 125 columns.
 - 2026-09-13: Lowered the default readable selector floor to 14 cells so
   the measured wide settings bar restores at 180 columns while the 125-column
   layout still routes provider and model controls through the compact picker.
