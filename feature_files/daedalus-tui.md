@@ -13,11 +13,12 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 - **Responsive layouts**: Terminal resize events switch narrow screens to a
   vertical workspace with a compact full-width task inbox and stacked toolbar
   actions. The wide task and settings bars are measured after layout, so the
-  compact category/value picker appears when a control is actually clipped;
-  a conservative parameterized safety guard covers very narrow or not-yet-
-  laid-out terminals. The picker keeps provider, model, reasoning, mode, topic,
-  and operating-branch choices available, while short terminals reduce prompt
-  and surrounding vertical chrome.
+  compact category/value picker appears when a control is actually clipped or
+  when a settings selector falls below its parameterized readable width; a
+  conservative parameterized safety guard covers very narrow or not-yet-laid-
+  out terminals. The picker keeps provider, model, reasoning, mode, topic, and
+  operating-branch choices available, while short terminals reduce prompt and
+  surrounding vertical chrome.
 - **Optional Topics**: A Topic Select lists `(None)` plus `topic_files/*.md`
   stems so related tasks can share goal/status/state-log memory without
   requiring a topic on every submission.
@@ -63,6 +64,19 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-09-13: Removed the per-project task-count suffix from the Project Select labels so options show only the project name.
+- 2026-09-13: Adjusted the default readable selector floor to 13 cells to
+  account for Textual's fractional-width rounding, allowing the wide settings
+  row to restore at 180 columns while retaining compact mode at 125 columns.
+- 2026-09-13: Lowered the default readable selector floor to 14 cells so
+  the measured wide settings bar restores at 180 columns while the 125-column
+  layout still routes provider and model controls through the compact picker.
+- 2026-09-13: Fixed the measured settings-overflow path to pass its compact
+  decision into the responsive layout, so a 125-column terminal now keeps the
+  provider, model, and reasoning controls available through the compact picker.
+- 2026-09-13: Added a measured minimum width for wide settings selectors so
+  resize events switch to the compact picker before fractional controls hide
+  their labels and dropdown affordances.
 - 2026-09-13: Made compact mode respond to measured task/settings control bounds after layout, with a conservative width guard and deferred re-measurement when restoring the wide layout.
 - 2026-09-13: Added resize-aware compact and short-height layouts with a two-level settings picker that preserves provider cascades, task metadata snapshots, and project topic/branch persistence on narrow terminals.
 - 2026-09-13: Routed every new task submission through the shared task-focus path so Coding, Ask, Plan, and topic-created tasks select their running task immediately.

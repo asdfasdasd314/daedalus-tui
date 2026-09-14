@@ -284,6 +284,22 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app._short_height_mode)
             self.assertEqual(app.query_one("#prompt-input").styles.height.value, 3)
 
+    async def test_responsive_layout_compacts_when_settings_selects_are_too_narrow(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            await pilot.resize_terminal(125, 60)
+            await pilot.pause()
+
+            self.assertTrue(app._compact_mode)
+            self.assertEqual(app.query_one("#settings").styles.display, "none")
+            self.assertEqual(app.query_one("#compact-settings").styles.display, "block")
+
+            await pilot.resize_terminal(180, 40)
+            await pilot.pause()
+            self.assertFalse(app._compact_mode)
+            self.assertEqual(app.query_one("#settings").styles.display, "block")
+            self.assertEqual(app.query_one("#compact-settings").styles.display, "none")
+
     async def test_compact_settings_cascade_and_submission_snapshot(self):
         app, coordinator = self.make_app()
         async with app.run_test() as pilot:

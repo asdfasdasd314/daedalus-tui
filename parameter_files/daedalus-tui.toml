@@ -40,6 +40,9 @@ width = "95%"
 # reduces vertical chrome independently.
 [layout]
 compact_width = 100
+# Switch the wide settings row to the category/value picker when a selector
+# cannot provide enough cells for its label and dropdown affordance.
+wide_control_min_width = 13
 short_height = 32
 compact_task_sidebar_height = 8
 compact_prompt_height = 4

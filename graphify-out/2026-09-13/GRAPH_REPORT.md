@@ -1,11 +1,11 @@
 # Graph Report - daedalus-tui  (2026-09-13)
 
 ## Corpus Check
-- 87 files · ~68,533 words
+- 87 files · ~68,555 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1463 nodes · 3792 edges · 82 communities (66 shown, 16 thin omitted)
+- 1463 nodes · 3792 edges · 81 communities (65 shown, 16 thin omitted)
 - Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 364 edges (avg confidence: 0.55)
 - Token cost: 0 input · 0 output
 
@@ -65,7 +65,6 @@
 - discover_projects
 - ._render_line_strip
 - .test_plan_review_renders_literal_markup_like_agent_text
-- CreateTopicScreen
 - Daedalus TUI Call Graph Visualization
 - b.py
 - update_repository
@@ -124,7 +123,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (82 total, 16 thin omitted)
+## Communities (81 total, 16 thin omitted)
 
 ### Community 0 - "PlanQuestion"
 Cohesion: 0.22
@@ -200,11 +199,11 @@ Nodes (7): RowSelected, Focus a task from the cross-project update inbox., Retur
 
 ### Community 21 - "._shutdown_coordinators"
 Cohesion: 0.09
-Nodes (8): Changed, DaedalusTuiApp, Push the Branch Select value for the active project to origin., Keep a task visible after user activity during this launch., Prefer mounted selector values so clarification refreshes keep choices., Replace question controls after Textual has completed child removal., Show either the full-size transcript or the full-size diagnostics log., Use Textual's OSC 52 path and a native clipboard fallback.
+Nodes (7): Changed, DaedalusTuiApp, Push the Branch Select value for the active project to origin., Keep a task visible after user activity during this launch., Prefer mounted selector values so clarification refreshes keep choices., Replace question controls after Textual has completed child removal., Use Textual's OSC 52 path and a native clipboard fallback.
 
 ### Community 22 - "._set_status"
-Cohesion: 0.09
-Nodes (13): AbstractEventLoop, BaseException, Exception, Stop agents before an explicit Textual exit begins., Persist Textual failures that would otherwise only flash on screen., Clean up if Textual's run loop returns without its unmount hook., Idempotently detach task callbacks and request child-process shutdown., Apply only the newest event per task to keep the UI responsive. (+5 more)
+Cohesion: 0.10
+Nodes (11): AbstractEventLoop, BaseException, Exception, Persist Textual failures that would otherwise only flash on screen., Apply only the newest event per task to keep the UI responsive., Promote only events that need the user's attention in the inbox., Finish Select setup without allowing a stale value to exit the TUI.          Pla, Keep one bad dynamic widget update from closing the entire TUI. (+3 more)
 
 ### Community 23 - "update_repository"
 Cohesion: 0.08
@@ -307,16 +306,12 @@ Cohesion: 0.26
 Nodes (7): ProjectDiscoveryTests, discover_projects(), is_direct_child_project(), Path, Discovery of Daedalus-supported repositories beneath a launch root., Return whether ``path`` is an immediate child of ``launch_root``., Find immediate child folders containing a direct ``feature_files`` child.      G
 
 ### Community 49 - "._render_line_strip"
-Cohesion: 0.25
+Cohesion: 0.29
 Nodes (3): Return provider metadata from the shared controls for a new task., Queue a coding task that writes and expands the requested topic file., Make a newly submitted task the visible task in every mode.
 
 ### Community 50 - ".test_plan_review_renders_literal_markup_like_agent_text"
 Cohesion: 0.10
 Nodes (4): TuiAppTests, DaedalusVimTextArea, VimTextArea with multiline prompt behavior and system clipboard sync., VimTextArea
-
-### Community 51 - "CreateTopicScreen"
-Cohesion: 0.29
-Nodes (5): Cover terminal and event-loop exits that bypass Textual unmount., Run before ThreadPoolExecutor's internal interpreter-exit join., Pause active agents before ThreadPoolExecutor joins its workers.      CPython ex, _register_app_for_thread_exit(), _shutdown_apps_before_thread_join()
 
 ### Community 52 - "Daedalus TUI Call Graph Visualization"
 Cohesion: 0.29
@@ -363,12 +358,12 @@ Cohesion: 0.11
 Nodes (3): Follow-up questions must not crash when old option ids linger on widgets., Deferred Select init must not fatal-exit on a leftover option id., Clearing questions after confirmation must keep the TUI alive.
 
 ### Community 69 - "._set_status"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (4): Key, Clear the selected task and unlock a fresh prompt editor., Return a TextArea selection or the active screen selection., Add Vim-like navigation without changing TextArea insert behavior.
 
 ### Community 70 - "debug_log.py"
-Cohesion: 0.20
-Nodes (9): _unregister_app_for_thread_exit(), close_fault_handler(), configure_debug_logging(), install_fault_handler(), _install_thread_exception_logging(), Path, Persistent diagnostics for failures that occur after the Textual screen closes., Write detailed runtime diagnostics to a rotating local log file. (+1 more)
+Cohesion: 0.09
+Nodes (17): Stop agents before an explicit Textual exit begins., Cover terminal and event-loop exits that bypass Textual unmount., Run before ThreadPoolExecutor's internal interpreter-exit join., Clean up if Textual's run loop returns without its unmount hook., Idempotently detach task callbacks and request child-process shutdown., Pause active agents before ThreadPoolExecutor joins its workers.      CPython ex, _register_app_for_thread_exit(), _shutdown_apps_before_thread_join() (+9 more)
 
 ### Community 71 - "_collapse_inner_safe"
 Cohesion: 0.20
@@ -394,7 +389,7 @@ Nodes (3): __getattr__(), Standalone Textual interface and local agent orchestra
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `DaedalusTuiApp` connect `._shutdown_coordinators` to `DaedalusVimTextArea`, `AgentRunner`, `GitWorktreeManager`, `Key`, `TaskRecord`, `._set_status`, `._set_status`, `CodingStatisticsScreen`, `calculate_token_usage`, `._set_status`, `task_coordinator.py`, `._start_new_task`, `._render_line_strip`, `.test_plan_review_renders_literal_markup_like_agent_text`, `CreateTopicScreen`, `update_repository`, `DescriptorEmbedder`, `._set_status`, `debug_log.py`, `__init__.py`, `.action_view_topic`?**
+- **Why does `DaedalusTuiApp` connect `._shutdown_coordinators` to `DaedalusVimTextArea`, `AgentRunner`, `GitWorktreeManager`, `Key`, `TaskRecord`, `._set_status`, `._set_status`, `CodingStatisticsScreen`, `calculate_token_usage`, `._set_status`, `task_coordinator.py`, `._start_new_task`, `._render_line_strip`, `.test_plan_review_renders_literal_markup_like_agent_text`, `update_repository`, `DescriptorEmbedder`, `._set_status`, `debug_log.py`, `__init__.py`, `.action_view_topic`?**
   _High betweenness centrality (0.142) - this node is a cross-community bridge._
 - **Why does `DaedalusVimTextArea` connect `.test_plan_review_renders_literal_markup_like_agent_text` to `._set_status`, `GitWorktreeManager`, `._set_status`, `KeyboardShortcutsScreen`, `task_coordinator.py`, `.cursor_shape`, `._handle_visual_line_mode`, `._start_new_task`, `.edit_paste_after`, `.edit_paste_before`, `.enter_insert_mode`, `.nav_word_end`, `._shutdown_coordinators`, `update_repository`, `._set_status`, `DescriptorEmbedder`, `CodingStatisticsScreen`?**
   _High betweenness centrality (0.063) - this node is a cross-community bridge._

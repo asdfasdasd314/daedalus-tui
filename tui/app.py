@@ -948,7 +948,12 @@ class DaedalusTuiApp(App[None]):
         """Apply the viewport-aware layout whenever the terminal changes size."""
         self._apply_responsive_layout(event.size.width, event.size.height)
 
-    def _apply_responsive_layout(self, width: int | None = None, height: int | None = None) -> None:
+    def _apply_responsive_layout(
+        self,
+        width: int | None = None,
+        height: int | None = None,
+        compact: bool | None = None,
+    ) -> None:
         """Toggle responsive classes and dimensions after a viewport change.
 
         ``compact_width`` is a lower safety guard, not the primary wide-layout
@@ -963,7 +968,7 @@ class DaedalusTuiApp(App[None]):
             return
         width = self.size.width if width is None else width
         height = self.size.height if height is None else height
-        compact = width < self.settings.layout.compact_width
+        compact = width < self.settings.layout.compact_width if compact is None else compact
         short = height < self.settings.layout.short_height
         self._compact_mode = compact
         self._short_height_mode = short
@@ -991,7 +996,11 @@ class DaedalusTuiApp(App[None]):
         if self._responsive_measure_pending:
             return
         self._responsive_measure_pending = True
-        self.call_after_refresh(self._apply_measured_responsive_layout)
+        self.set_timer(1 / 120, self._schedule_responsive_measurement)
+
+    def _schedule_responsive_measurement(self) -> None:
+        """Run the wide-layout measurement after the next screen refresh."""
+        self.screen.call_after_refresh(self._apply_measured_responsive_layout)
 
     def _apply_measured_responsive_layout(self) -> None:
         """Switch to compact mode when wide controls extend past their bars."""
@@ -1002,10 +1011,10 @@ class DaedalusTuiApp(App[None]):
         height = self.size.height
         compact = width < self.settings.layout.compact_width or self._wide_controls_overflow()
         if compact != self._compact_mode:
-            self._apply_responsive_layout(width, height)
+            self._apply_responsive_layout(width, height, compact=compact)
 
     def _wide_controls_overflow(self) -> bool:
-        """Return whether a visible wide-layout control is clipped by its bar."""
+        """Return whether wide-layout controls are clipped or too narrow."""
         for selector in ("#task-bar", "#settings"):
             containers = self.query(selector)
             if not containers:
@@ -1017,6 +1026,12 @@ class DaedalusTuiApp(App[None]):
             for child in container.children:
                 region = child.region
                 if region.width <= 0 or region.height <= 0:
+                    return True
+                if (
+                    selector == "#settings"
+                    and isinstance(child, Select)
+                    and region.width < self.settings.layout.wide_control_min_width
+                ):
                     return True
                 if (
                     region.x < available.x
@@ -2020,16 +2035,10 @@ class DaedalusTuiApp(App[None]):
 
     def _refresh_project_selector(self) -> None:
         project_select = self.query_one("#project-select", Select)
-        options = []
-        for project in self._selector_projects():
-            project_path = project.path.resolve()
-            task_count = (
-                len(self._coordinators[project_path].tasks())
-                if project_path in self._coordinators
-                else 0
-            )
-            suffix = f" · {task_count} tasks" if task_count else ""
-            options.append((f"{project.display_name}{suffix}", str(project.path)))
+        options = [
+            (project.display_name, str(project.path))
+            for project in self._selector_projects()
+        ]
         self._set_select_options_if_changed(project_select, options, compare_labels=True)
         effective = self._project_select_value()
         if project_select.value != effective:
