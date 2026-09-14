@@ -63,6 +63,7 @@ The standalone Daedalus TUI is an installable Textual application that runs from
 HACKING
 
 ## State Log
+- 2026-09-13: Removed the per-project task-count suffix from the Project Select labels so options show only the project name.
 - 2026-09-13: Made compact mode respond to measured task/settings control bounds after layout, with a conservative width guard and deferred re-measurement when restoring the wide layout.
 - 2026-09-13: Added resize-aware compact and short-height layouts with a two-level settings picker that preserves provider cascades, task metadata snapshots, and project topic/branch persistence on narrow terminals.
 - 2026-09-13: Routed every new task submission through the shared task-focus path so Coding, Ask, Plan, and topic-created tasks select their running task immediately.

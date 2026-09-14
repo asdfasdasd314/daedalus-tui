@@ -1952,16 +1952,10 @@ class DaedalusTuiApp(App[None]):
 
     def _refresh_project_selector(self) -> None:
         project_select = self.query_one("#project-select", Select)
-        options = []
-        for project in self._selector_projects():
-            project_path = project.path.resolve()
-            task_count = (
-                len(self._coordinators[project_path].tasks())
-                if project_path in self._coordinators
-                else 0
-            )
-            suffix = f" · {task_count} tasks" if task_count else ""
-            options.append((f"{project.display_name}{suffix}", str(project.path)))
+        options = [
+            (project.display_name, str(project.path))
+            for project in self._selector_projects()
+        ]
         self._set_select_options_if_changed(project_select, options, compare_labels=True)
         effective = self._project_select_value()
         if project_select.value != effective:
