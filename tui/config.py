@@ -36,7 +36,7 @@ class LayoutSettings:
     short_height: int = 32
     compact_task_sidebar_height: int = 8
     compact_prompt_height: int = 4
-    wide_control_min_width: int = 16
+    wide_control_min_width: int = 14
 
 
 @dataclass(frozen=True)
@@ -100,7 +100,7 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
         short_height=int(layout_values.get("short_height", 32)),
         compact_task_sidebar_height=int(layout_values.get("compact_task_sidebar_height", 8)),
         compact_prompt_height=int(layout_values.get("compact_prompt_height", 4)),
-        wide_control_min_width=int(layout_values.get("wide_control_min_width", 16)),
+        wide_control_min_width=int(layout_values.get("wide_control_min_width", 14)),
     )
     if any(value < 1 for value in (
         layout.compact_width,
