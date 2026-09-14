@@ -171,6 +171,36 @@ class ProjectInitializerTests(unittest.TestCase):
                 calls,
             )
 
+    def test_optional_personal_supabase_registration_is_atomic_with_tempdir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            calls = []
+
+            def fake_run(command, cwd, capture_output, text, shell):
+                calls.append(command)
+                if command[:2] == ["git", "init"]:
+                    (Path(cwd) / ".git").mkdir()
+                return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+            result = initialize_project(
+                {
+                    "requestId": str(uuid.uuid4()),
+                    "projectName": "with-schema",
+                    "createGitHubRepository": False,
+                    "registerPersonalSupabase": True,
+                },
+                execution_root=root,
+                run_process=fake_run,
+                find_executable=lambda executable: f"/bin/{executable}",
+            )
+            destination = root / "with-schema"
+            self.assertEqual(result["status"], "success")
+            self.assertTrue((destination / "supabase" / "config.toml").is_file())
+            self.assertTrue((destination / ".env.example").is_file())
+            self.assertFalse(any(path.name.startswith(".with-schema.daedalus-init-")
+                                 for path in root.iterdir()))
+            self.assertIn(["git", "add", "."], calls)
+
     def test_matching_request_recovery_does_not_repeat_local_initialization(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

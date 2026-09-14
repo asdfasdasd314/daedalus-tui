@@ -30,6 +30,11 @@ from .debug_log import LOGGER, close_fault_handler, configure_debug_logging, ins
 from .git_worktree import GitWorktreeError, list_local_branches, push_branch, remote_exists
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
 from .project_initializer import initialize_project, load_initializer_settings, validate_project_name
+from .personal_supabase import (
+    is_personal_supabase_registered,
+    register_personal_supabase,
+    schema_from_project_root,
+)
 from .projects import DaedalusProject, discover_projects, is_direct_child_project
 from .plan import (
     CUSTOM_ANSWER_OPTION_ID,
@@ -324,6 +329,10 @@ class ProjectInitializerScreen(ModalScreen[dict | None]):
             yield Static("Project name (lowercase, digits, hyphens)", id="project-name-label")
             yield Input(placeholder="example-project", id="project-name-input")
             yield Checkbox("Also create a private GitHub repository", id="project-github-checkbox")
+            yield Checkbox(
+                "Register schema on personal Supabase",
+                id="project-personal-supabase-checkbox",
+            )
             yield Static("", id="project-initializer-status")
             with Horizontal(id="project-initializer-actions"):
                 yield Button("Create", id="create-project-button", variant="primary")
@@ -352,6 +361,10 @@ class ProjectInitializerScreen(ModalScreen[dict | None]):
         status = self.query_one("#project-initializer-status", Static)
         name_input = self.query_one("#project-name-input", Input)
         create_github = self.query_one("#project-github-checkbox", Checkbox).value
+        register_personal = self.query_one(
+            "#project-personal-supabase-checkbox",
+            Checkbox,
+        ).value
         try:
             settings = load_initializer_settings()
             project_name = validate_project_name(
@@ -372,6 +385,7 @@ class ProjectInitializerScreen(ModalScreen[dict | None]):
                     "requestId": str(uuid.uuid4()),
                     "projectName": project_name,
                     "createGitHubRepository": create_github,
+                    "registerPersonalSupabase": register_personal,
                 },
                 execution_root=self.launch_root,
             )
@@ -774,6 +788,10 @@ class DaedalusTuiApp(App[None]):
                         )
                         yield Button("New Project", id="new-project-button")
                         yield Button("Create Topic", id="create-topic-button", variant="primary")
+                        yield Button(
+                            "Register Supabase Schema",
+                            id="register-supabase-schema-button",
+                        )
                         yield Button("New Task", id="new-task-button", variant="primary")
                     with Horizontal(id="settings"):
                         yield Select(
@@ -879,6 +897,7 @@ class DaedalusTuiApp(App[None]):
         self._apply_provider_selection(str(self.query_one("#provider-select", Select).value))
         self._refresh_target_branch_select()
         self._refresh_topic_select()
+        self._refresh_personal_supabase_button()
         self._refresh_push_button()
         self._refresh_task_list()
         self._refresh_compact_setting_value()
@@ -1137,6 +1156,31 @@ class DaedalusTuiApp(App[None]):
     def action_show_create_topic(self) -> None:
         self.push_screen(CreateTopicScreen(self._active_project_path), self._on_topic_created)
 
+    def action_register_personal_supabase(self) -> None:
+        """Scaffold personal shared-Supabase schema files for the active project."""
+        project_path = self._active_project_path
+        try:
+            schema = schema_from_project_root(project_path)
+        except ValueError as error:
+            self._set_error(str(error))
+            self._set_status("Supabase schema registration failed")
+            return
+        if is_personal_supabase_registered(project_path, schema):
+            self._set_status(f"Schema {schema!r} already registered")
+            self._refresh_personal_supabase_button()
+            return
+        result = register_personal_supabase(project_path, schema=schema)
+        if result.status != "success":
+            self._set_error(result.message)
+            self._set_status("Supabase schema registration failed")
+            self._refresh_personal_supabase_button()
+            return
+        if result.already_registered:
+            self._set_status(f"Schema {schema!r} already registered")
+        else:
+            self._set_status(f"Registered Supabase schema {schema!r}")
+        self._refresh_personal_supabase_button()
+
     def action_view_topic(self) -> None:
         """Open the selected project topic in a read-only modal."""
         topic = self._selected_topic()
@@ -1160,6 +1204,8 @@ class DaedalusTuiApp(App[None]):
             self.action_show_new_project()
         elif event.button.id == "create-topic-button":
             self.action_show_create_topic()
+        elif event.button.id == "register-supabase-schema-button":
+            self.action_register_personal_supabase()
         elif event.button.id == "view-topic-button":
             self.action_view_topic()
         elif event.button.id == "push-branch-button":
@@ -1841,6 +1887,24 @@ class DaedalusTuiApp(App[None]):
             return
         self.query_one("#view-topic-button", Button).disabled = self._selected_topic() is None
 
+    def _refresh_personal_supabase_button(self) -> None:
+        """Disable registration when the active project already claimed its schema."""
+        if not self.query("#register-supabase-schema-button"):
+            return
+        button = self.query_one("#register-supabase-schema-button", Button)
+        project_path = self._active_project_path
+        try:
+            schema = schema_from_project_root(project_path)
+            registered = is_personal_supabase_registered(project_path, schema)
+        except ValueError:
+            registered = False
+            schema = None
+        button.disabled = registered
+        if registered and schema:
+            button.tooltip = f"Schema {schema!r} already registered"
+        else:
+            button.tooltip = "Claim a dedicated schema on the shared personal Supabase database"
+
     def _usage_entries(self):
         try:
             persisted = usage_entries_from_memory(self.memory)
@@ -1899,6 +1963,7 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#directory", Static).update(self._directory_text())
         self._refresh_target_branch_select()
         self._refresh_topic_select()
+        self._refresh_personal_supabase_button()
         self._refresh_task_list()
         self._render_selected_task_safely("project switch")
         if draft is not None:
@@ -1948,7 +2013,10 @@ class DaedalusTuiApp(App[None]):
                 self._switch_project(target)
             else:
                 self.query_one("#directory", Static).update(self._directory_text())
+                self._refresh_personal_supabase_button()
             self.query_one("#project-select", Select).value = self._project_select_value()
+        else:
+            self._refresh_personal_supabase_button()
 
     def _refresh_project_selector(self) -> None:
         project_select = self.query_one("#project-select", Select)

@@ -87,8 +87,9 @@ Screen {
     width: 14;
 }
 
-#new-project-button, #create-topic-button {
-    width: 16;
+#new-project-button, #create-topic-button, #register-supabase-schema-button {
+    width: auto;
+    min-width: 16;
     margin-right: 1;
 }
 

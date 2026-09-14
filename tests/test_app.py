@@ -16,6 +16,7 @@ from tui.app import (
     CodingStatisticsScreen,
     DaedalusTuiApp,
     KeyboardShortcutsScreen,
+    ProjectInitializerScreen,
     TopicViewerScreen,
 )
 from tui.config import LayoutSettings, ModelOption, TuiSettings
@@ -202,9 +203,56 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#start-coding-button", Button), Button)
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
             self.assertIsInstance(app.query_one("#create-topic-button", Button), Button)
+            self.assertIsInstance(app.query_one("#register-supabase-schema-button", Button), Button)
+            self.assertFalse(app.query_one("#register-supabase-schema-button", Button).disabled)
             self.assertIsInstance(app.query_one("#view-topic-button", Button), Button)
             self.assertTrue(app.query_one("#view-topic-button", Button).disabled)
             self.assertIsInstance(app.query_one("#output-toggle-button", Button), Button)
+            await pilot.pause()
+
+    async def test_register_supabase_schema_button_disables_when_registered(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "demo-app"
+            (project / ".agents" / "profiles").mkdir(parents=True)
+            (project / "feature_files").mkdir()
+            (project / ".agents" / "profiles" / "coding.md").write_text("# Coding\n", encoding="utf-8")
+            (project / ".agents" / "profiles" / "architecture.md").write_text(
+                "# Architecture\n",
+                encoding="utf-8",
+            )
+            (project / ".daedalus").write_text(
+                "[worktree]\ninstall_command = []\nreadonly_paths = []\n",
+                encoding="utf-8",
+            )
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=project,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+            async with app.run_test() as pilot:
+                button = app.query_one("#register-supabase-schema-button", Button)
+                self.assertFalse(button.disabled)
+                app.action_register_personal_supabase()
+                await pilot.pause()
+                self.assertTrue(button.disabled)
+                self.assertTrue((project / "supabase" / "config.toml").is_file())
+                self.assertIn(
+                    "Registered Supabase schema",
+                    str(app.query_one("#status", Static).render()),
+                )
+
+    async def test_new_project_modal_includes_personal_supabase_checkbox(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            app.push_screen(ProjectInitializerScreen(Path("/tmp")))
+            await pilot.pause()
+            from textual.widgets import Checkbox
+
+            checkbox = app.screen.query_one("#project-personal-supabase-checkbox", Checkbox)
+            self.assertFalse(checkbox.value)
+            await app.screen.dismiss(None)
             await pilot.pause()
 
     async def test_responsive_layout_transitions_restore_wide_dimensions(self):
