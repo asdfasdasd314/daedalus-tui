@@ -436,6 +436,54 @@ class TaskMemoryStoreTests(unittest.TestCase):
             self.assertEqual(tasks["task-tagged"]["topic"], "mvp")
             self.assertNotIn("topic", tasks["task-plain"])
 
+    def test_remembers_opened_project_directories_without_losing_tasks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / ".daedalus-memory.json"
+            store = TaskMemoryStore(path)
+            first = Path(directory) / "first"
+            second = Path(directory) / "second"
+            store.record_task(
+                "task-one",
+                "Make the change",
+                "codex",
+                "gpt-5.6-luna",
+                "high",
+                "coding",
+                "completed",
+                submitted_at=0,
+            )
+
+            store.add_opened_project_directory(first)
+            store.add_opened_project_directory(second)
+            store.add_opened_project_directory(first)
+
+            self.assertEqual(
+                store.get_opened_project_directories(),
+                (first.resolve(), second.resolve()),
+            )
+            self.assertIn("task-one", store.get_tasks())
+
+    def test_forgets_one_opened_project_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / ".daedalus-memory.json"
+            store = TaskMemoryStore(path)
+            first = Path(directory) / "first"
+            second = Path(directory) / "second"
+            store.add_opened_project_directory(first)
+            store.add_opened_project_directory(second)
+            store.set_last_opened_project(second)
+
+            store.remove_opened_project_directory(first)
+
+            self.assertEqual(store.get_opened_project_directories(), (second.resolve(),))
+            self.assertEqual(store.get_last_opened_project(), second.resolve())
+
+    def test_reports_no_opened_directories_for_a_fresh_memory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = TaskMemoryStore(Path(directory) / ".daedalus-memory.json")
+
+            self.assertEqual(store.get_opened_project_directories(), ())
+
 
 if __name__ == "__main__":
     unittest.main()

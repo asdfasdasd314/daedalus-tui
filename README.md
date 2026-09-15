@@ -40,6 +40,15 @@ usability fallback. Each project
 has its own task coordinator, task numbering, Git worktrees, and transcripts;
 switching the sidebar does not interrupt tasks running in another project.
 
+A project that lives somewhere else — created, cloned, or moved outside the
+launch root — is reachable through the project selector's trailing **Open
+directory…** entry. It asks for one path (absolute, `~`-relative, or relative
+to the launch root), then adds that directory to the selector marked
+`(external)` and switches onto it. Opened directories are remembered in
+`.daedalus-memory.json` and return on the next launch, so the selector only
+ever grows by the projects you actually open, and an opened directory that no
+longer exists is dropped and forgotten at startup.
+
 The layout adapts to terminal size. Below the configured compact-width safety
 guard, or whenever a wide task/settings control is actually clipped, the task
 inbox becomes a short full-width panel, the main workspace stacks vertically,
@@ -145,7 +154,8 @@ outputs, token usage, resolved project path, and any error so failed, paused,
 and cancelled work can be reopened for analysis. Failed tasks and tasks
 interrupted by a TUI restart are rehydrated into the task inbox; failed tasks
 can be retried and interrupted tasks can be resumed when their worktrees still
-exist. The memory file also keeps a single `last_opened_project` entry.
+exist. The memory file also keeps a single `last_opened_project` entry and an
+`opened_project_directories` list for projects opened by path.
 Plan tasks with submitted answers additionally retain generated review requests
 in an optional `prompt_history` list on the same worktree record.
 Runtime diagnostics are written to `.daedalus-debug.log` next to that memory

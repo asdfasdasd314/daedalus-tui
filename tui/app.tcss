@@ -422,6 +422,10 @@ ProjectInitializerScreen {
     align: center middle;
 }
 
+OpenProjectDirectoryScreen {
+    align: center middle;
+}
+
 CreateTopicScreen {
     align: center middle;
 }
@@ -533,6 +537,35 @@ TopicViewerScreen {
 }
 
 #project-initializer-actions {
+    height: 3;
+    align: left middle;
+}
+
+#open-directory-dialog {
+    width: 72;
+    height: auto;
+    border: round $primary;
+    background: $surface;
+    padding: 1 2;
+}
+
+#open-directory-title {
+    color: $text-accent;
+    text-style: bold;
+    height: 2;
+}
+
+#open-directory-subtitle, #open-directory-status {
+    color: $text-muted;
+    height: 1;
+    margin-bottom: 1;
+}
+
+#open-directory-input {
+    margin-bottom: 1;
+}
+
+#open-directory-actions {
     height: 3;
     align: left middle;
 }

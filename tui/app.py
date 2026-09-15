@@ -47,7 +47,12 @@ from .firebase import (
     register_firebase,
 )
 from .provider_auth import check_provider_auth, sign_in_instructions
-from .projects import DaedalusProject, discover_projects, is_direct_child_project
+from .projects import (
+    DaedalusProject,
+    discover_projects,
+    is_direct_child_project,
+    project_from_directory,
+)
 from .plan import (
     CUSTOM_ANSWER_OPTION_ID,
     PlanClarification,
@@ -190,6 +195,13 @@ BACKEND_LABELS = {
 BACKEND_OPTIONS = tuple((BACKEND_LABELS[name], name) for name in ("firebase", "supabase", "none"))
 
 
+# Trailing project-selector entry. Discovery only walks the launch root, so one
+# sentinel keeps a project living anywhere else reachable without listing every
+# directory on the machine in the selector.
+OPEN_DIRECTORY_VALUE = "__open-project-directory__"
+OPEN_DIRECTORY_LABEL = "Open directory…"
+
+
 COMPACT_SETTING_CATEGORIES = (
     ("Model provider", "provider"),
     ("Model", "model"),
@@ -328,6 +340,77 @@ class KeyboardShortcutsScreen(ModalScreen[None]):
 
     def action_close_shortcuts(self) -> None:
         self.dismiss(None)
+
+
+class OpenProjectDirectoryScreen(ModalScreen[str | None]):
+    """Collect the path of a project that launch-root discovery cannot see.
+
+    Discovery is deliberately limited to immediate launch-root children, so a
+    project created, cloned, or moved elsewhere would otherwise require
+    relaunching the TUI from another directory.
+    """
+
+    BINDINGS = [
+        ("escape", "cancel_open_directory", "Cancel"),
+    ]
+
+    def __init__(self, base_directory: Path) -> None:
+        super().__init__()
+        self.base_directory = base_directory.expanduser().resolve()
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="open-directory-dialog"):
+            yield Static("Open project directory", id="open-directory-title")
+            yield Static(
+                f"Absolute path, ~ path, or a path relative to {self.base_directory}",
+                id="open-directory-subtitle",
+                markup=False,
+            )
+            yield Input(placeholder="~/code/my-project", id="open-directory-input")
+            yield Static("", id="open-directory-status", markup=False)
+            with Horizontal(id="open-directory-actions"):
+                yield Button("Open", id="open-directory-button", variant="primary")
+                yield Button("Cancel", id="cancel-open-directory-button")
+
+    def on_mount(self) -> None:
+        self.query_one("#open-directory-input", Input).focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "cancel-open-directory-button":
+            self.dismiss(None)
+        elif event.button.id == "open-directory-button":
+            self._open_directory()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "open-directory-input":
+            self._open_directory()
+
+    def action_cancel_open_directory(self) -> None:
+        self.dismiss(None)
+
+    def _open_directory(self) -> None:
+        status = self.query_one("#open-directory-status", Static)
+        directory_input = self.query_one("#open-directory-input", Input)
+        entered = directory_input.value.strip()
+        if not entered:
+            status.update("Enter a directory path.")
+            directory_input.focus()
+            return
+        candidate = Path(entered).expanduser()
+        if not candidate.is_absolute():
+            candidate = self.base_directory / candidate
+        try:
+            resolved = candidate.resolve()
+            is_directory = resolved.is_dir()
+        except OSError as error:
+            status.update(str(error))
+            directory_input.focus()
+            return
+        if not is_directory:
+            status.update(f"{resolved} is not an existing directory.")
+            directory_input.focus()
+            return
+        self.dismiss(str(resolved))
 
 
 class ProjectInitializerScreen(ModalScreen[dict | None]):
@@ -896,6 +979,11 @@ class DaedalusTuiApp(App[None]):
             auth_policy=self.settings.auth.runner_policy(),
             claude_permission_mode=self.settings.claude.permission_mode,
         )
+        try:
+            self._opened_directories = list(self.memory.get_opened_project_directories())
+        except (OSError, ValueError):
+            # Project navigation should remain usable if local memory is unavailable.
+            self._opened_directories = []
         discovered = [
             project
             for project in discover_projects(self.launch_root, self.settings.project_discovery)
@@ -906,6 +994,10 @@ class DaedalusTuiApp(App[None]):
             # orchestration will provide the actionable Git error if needed.
             discovered = [DaedalusProject(self.launch_root, self.launch_root)]
         discovered_paths = {project.path.resolve() for project in discovered}
+        for opened in self._opened_project_entries():
+            if opened.path not in discovered_paths:
+                discovered.append(opened)
+                discovered_paths.add(opened.path)
         remembered_project = self._remembered_project()
         if remembered_project in discovered_paths:
             active_project = remembered_project
@@ -962,10 +1054,7 @@ class DaedalusTuiApp(App[None]):
                     with Horizontal(id="task-bar"):
                         yield Static("Project", id="project-label")
                         yield Select(
-                            [
-                                (project.display_name, str(project.path))
-                                for project in self._selector_projects()
-                            ],
+                            self._project_selector_options(),
                             value=self._project_select_value(),
                             allow_blank=False,
                             id="project-select",
@@ -1493,7 +1582,9 @@ class DaedalusTuiApp(App[None]):
                 self._apply_compact_setting(str(event.value))
             return
         if event.select.id == "project-select":
-            if event.value not in (Select.BLANK, ""):
+            if str(event.value) == OPEN_DIRECTORY_VALUE:
+                self._prompt_for_project_directory()
+            elif event.value not in (Select.BLANK, ""):
                 self._switch_project(Path(str(event.value)))
             return
         if event.select.id == "target-branch-select":
@@ -2156,6 +2247,89 @@ class DaedalusTuiApp(App[None]):
             # Project navigation should remain usable if local memory is unavailable.
             pass
 
+    def _opened_project_entries(self) -> list[DaedalusProject]:
+        """Return by-path projects, forgetting directories that no longer exist."""
+
+        entries: list[DaedalusProject] = []
+        remaining: list[Path] = []
+        for directory in self._opened_directories:
+            try:
+                entries.append(project_from_directory(directory, self.launch_root))
+            except ValueError:
+                # The directory was moved or deleted; stop offering it.
+                try:
+                    self.memory.remove_opened_project_directory(directory)
+                except (OSError, ValueError):
+                    pass
+                continue
+            remaining.append(directory)
+        self._opened_directories = remaining
+        return entries
+
+    def _project_selector_options(self) -> list[tuple[str, str]]:
+        """Return project choices followed by the open-by-path entry.
+
+        The list stays limited to projects actually in use: a directory appears
+        only once it has been opened, so the single trailing entry is the whole
+        cost of reaching projects outside the launch root.
+        """
+
+        options = [
+            (project.display_name, str(project.path))
+            for project in self._selector_projects()
+        ]
+        options.append((OPEN_DIRECTORY_LABEL, OPEN_DIRECTORY_VALUE))
+        return options
+
+    def _prompt_for_project_directory(self) -> None:
+        """Restore the displayed project, then ask which directory to open."""
+
+        project_select = self.query_one("#project-select", Select)
+        effective = self._project_select_value()
+        if project_select.value != effective:
+            # The sentinel is an action, not a project; a queued Changed event
+            # for the restored value is a no-op in _switch_project.
+            project_select.value = effective
+        self.push_screen(
+            OpenProjectDirectoryScreen(self.launch_root),
+            self._on_project_directory_chosen,
+        )
+
+    def _on_project_directory_chosen(self, directory: str | None) -> None:
+        if not directory:
+            return
+        self._open_project_directory(Path(directory))
+
+    def _open_project_directory(self, directory: Path) -> None:
+        """List a directory in the project selector and switch onto it."""
+
+        try:
+            project = project_from_directory(directory, self.launch_root)
+        except ValueError as error:
+            self._set_error(str(error))
+            self._set_status("Error")
+            return
+        project_path = project.path
+        if not is_direct_child_project(project_path, self.launch_root):
+            # Direct children are rediscovered on every refresh and need no
+            # remembered entry of their own.
+            if project_path not in self._opened_directories:
+                self._opened_directories.append(project_path)
+            try:
+                self.memory.add_opened_project_directory(project_path)
+            except (OSError, ValueError):
+                # The directory still opens this session without local memory.
+                pass
+        if project_path not in {known.path.resolve() for known in self.projects}:
+            self.projects = (*self.projects, project)
+        self._refresh_project_selector()
+        if project_path == self._active_project_path:
+            self._set_status(f"Opened {project.display_name}")
+            return
+        self._switch_project(project_path)
+        # The switch changes which option is effective, so sync the selector.
+        self._refresh_project_selector()
+
     def _switch_project(self, project_path: Path) -> None:
         project_path = project_path.expanduser().resolve()
         if project_path == self._active_project_path:
@@ -2215,6 +2389,10 @@ class DaedalusTuiApp(App[None]):
         if not discovered:
             discovered = [DaedalusProject(self.launch_root, self.launch_root)]
         discovered_paths = {project.path.resolve() for project in discovered}
+        for opened in self._opened_project_entries():
+            if opened.path not in discovered_paths:
+                discovered.append(opened)
+                discovered_paths.add(opened.path)
         for known in self.projects:
             path = known.path.resolve()
             if (
@@ -2244,25 +2422,24 @@ class DaedalusTuiApp(App[None]):
 
     def _refresh_project_selector(self) -> None:
         project_select = self.query_one("#project-select", Select)
-        options = [
-            (project.display_name, str(project.path))
-            for project in self._selector_projects()
-        ]
+        options = self._project_selector_options()
         self._set_select_options_if_changed(project_select, options, compare_labels=True)
         effective = self._project_select_value()
         if project_select.value != effective:
             project_select.value = effective
 
     def _selector_projects(self) -> tuple[DaedalusProject, ...]:
-        """Return only direct-child projects, or the empty-root fallback."""
+        """Return direct-child and opened-by-path projects, or the root fallback."""
 
-        direct_children = tuple(
+        opened = set(self._opened_directories)
+        listed = tuple(
             project
             for project in self.projects
             if is_direct_child_project(project.path, self.launch_root)
+            or project.path.resolve() in opened
         )
-        if direct_children:
-            return direct_children
+        if listed:
+            return listed
         return tuple(
             project
             for project in self.projects

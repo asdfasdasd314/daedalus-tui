@@ -14,6 +14,7 @@ from .verification import truncate_diagnostic
 
 DEFAULT_MEMORY_FILE = ".daedalus-memory.json"
 LAST_OPENED_PROJECT_KEY = "last_opened_project"
+OPENED_PROJECT_DIRECTORIES_KEY = "opened_project_directories"
 PROJECT_TARGET_BRANCHES_KEY = "project_target_branches"
 PROJECT_TOPICS_KEY = "project_topics"
 TASKS_KEY = "tasks"
@@ -64,6 +65,65 @@ class TaskMemoryStore:
     def record_last_opened_project(self, project_path: Path) -> None:
         """Backward-compatible alias for :meth:`set_last_opened_project`."""
         self.set_last_opened_project(project_path)
+
+    def get_opened_project_directories(self) -> tuple[Path, ...]:
+        """Return the directories opened by path, in the order they were added."""
+        with self._lock:
+            entries = self._read_entries()
+        paths: list[Path] = []
+        seen: set[Path] = set()
+        for entry in entries:
+            value = entry.get(OPENED_PROJECT_DIRECTORIES_KEY)
+            if not isinstance(value, list):
+                continue
+            for item in value:
+                if not isinstance(item, str) or not item:
+                    continue
+                resolved = Path(item).expanduser().resolve()
+                if resolved not in seen:
+                    seen.add(resolved)
+                    paths.append(resolved)
+        return tuple(paths)
+
+    def add_opened_project_directory(self, project_path: Path) -> None:
+        """Remember a directory opened by path so it returns on the next launch."""
+        self._write_opened_project_directories(add=project_path)
+
+    def remove_opened_project_directory(self, project_path: Path) -> None:
+        """Forget a directory opened by path, used when it no longer exists."""
+        self._write_opened_project_directories(remove=project_path)
+
+    def _write_opened_project_directories(
+        self,
+        add: Path | None = None,
+        remove: Path | None = None,
+    ) -> None:
+        with self._lock:
+            entries = self._read_entries()
+            updated_entries: list[dict[str, object]] = []
+            paths: list[str] = []
+            seen: set[str] = set()
+            for existing in entries:
+                existing_paths = existing.get(OPENED_PROJECT_DIRECTORIES_KEY)
+                if isinstance(existing_paths, list):
+                    for item in existing_paths:
+                        if isinstance(item, str) and item and item not in seen:
+                            seen.add(item)
+                            paths.append(item)
+                    continue
+                if "tokens" in existing:
+                    continue
+                updated_entries.append(existing)
+            if remove is not None:
+                key = str(remove.expanduser().resolve())
+                paths = [item for item in paths if item != key]
+            if add is not None:
+                key = str(add.expanduser().resolve())
+                if key not in paths:
+                    paths.append(key)
+            if paths:
+                updated_entries.append({OPENED_PROJECT_DIRECTORIES_KEY: paths})
+            self._write_entries(updated_entries)
 
     def get_project_target_branch(self, project_path: Path) -> str | None:
         """Return the remembered operating branch for a project, if any."""

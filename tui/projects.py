@@ -35,9 +35,16 @@ class DaedalusProject:
         base = project_path.name or self.name
         if project_path == launch_root:
             return f"{base} (root)"
+        markers: list[str] = []
+        if project_path.parent != launch_root:
+            # Opened by path from outside the launch root, where the basename
+            # alone would not say which directory the option refers to.
+            markers.append("external")
         if not self.formatted:
             # Tasks still run here, but no feature files exist to update yet.
-            return f"{base} (unformatted)"
+            markers.append("unformatted")
+        if markers:
+            return f"{base} ({', '.join(markers)})"
         return base
 
 
@@ -109,4 +116,30 @@ def discover_projects(
     )
 
 
-__all__ = ["DaedalusProject", "discover_projects", "is_direct_child_project"]
+def project_from_directory(path: Path, launch_root: Path) -> DaedalusProject:
+    """Build a project entry for a directory the operator named by hand.
+
+    Discovery only walks the launch root, so a project created or cloned
+    elsewhere would otherwise be unreachable without restarting the TUI in a
+    different directory. The same Daedalus-format and Git checks used by
+    discovery apply here, so an opened directory is labelled exactly as a
+    discovered one would be.
+    """
+
+    candidate = path.expanduser().resolve()
+    if not candidate.is_dir():
+        raise ValueError(f"{candidate} is not an existing directory.")
+    return DaedalusProject(
+        candidate,
+        launch_root.expanduser().resolve(),
+        formatted=(candidate / "feature_files").is_dir(),
+        git_repository=(candidate / ".git").exists(),
+    )
+
+
+__all__ = [
+    "DaedalusProject",
+    "discover_projects",
+    "is_direct_child_project",
+    "project_from_directory",
+]

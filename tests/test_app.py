@@ -13,12 +13,15 @@ from textual.widgets import Button, DataTable, Log, Select, Static, TextArea
 from vimkeys_input import VimMode
 
 from tui.app import (
+    OPEN_DIRECTORY_VALUE,
     CodingStatisticsScreen,
     DaedalusTuiApp,
     KeyboardShortcutsScreen,
+    OpenProjectDirectoryScreen,
     ProjectInitializerScreen,
     TopicViewerScreen,
 )
+from tui.memory import TaskMemoryStore
 from tui.config import LayoutSettings, ModelOption, TuiSettings
 from tui.projects import DaedalusProject
 from tui.plan import CUSTOM_ANSWER_OPTION_ID, PlanOption, PlanQuestion, encode_custom_answer
@@ -650,7 +653,7 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 await pilot.pause()
                 project_select = app.query_one("#project-select", Select)
                 labels = [str(label) for label, _value in project_select._options]
-                self.assertEqual(labels, ["daedalus", "other-project"])
+                self.assertEqual(labels, ["daedalus", "other-project", "Open directory…"])
                 self.assertNotIn("project-initialization/other-project", labels)
 
                 app._reload_projects()
@@ -659,7 +662,163 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 refreshed_labels = [
                     str(label) for label, _value in project_select._options
                 ]
-                self.assertEqual(refreshed_labels, ["daedalus", "other-project"])
+                self.assertEqual(
+                    refreshed_labels, ["daedalus", "other-project", "Open directory…"]
+                )
+
+    @patch("tui.app.TaskCoordinator")
+    @patch("tui.app.list_local_branches")
+    @patch("tui.app.discover_projects")
+    async def test_open_directory_entry_trails_the_discovered_projects(
+        self, discover, list_branches, coordinator_class
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            alpha = root / "alpha"
+            alpha.mkdir()
+            discover.return_value = (DaedalusProject(alpha, root),)
+            list_branches.return_value = ["main"]
+            coordinator_class.return_value = FakeCoordinator()
+
+            app = DaedalusTuiApp(runner=FakeRunner(), directory=root, settings=settings())
+            async with app.run_test() as pilot:
+                await pilot.pause()
+                project_select = app.query_one("#project-select", Select)
+
+                self.assertEqual(
+                    [str(label) for label, _value in project_select._options],
+                    ["alpha", "Open directory…"],
+                )
+                self.assertEqual(project_select.value, str(alpha))
+
+    @patch("tui.app.TaskCoordinator")
+    @patch("tui.app.list_local_branches")
+    @patch("tui.app.discover_projects")
+    async def test_open_directory_entry_opens_a_dialog_and_keeps_the_project(
+        self, discover, list_branches, coordinator_class
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            alpha = root / "alpha"
+            alpha.mkdir()
+            discover.return_value = (DaedalusProject(alpha, root),)
+            list_branches.return_value = ["main"]
+            coordinator_class.return_value = FakeCoordinator()
+
+            app = DaedalusTuiApp(runner=FakeRunner(), directory=root, settings=settings())
+            async with app.run_test() as pilot:
+                await pilot.pause()
+                app.query_one("#project-select", Select).value = OPEN_DIRECTORY_VALUE
+                await pilot.pause()
+
+                self.assertIsInstance(app.screen, OpenProjectDirectoryScreen)
+                # The sentinel is an action, so the selector still shows a project.
+                self.assertEqual(
+                    app.query_one("#project-select", Select).value, str(alpha)
+                )
+                self.assertEqual(app._active_project_path, alpha.resolve())
+
+    @patch("tui.app.TaskCoordinator")
+    @patch("tui.app.list_local_branches")
+    @patch("tui.app.discover_projects")
+    async def test_opening_a_directory_lists_it_and_switches_onto_it(
+        self, discover, list_branches, coordinator_class
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "launch-root"
+            alpha = root / "alpha"
+            outside = Path(directory) / "elsewhere" / "outside-project"
+            alpha.mkdir(parents=True)
+            (outside / "feature_files").mkdir(parents=True)
+            discover.return_value = (DaedalusProject(alpha, root),)
+            list_branches.return_value = ["main"]
+            coordinator_class.return_value = FakeCoordinator()
+
+            app = DaedalusTuiApp(runner=FakeRunner(), directory=root, settings=settings())
+            async with app.run_test() as pilot:
+                await pilot.pause()
+                app._open_project_directory(outside)
+                await pilot.pause()
+
+                project_select = app.query_one("#project-select", Select)
+                self.assertEqual(
+                    [str(label) for label, _value in project_select._options],
+                    ["alpha", "outside-project (external)", "Open directory…"],
+                )
+                self.assertEqual(project_select.value, str(outside.resolve()))
+                self.assertEqual(app._active_project_path, outside.resolve())
+                self.assertEqual(
+                    TaskMemoryStore(root / ".daedalus-memory.json").get_opened_project_directories(),
+                    (outside.resolve(),),
+                )
+
+                # Discovery refreshes must not drop the opened directory.
+                app._reload_projects()
+                await pilot.pause()
+                self.assertIn(
+                    "outside-project (external)",
+                    [str(label) for label, _value in project_select._options],
+                )
+
+    @patch("tui.app.TaskCoordinator")
+    @patch("tui.app.list_local_branches")
+    @patch("tui.app.discover_projects")
+    async def test_remembered_directories_return_and_missing_ones_are_forgotten(
+        self, discover, list_branches, coordinator_class
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "launch-root"
+            alpha = root / "alpha"
+            outside = Path(directory) / "elsewhere" / "outside-project"
+            removed = Path(directory) / "elsewhere" / "deleted-project"
+            alpha.mkdir(parents=True)
+            (outside / "feature_files").mkdir(parents=True)
+            discover.return_value = (DaedalusProject(alpha, root),)
+            list_branches.return_value = ["main"]
+            coordinator_class.return_value = FakeCoordinator()
+            store = TaskMemoryStore(root / ".daedalus-memory.json")
+            store.add_opened_project_directory(outside)
+            store.add_opened_project_directory(removed)
+            store.set_last_opened_project(outside)
+
+            app = DaedalusTuiApp(runner=FakeRunner(), directory=root, settings=settings())
+            async with app.run_test() as pilot:
+                await pilot.pause()
+
+                self.assertEqual(app._active_project_path, outside.resolve())
+                self.assertEqual(
+                    [str(label) for label, _value in app.query_one("#project-select", Select)._options],
+                    ["alpha", "outside-project (external)", "Open directory…"],
+                )
+                self.assertEqual(
+                    store.get_opened_project_directories(), (outside.resolve(),)
+                )
+
+    @patch("tui.app.TaskCoordinator")
+    @patch("tui.app.list_local_branches")
+    @patch("tui.app.discover_projects")
+    async def test_opening_a_missing_directory_reports_an_error(
+        self, discover, list_branches, coordinator_class
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            alpha = root / "alpha"
+            alpha.mkdir()
+            discover.return_value = (DaedalusProject(alpha, root),)
+            list_branches.return_value = ["main"]
+            coordinator_class.return_value = FakeCoordinator()
+
+            app = DaedalusTuiApp(runner=FakeRunner(), directory=root, settings=settings())
+            async with app.run_test() as pilot:
+                await pilot.pause()
+                app._open_project_directory(root / "missing")
+                await pilot.pause()
+
+                self.assertEqual(app._active_project_path, alpha.resolve())
+                self.assertEqual(
+                    [str(label) for label, _value in app.query_one("#project-select", Select)._options],
+                    ["alpha", "Open directory…"],
+                )
 
     @patch("tui.app.TaskCoordinator")
     @patch("tui.app.list_local_branches")

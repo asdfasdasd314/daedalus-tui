@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from tui.config import ProjectDiscoverySettings
-from tui.projects import discover_projects
+from tui.projects import discover_projects, project_from_directory
 
 
 class ProjectDiscoveryTests(unittest.TestCase):
@@ -99,6 +99,51 @@ class ProjectDiscoveryTests(unittest.TestCase):
             missing = Path(directory) / "missing"
 
             self.assertEqual(discover_projects(missing), ())
+
+
+class ProjectFromDirectoryTests(unittest.TestCase):
+    def test_builds_a_labelled_project_for_a_directory_outside_the_launch_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "launch-root"
+            elsewhere = Path(directory) / "elsewhere" / "outside-project"
+            root.mkdir()
+            (elsewhere / "feature_files").mkdir(parents=True)
+            (elsewhere / ".git").mkdir()
+
+            project = project_from_directory(elsewhere, root)
+
+            self.assertEqual(project.path, elsewhere.resolve())
+            self.assertTrue(project.formatted)
+            self.assertTrue(project.git_repository)
+            self.assertEqual(project.display_name, "outside-project (external)")
+
+    def test_marks_an_unformatted_external_directory_in_its_label(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "launch-root"
+            elsewhere = Path(directory) / "elsewhere" / "plain"
+            root.mkdir()
+            elsewhere.mkdir(parents=True)
+
+            project = project_from_directory(elsewhere, root)
+
+            self.assertFalse(project.formatted)
+            self.assertEqual(project.display_name, "plain (external, unformatted)")
+
+    def test_direct_children_keep_their_plain_label(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            child = root / "child"
+            (child / "feature_files").mkdir(parents=True)
+
+            self.assertEqual(project_from_directory(child, root).display_name, "child")
+
+    def test_rejects_a_path_that_is_not_a_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            missing = root / "missing"
+
+            with self.assertRaises(ValueError):
+                project_from_directory(missing, root)
 
 
 if __name__ == "__main__":
