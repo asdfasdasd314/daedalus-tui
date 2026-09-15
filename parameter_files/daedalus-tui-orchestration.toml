@@ -16,5 +16,11 @@ graphify_executable = "graphify"
 supabase_db_push_enabled = true
 supabase_executable = "supabase"
 
+# Firebase-backed projects get their changed Firestore rules and indexes
+# deployed after verification passes, the same way Supabase migrations are
+# pushed. The deploy runs only for projects registered for Firebase.
+firebase_deploy_enabled = true
+firebase_executable = "firebase"
+
 # An empty list discovers root and one-level nested npm/pytest suites.
 verification_commands = []

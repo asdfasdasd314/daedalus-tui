@@ -87,7 +87,7 @@ Screen {
     width: 14;
 }
 
-#new-project-button, #create-topic-button, #register-supabase-schema-button {
+#new-project-button, #create-topic-button, #register-backend-button, #sign-in-button {
     width: auto;
     min-width: 16;
     margin-right: 1;
@@ -686,4 +686,45 @@ TopicViewerScreen {
 
 .shortcut-row {
     height: 1;
+}
+
+#sign-in-dialog, #backend-dialog {
+    width: 72;
+    max-width: 90%;
+    height: auto;
+    padding: 1 2;
+    background: $surface;
+    border: round $primary;
+}
+
+#sign-in-title, #backend-title {
+    color: $text-accent;
+    text-style: bold;
+}
+
+#sign-in-mode, #backend-subtitle, #backend-note {
+    color: $text-muted;
+    margin-bottom: 1;
+}
+
+#sign-in-detail, #backend-registered, #backend-status {
+    height: auto;
+    margin-bottom: 1;
+}
+
+#backend-select {
+    margin-bottom: 1;
+}
+
+#sign-in-actions, #backend-actions {
+    height: auto;
+    align: right middle;
+}
+
+#sign-in-actions Button, #backend-actions Button {
+    margin-left: 1;
+}
+
+#project-backend-label {
+    margin-top: 1;
 }

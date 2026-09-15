@@ -26,6 +26,32 @@ def cursor_environment(directory: Path, extra_files: tuple[Path, ...] = ()) -> d
     return environment
 
 
+def agent_environment(
+    provider: str,
+    directory: Path,
+    extra_files: tuple[Path, ...] = (),
+    stripped_variables: tuple[str, ...] = (),
+) -> dict[str, str] | None:
+    """Return the subprocess environment for one provider, or None to inherit.
+
+    Cursor reads its credentials from local `.env` files, so it always gets an
+    explicit environment. Every provider additionally has ``stripped_variables``
+    removed: account mode deletes the API-key variables that would otherwise
+    make a CLI bill API credit instead of the operator's signed-in plan, and a
+    removed variable cannot be reintroduced by a local `.env` file.
+    """
+    if provider == "cursor":
+        environment = cursor_environment(directory, extra_files)
+    elif stripped_variables:
+        environment = os.environ.copy()
+    else:
+        # Nothing to change; let the child inherit the parent environment.
+        return None
+    for variable in stripped_variables:
+        environment.pop(variable, None)
+    return environment
+
+
 def read_env_file(path: Path) -> dict[str, str]:
     if not path.is_file():
         return {}

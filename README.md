@@ -27,10 +27,16 @@ projects:
 python3 -m tui
 ```
 
-The launch directory is treated as a project workspace. The TUI discovers only
-its immediate child directories that contain a `feature_files/` folder; nested
-descendants are not traversed or listed. If no eligible child project exists,
-the launch directory remains available as a usability fallback. Each project
+The launch directory is treated as a project workspace. The TUI discovers its
+immediate child directories; nested descendants are not traversed or listed.
+Folders with a `feature_files/` directory are listed first as Daedalus
+projects, and plain Git checkouts are listed after them marked
+`(unformatted)` so the TUI is not limited to projects you have already
+converted. Set `include_all_directories = true` in the `[projects]` table of
+`parameter_files/daedalus-tui.toml` to list every child directory, or
+`include_git_repositories = false` to show Daedalus projects only. If no
+eligible child project exists, the launch directory remains available as a
+usability fallback. Each project
 has its own task coordinator, task numbering, Git worktrees, and transcripts;
 switching the sidebar does not interrupt tasks running in another project.
 
@@ -45,20 +51,67 @@ defaults in the `[layout]` table of
 `parameter_files/daedalus-tui.toml` (`compact_width`, `short_height`,
 `compact_task_sidebar_height`, and `compact_prompt_height`).
 
-For Cursor CLI, edit the included `.env` file (or copy `.env.example` to a
-new `.env`) and set your key:
+## Providers and sign-in
+
+Three providers are available: Codex (`codex`), Claude Code (`claude`), and
+Cursor CLI (`agent`). Each provider's models and effort levels live in
+`parameter_files/daedalus-tui.toml`; Claude Code has its own effort scale that
+adds `max`, and Cursor is a provider-only choice with model and reasoning
+disabled. Claude Code runs with `--permission-mode acceptEdits`, so it edits
+files without prompting while orchestration still runs verification itself. Set
+`[claude] permission_mode = "bypassPermissions"` if you want it to run commands
+too; that grants autonomy comparable to Codex but without Codex's sandbox.
+
+By default the TUI runs agents on your **signed-in account** rather than an API
+key, so work bills your plan. In this mode it removes each provider's API-key
+variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`,
+`CURSOR_API_KEY`) from the agent subprocess environment, and a local `.env`
+cannot put them back. Sign in once from your own terminal:
+
+```bash
+claude auth login
+codex login
+agent login
+```
+
+The task bar's **Sign In** control reports the selected provider's status and
+repeats the exact command to run. The TUI does not host the login itself,
+because an interactive CLI that takes over the terminal would hide the
+interface.
+
+To go back to key-based execution, set `mode = "api-key"` in the `[auth]` table
+of `parameter_files/daedalus-tui.toml`. Cursor then reads `CURSOR_API_KEY` from
+the process environment or a local `.env`:
 
 ```bash
 cp .env.example .env
 # edit .env and set CURSOR_API_KEY=...
 ```
 
-The TUI passes `CURSOR_API_KEY` to Cursor only when it is not already present
-in the process environment. You can also authenticate with `agent login`.
+API keys never belong in a parameter file; those tables list variable names
+only.
+
+## Project backends
+
+New Project and the task bar's **Register Backend** control scaffold a backend
+into a project: **Firebase** (`firebase.json`, deny-by-default
+`firestore.rules`, `firestore.indexes.json`, `storage.rules`) or a **personal
+Supabase** schema. Firebase is the default for new projects; change
+`default_backend` in
+`parameter_files/daedalus-tui-project-initialization.toml` to pick another.
+
+Registration writes files only. After verification passes, orchestration
+deploys changed Firestore rules and indexes with
+`firebase deploy --only firestore:rules,firestore:indexes --non-interactive`,
+and pushes pending Supabase migrations, repairing failures with the coding
+agent before integration proceeds. Agents never run either command themselves.
+Tune the deploy in `parameter_files/daedalus-tui-firebase.toml` and disable it
+with `firebase_deploy_enabled = false` in the orchestration parameter file.
 
 Each prompt creates an independent local Git worktree based on the configured
 `target_branch` (default `main`; `primary_branch` remains accepted as an
-alias), runs Codex or Cursor there, verifies the result, resolves integration
+alias), runs the selected agent (Codex, Claude Code, or Cursor) there, verifies
+the result, resolves integration
 failures with the selected agent, and fast-forwards that target branch after
 successful checks. The operator does not need the target branch checked out.
 Up to four prompts can run concurrently; integration and promotion remain

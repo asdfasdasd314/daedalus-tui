@@ -14,7 +14,7 @@ import time
 from typing import Callable, Literal
 
 from .debug_log import LOGGER, log_exception
-from .environment import cursor_environment
+from .environment import agent_environment
 
 
 @dataclass(frozen=True)
@@ -47,7 +47,42 @@ REASONING_MAP = {
     "medium": "medium",
     "high": "high",
     "extra-high": "xhigh",
+    "max": "max",
 }
+
+# Executable and display name for each supported provider CLI.
+PROVIDER_EXECUTABLES = {
+    "codex": ("codex", "Codex CLI"),
+    "cursor": ("agent", "Cursor CLI"),
+    "claude": ("claude", "Claude Code CLI"),
+}
+
+# Shown when a provider exits without usable diagnostics, which is what an
+# unauthenticated CLI usually looks like from here.
+SIGN_IN_HINTS = {
+    "codex": "Codex authentication: run `codex login` to sign in to your account.",
+    "cursor": "Cursor authentication: run `agent login` or set CURSOR_API_KEY in .env.",
+    "claude": "Claude Code authentication: run `claude auth login` to sign in to your account.",
+}
+
+
+@dataclass(frozen=True)
+class ProviderAuthPolicy:
+    """How provider CLI subprocesses authenticate.
+
+    In account mode the runner removes each provider's API-key variables from
+    the subprocess environment so the CLI falls back to its signed-in account
+    and bills the operator's plan. ``api_key_variables`` holds variable names
+    only; no key ever passes through this object.
+    """
+
+    account_login: bool = True
+    api_key_variables: dict[str, tuple[str, ...]] = field(default_factory=dict)
+
+    def stripped_variables(self, provider: str) -> tuple[str, ...]:
+        if not self.account_login:
+            return ()
+        return self.api_key_variables.get(provider, ())
 
 
 @dataclass(frozen=True)
@@ -106,7 +141,15 @@ class AgentResult:
 
 
 class AgentRunner:
-    """Run Codex or Cursor directly and emit only assistant-facing messages."""
+    """Run Codex, Claude Code, or Cursor and emit only assistant-facing messages."""
+
+    def __init__(
+        self,
+        auth_policy: ProviderAuthPolicy | None = None,
+        claude_permission_mode: str = "acceptEdits",
+    ):
+        self.auth_policy = auth_policy or ProviderAuthPolicy()
+        self.claude_permission_mode = claude_permission_mode
 
     def command_for(self, request: AgentRequest) -> list[str]:
         if request.provider == "codex":
@@ -126,6 +169,29 @@ class AgentRunner:
             command.extend(["--json", request.prompt])
             return command
 
+        if request.provider == "claude":
+            command = [
+                "claude",
+                "--print",
+                "--output-format",
+                "stream-json",
+                "--verbose",
+            ]
+            # The worktree is already the working directory; only genuinely
+            # extra roots need --add-dir. Its argument is variadic, so a
+            # single-argument option always follows it and terminates the list
+            # before the trailing prompt can be absorbed.
+            for directory in request.writable_directories:
+                if directory != request.directory:
+                    command.extend(["--add-dir", str(directory)])
+            command.extend(["--model", request.model])
+            effort = REASONING_MAP.get(request.reasoning, request.reasoning)
+            if effort:
+                command.extend(["--effort", effort])
+            command.extend(["--permission-mode", self.claude_permission_mode])
+            command.append(request.prompt)
+            return command
+
         if request.provider == "cursor":
             return [
                 "agent",
@@ -139,8 +205,7 @@ class AgentRunner:
         raise ValueError(f"Unsupported agent provider: {request.provider}")
 
     def run(self, request: AgentRequest, on_output: OutputCallback) -> AgentResult:
-        executable = "codex" if request.provider == "codex" else "agent"
-        name = "Codex CLI" if request.provider == "codex" else "Cursor CLI"
+        executable, name = PROVIDER_EXECUTABLES.get(request.provider, ("agent", "Cursor CLI"))
         if shutil.which(executable) is None:
             LOGGER.error("Agent executable unavailable provider=%s executable=%s", request.provider, executable)
             return AgentResult(
@@ -149,11 +214,19 @@ class AgentRunner:
                 error=f"{name} is unavailable. Install it so `{executable}` is on PATH.",
             )
 
-        environment = (
-            cursor_environment(request.directory, request.environment_files)
-            if request.provider == "cursor"
-            else None
+        stripped = self.auth_policy.stripped_variables(request.provider)
+        environment = agent_environment(
+            request.provider,
+            request.directory,
+            request.environment_files,
+            stripped,
         )
+        if stripped:
+            LOGGER.info(
+                "Running provider=%s with account login; removed %s from the agent environment",
+                request.provider,
+                ", ".join(stripped),
+            )
         try:
             command = self.command_for(request)
             LOGGER.info(
@@ -267,6 +340,20 @@ class AgentRunner:
                     stopped_reason,
                     tokens_consumed,
                 )
+            if request.provider == "claude":
+                # Claude Code streams whole assistant blocks, so the transcript
+                # is already complete; the final result payload is only a
+                # fallback for a run that emitted no assistant text.
+                return AgentResult(
+                    request.provider,
+                    returncode,
+                    "\n\n".join(messages) if messages else normalized[0],
+                    None,
+                    stderr,
+                    stopped_reason,
+                    tokens_consumed,
+                    bool(messages),
+                )
             return AgentResult(
                 request.provider,
                 returncode,
@@ -291,17 +378,34 @@ class AgentRunner:
 
         diagnostics = self._failure_diagnostics(request.provider, stdout, stderr)
         LOGGER.error("Agent process failed provider=%s returncode=%s", request.provider, returncode)
-        if request.provider == "cursor" and not environment.get("CURSOR_API_KEY", "").strip():
-            diagnostics += "\n\nCursor authentication: run `agent login` or set CURSOR_API_KEY in .env."
+        if self._sign_in_hint_applies(request.provider, environment, stripped):
+            diagnostics += "\n\n" + SIGN_IN_HINTS[request.provider]
         return AgentResult(
             provider=request.provider,
             returncode=returncode,
             error=(
-                f"{request.provider.capitalize()} failed with exit code {returncode}."
+                f"{name} failed with exit code {returncode}."
                 + f"\n\nDiagnostics:\n{diagnostics}"
             ).strip(),
             stderr=stderr,
         )
+
+    @staticmethod
+    def _sign_in_hint_applies(
+        provider: str,
+        environment: dict[str, str] | None,
+        stripped: tuple[str, ...],
+    ) -> bool:
+        """Add sign-in guidance when no usable credential could have been present."""
+        if provider not in SIGN_IN_HINTS:
+            return False
+        if stripped:
+            # Account mode removed the API keys on purpose, so a failure here is
+            # most often an account that is not signed in.
+            return True
+        if provider == "cursor":
+            return not (environment or {}).get("CURSOR_API_KEY", "").strip()
+        return False
 
     @staticmethod
     def _wait_for_process(
@@ -362,6 +466,8 @@ class AgentRunner:
         callback: OutputCallback,
         on_activity: Callable[[], None] | None = None,
     ) -> Thread:
+        parser = AgentRunner.event_parser(provider)
+
         def forward() -> None:
             if stream is None:
                 return
@@ -371,16 +477,12 @@ class AgentRunner:
                 output["stdout"].append(chunk)
                 if on_activity is not None:
                     on_activity()
-                if provider == "codex":
-                    message = AgentRunner.parse_codex_event(chunk)
-                    if message:
-                        messages.append(message)
-                        AgentRunner._forward_event(callback, AgentLogEvent("message", message))
-                elif provider == "cursor":
-                    message = AgentRunner.parse_cursor_event(chunk)
-                    if message:
-                        messages.append(message)
-                        AgentRunner._forward_event(callback, AgentLogEvent("message", message))
+                if parser is None:
+                    continue
+                message = parser(chunk)
+                if message:
+                    messages.append(message)
+                    AgentRunner._forward_event(callback, AgentLogEvent("message", message))
             stream.close()
 
         thread = Thread(target=forward, daemon=True)
@@ -424,6 +526,26 @@ class AgentRunner:
         return text.strip() if isinstance(text, str) and text.strip() else None
 
     @staticmethod
+    def event_parser(provider: str) -> Callable[[str], str | None] | None:
+        """Return the stream-event parser for a provider, if it streams events."""
+        return {
+            "codex": AgentRunner.parse_codex_event,
+            "cursor": AgentRunner.parse_cursor_event,
+            "claude": AgentRunner.parse_claude_event,
+        }.get(provider)
+
+    @staticmethod
+    def parse_claude_event(line: str) -> str | None:
+        """Return completed assistant text from Claude Code's stream-json events.
+
+        Claude Code emits one event per assistant content block rather than
+        token deltas, so each parsed message is a complete transcript entry.
+        Tool-use blocks carry no text and are filtered out here.
+        """
+        text = AgentRunner.parse_cursor_event(line)
+        return text.strip() if text and text.strip() else None
+
+    @staticmethod
     def parse_cursor_event(line: str) -> str | None:
         """Return assistant text deltas from Cursor's stream-json events."""
         try:
@@ -450,6 +572,10 @@ class AgentRunner:
 
     @staticmethod
     def _normalize_output(provider: str, stdout: str, stderr: str) -> tuple[str, str | None]:
+        if provider == "claude":
+            # Claude Code's transcript comes from streamed assistant events, so a
+            # missing result payload is not an error the way it is for Cursor.
+            return AgentRunner._result_text(stdout) or stdout, None
         if provider != "cursor":
             return stdout, None
         payloads = AgentRunner._json_payloads(stdout)
@@ -466,6 +592,18 @@ class AgentRunner:
         if not isinstance(result, str):
             return stdout, "Cursor returned JSON without a result.\n\nSTDERR:\n" + stderr
         return result, None
+
+    @staticmethod
+    def _result_text(stdout: str) -> str | None:
+        """Return the last `result` string emitted on a stream-json stdout."""
+        return next(
+            (
+                payload.get("result")
+                for payload in reversed(AgentRunner._json_payloads(stdout))
+                if isinstance(payload.get("result"), str)
+            ),
+            None,
+        )
 
     @staticmethod
     def _json_payloads(stdout: str) -> list[dict]:
@@ -530,9 +668,16 @@ class AgentRunner:
             "reasoning_output_tokens",
             "reasoningOutputTokens",
         )
-        if input_tokens is None and output_tokens is None:
+        # Claude Code reports cached prompt tokens separately from input_tokens;
+        # leaving them out would undercount a cached run by most of its prompt.
+        cached_tokens = sum(
+            max(0, value)
+            for key in ("cache_read_input_tokens", "cache_creation_input_tokens")
+            if isinstance(value := usage.get(key), int) and not isinstance(value, bool)
+        )
+        if input_tokens is None and output_tokens is None and not cached_tokens:
             return None
-        return max(0, input_tokens or 0) + max(0, output_tokens or 0)
+        return max(0, input_tokens or 0) + max(0, output_tokens or 0) + cached_tokens
 
     @staticmethod
     def _first_integer(payload: dict, *keys: str) -> int | None:
@@ -546,6 +691,9 @@ class AgentRunner:
     def _failure_diagnostics(provider: str, stdout: str, stderr: str) -> str:
         if stderr.strip():
             return stderr.strip()
+        if provider == "claude":
+            result = AgentRunner._result_text(stdout)
+            return (result or stdout).strip() or "No diagnostics were emitted."
         if provider == "cursor":
             try:
                 payload = json.loads(stdout)

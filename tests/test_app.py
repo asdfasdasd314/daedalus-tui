@@ -139,12 +139,21 @@ class FakeCoordinator:
         return True
 
 
+def select_values(select):
+    """Return a Select's real option values, skipping its blank placeholder."""
+    return [value for _label, value in select._options if isinstance(value, str)]
+
+
 def settings():
     return TuiSettings(
         "codex",
         "gpt-5.6-luna",
         "medium",
-        (ModelOption("Codex", "codex"), ModelOption("Cursor CLI", "cursor")),
+        (
+            ModelOption("Codex", "codex"),
+            ModelOption("Claude Code", "claude"),
+            ModelOption("Cursor CLI", "cursor"),
+        ),
         (
             ModelOption("GPT-5.6 Luna", "gpt-5.6-luna"),
             ModelOption("GPT-5.6 Terra", "gpt-5.6-terra"),
@@ -157,6 +166,14 @@ def settings():
             ModelOption("Extra high", "extra-high"),
         ),
         ModelOption("Cursor CLI", "cursor"),
+        (ModelOption("Opus 5", "claude-opus-5"), ModelOption("Sonnet 5", "claude-sonnet-5")),
+        (
+            ModelOption("Light", "light"),
+            ModelOption("Medium", "medium"),
+            ModelOption("High", "high"),
+            ModelOption("Extra high", "extra-high"),
+            ModelOption("Max", "max"),
+        ),
     )
 
 
@@ -203,14 +220,15 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
             self.assertIsInstance(app.query_one("#start-coding-button", Button), Button)
             self.assertIsInstance(app.query_one("#new-task-button", Button), Button)
             self.assertIsInstance(app.query_one("#create-topic-button", Button), Button)
-            self.assertIsInstance(app.query_one("#register-supabase-schema-button", Button), Button)
-            self.assertFalse(app.query_one("#register-supabase-schema-button", Button).disabled)
+            self.assertIsInstance(app.query_one("#register-backend-button", Button), Button)
+            self.assertFalse(app.query_one("#register-backend-button", Button).disabled)
+            self.assertIsInstance(app.query_one("#sign-in-button", Button), Button)
             self.assertIsInstance(app.query_one("#view-topic-button", Button), Button)
             self.assertTrue(app.query_one("#view-topic-button", Button).disabled)
             self.assertIsInstance(app.query_one("#output-toggle-button", Button), Button)
             await pilot.pause()
 
-    async def test_register_supabase_schema_button_disables_when_registered(self):
+    async def test_register_backend_button_disables_when_registered(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             project = root / "demo-app"
@@ -232,28 +250,99 @@ class TuiAppTests(unittest.IsolatedAsyncioTestCase):
                 coordinator=FakeCoordinator(),
             )
             async with app.run_test() as pilot:
-                button = app.query_one("#register-supabase-schema-button", Button)
+                button = app.query_one("#register-backend-button", Button)
                 self.assertFalse(button.disabled)
-                app.action_register_personal_supabase()
+                app.action_register_backend()
+                await pilot.pause()
+                screen = app.screen
+                screen.query_one("#backend-select", Select).value = "supabase"
+                await pilot.pause()
+                screen.query_one("#register-backend-confirm", Button).press()
+                await pilot.pause()
                 await pilot.pause()
                 self.assertTrue(button.disabled)
                 self.assertTrue((project / "supabase" / "config.toml").is_file())
                 self.assertIn(
-                    "Registered Supabase schema",
+                    "Registered personal Supabase schema",
                     str(app.query_one("#status", Static).render()),
                 )
 
-    async def test_new_project_modal_includes_personal_supabase_checkbox(self):
+    async def test_register_backend_scaffolds_firebase_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory) / "demo-app"
+            (project / ".agents" / "profiles").mkdir(parents=True)
+            (project / "feature_files").mkdir()
+            app = DaedalusTuiApp(
+                runner=FakeRunner(),
+                directory=project,
+                settings=settings(),
+                coordinator=FakeCoordinator(),
+            )
+            async with app.run_test() as pilot:
+                app.action_register_backend()
+                await pilot.pause()
+                screen = app.screen
+                # Firebase is the default selection in the backend dialog.
+                self.assertEqual(screen.query_one("#backend-select", Select).value, "firebase")
+                screen.query_one("#register-backend-confirm", Button).press()
+                await pilot.pause()
+                await pilot.pause()
+                self.assertTrue((project / "firebase.json").is_file())
+                self.assertTrue((project / "firestore.rules").is_file())
+                self.assertIn("firebase", (project / ".daedalus").read_text(encoding="utf-8"))
+                self.assertTrue(app.query_one("#register-backend-button", Button).disabled)
+
+    async def test_new_project_modal_defaults_to_the_configured_backend(self):
         app, _ = self.make_app()
         async with app.run_test() as pilot:
-            app.push_screen(ProjectInitializerScreen(Path("/tmp")))
+            app.push_screen(ProjectInitializerScreen(Path("/tmp"), "firebase"))
             await pilot.pause()
-            from textual.widgets import Checkbox
-
-            checkbox = app.screen.query_one("#project-personal-supabase-checkbox", Checkbox)
-            self.assertFalse(checkbox.value)
+            backend = app.screen.query_one("#project-backend-select", Select)
+            self.assertEqual(backend.value, "firebase")
+            self.assertEqual(select_values(backend), ["firebase", "supabase", "none"])
             await app.screen.dismiss(None)
             await pilot.pause()
+
+    async def test_claude_provider_offers_its_own_models_and_effort_scale(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            app._apply_provider_selection("claude")
+            await pilot.pause()
+            model_select = app.query_one("#model-select", Select)
+            reasoning_select = app.query_one("#reasoning-select", Select)
+            self.assertEqual(
+                select_values(model_select),
+                ["claude-opus-5", "claude-sonnet-5"],
+            )
+            self.assertIn("max", select_values(reasoning_select))
+            self.assertFalse(model_select.disabled)
+            self.assertFalse(reasoning_select.disabled)
+            # The Codex default model does not exist for Claude, so the first
+            # Claude model is selected instead of an illegal value.
+            self.assertEqual(model_select.value, "claude-opus-5")
+            self.assertEqual(reasoning_select.value, "medium")
+
+    async def test_cursor_provider_keeps_its_inert_model_and_reasoning_controls(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            app._apply_provider_selection("cursor")
+            await pilot.pause()
+            self.assertTrue(app.query_one("#model-select", Select).disabled)
+            self.assertTrue(app.query_one("#reasoning-select", Select).disabled)
+            self.assertEqual(app.query_one("#reasoning-select", Select).value, "")
+
+    async def test_compact_picker_follows_the_claude_provider_cascade(self):
+        app, _ = self.make_app()
+        async with app.run_test() as pilot:
+            app._apply_provider_selection("claude")
+            await pilot.pause()
+            self.assertEqual(
+                [value for _label, value in app._compact_setting_options("model")],
+                ["claude-opus-5", "claude-sonnet-5"],
+            )
+            self.assertIn(
+                "max", [value for _label, value in app._compact_setting_options("reasoning")]
+            )
 
     async def test_responsive_layout_transitions_restore_wide_dimensions(self):
         app = DaedalusTuiApp(

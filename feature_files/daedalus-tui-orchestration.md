@@ -10,6 +10,7 @@ The standalone TUI orchestration layer creates isolated Git worktrees from a con
 - **Verification repair**: Failed task checks launch repair attempts in the same worktree up to the configured limit.
 - **Verification diagnostics**: When every verification attempt fails, each attempt's failure output is written to the task error panel and included in the final failure message.
 - **Supabase migration push**: After verification succeeds, orchestration runs `supabase db push --yes` only when the task changed `supabase/migrations/` relative to the worktree base commit; failures emit diagnostics and launch coding-profile repairs up to the verification attempt limit before blocking integration. Personal schema registration (separate feature) only scaffolds those migration files; this feature remains the sole remote push owner.
+- **Firebase deploy**: After verification and any Supabase migration push succeed, orchestration runs `firebase deploy --only firestore:rules,firestore:indexes --non-interactive` only for projects whose `.daedalus` marks them Firebase-registered and only when the task changed the parameterized Firebase watched paths; failures emit diagnostics and launch coding-profile repairs up to the verification attempt limit before blocking integration. Registration (separate feature) only scaffolds those files; this feature remains the sole remote deploy owner.
 - **Integration-stage retry**: After coding, verification, and any required migration push succeed, failed integration or resolver retries resume at the integration gate instead of re-running the coding agent.
 - **Resolver fallback**: Merge conflicts and post-merge verification failures launch the selected provider as a resolver with the latest failure details.
 - **Configurable target branch**: `target_branch` (default `main`, alias
@@ -26,12 +27,13 @@ The standalone TUI orchestration layer creates isolated Git worktrees from a con
 - **Topic prompt boundary**: When a task carries a topic slug, the orchestrator reloads that topic markdown from the task worktree and embeds it with mode-specific instructions before task, repair, and resolver prompts; missing topics emit a non-fatal diagnostic and omit the embed.
 - **Graph refresh boundary**: Graphify runs only after successful primary promotion, and a failed refresh is cleaned up and reported without starting a resolver.
 - **Local-only boundary**: No persistence or daemon communications. Orchestration may push pending Supabase migrations for target projects via the Supabase CLI; agents still do not own DB push. Automated orchestration never pushes Git remotes; an explicit operator Push in the TUI may publish the selected operating branch.
-- **Project discovery boundary**: The TUI discovers only immediate launch-root child directories containing `feature_files`; nested paths are excluded, with the launch root used only when no eligible child exists.
+- **Project discovery boundary**: The TUI discovers only immediate launch-root child directories; nested paths are excluded, with the launch root used only when no eligible child exists. Daedalus-formatted children (those with `feature_files`) always qualify, and the `[projects]` parameter table decides whether plain Git checkouts and other directories are listed alongside them.
 - **Project-scoped execution**: The TUI creates one coordinator per discovered `feature_files` project, so task numbering, worktrees, branches, and integration gates stay scoped to the selected repository.
 - **Shutdown diagnostics**: A rotating project-local debug log records agent process IDs, task transitions, Textual exceptions, worker shutdown, and on-demand all-thread stack dumps.
 
 ## Relevant Files
-- `tui/orchestrator.py`: Single-task lifecycle, verification repair, migration push repair, integration, and resolver loops.
+- `tui/orchestrator.py`: Single-task lifecycle, verification repair, migration push repair, Firebase deploy repair, integration, and resolver loops.
+- `tui/firebase.py`: Firebase change detection and the non-interactive deploy wrapper.
 - `tui/task_coordinator.py`: Concurrent task records, executor limit, and serialized integration gate.
 - `tui/git_worktree.py`: Git validation, worktree, branch listing, operator push helper, merge, and cleanup operations.
 - `tui/project_config.py`: Target-project `.daedalus` worktree provisioning settings.
@@ -45,6 +47,7 @@ The standalone TUI orchestration layer creates isolated Git worktrees from a con
 HACKING
 
 ## State Log
+- 2026-09-15: Added an orchestration-owned Firebase deploy step that applies changed Firestore rules and indexes after verification and repairs failures with the coding profile before blocking integration.
 - 2026-09-13: Noted that personal shared-Supabase schema registration scaffolds migrations only; orchestration remains the sole `supabase db push` owner.
 - 2026-08-25: Added post-verification Supabase migration push with a verify→repair loop when `supabase/migrations/` changed, gated by `supabase_db_push_enabled`.
 - 2026-08-25: Clarified that remote push remains outside automated orchestration while the TUI may offer an operator-owned Push for the selected operating branch.

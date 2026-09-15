@@ -1,9 +1,11 @@
 providers = [
   { label = "Codex", value = "codex" },
+  { label = "Claude Code", value = "claude" },
   { label = "Cursor CLI", value = "cursor" },
 ]
 
 codex_models = [
+  { label = "GPT-6 Astra", value = "gpt-6-astra" },
   { label = "GPT-5.6 Luna", value = "gpt-5.6-luna" },
   { label = "GPT-5.6 Terra", value = "gpt-5.6-terra" },
   { label = "GPT-5.6 Sol", value = "gpt-5.6-sol" },
@@ -16,6 +18,27 @@ codex_reasoning = [
   { label = "Extra high", value = "extra-high" },
 ]
 
+# Claude Code models are passed to `claude --model`. Full model ids are used
+# instead of the moving `opus`/`sonnet` aliases so a task's recorded selection
+# keeps meaning the same model later.
+claude_models = [
+  { label = "Opus 5", value = "claude-opus-5" },
+  { label = "Sonnet 5", value = "claude-sonnet-5" },
+  { label = "Fable 5.1", value = "claude-fable-5-1" },
+  { label = "Haiku 4.5", value = "claude-haiku-4-5-20251001" },
+]
+
+# Claude Code exposes effort directly through `claude --effort`, so it gets its
+# own scale rather than reusing the Codex reasoning mapping. `max` has no Codex
+# equivalent.
+claude_reasoning = [
+  { label = "Light", value = "light" },
+  { label = "Medium", value = "medium" },
+  { label = "High", value = "high" },
+  { label = "Extra high", value = "extra-high" },
+  { label = "Max", value = "max" },
+]
+
 modes = [
   { label = "Coding", value = "coding" },
   { label = "Ask", value = "ask" },
@@ -24,12 +47,63 @@ modes = [
 
 [defaults]
 provider = "codex"
-model = "gpt-5.6-luna"
+model = "gpt-6-astra"
 reasoning = "high"
 
 [cursor]
 label = "Cursor CLI"
 value = "cursor"
+
+# Claude Code permission handling for non-interactive task runs. `acceptEdits`
+# auto-approves file edits and matches the profile boundary that agents edit
+# files rather than execute source code; orchestration still runs verification
+# itself. `bypassPermissions` grants Codex-equivalent autonomy including
+# command execution, without Codex's workspace sandbox.
+[claude]
+permission_mode = "acceptEdits"
+
+# Provider sign-in. In `account` mode the TUI removes each provider's API-key
+# variables from the agent subprocess environment so the CLI falls back to the
+# signed-in account and bills the operator's plan instead of API credit. Set
+# `mode = "api-key"` to restore key-based execution, which reads keys from the
+# process environment and local `.env` files as before.
+#
+# API keys never belong in this file; only the variable names are listed here.
+[auth]
+mode = "account"
+
+[auth.codex]
+label = "Codex"
+api_key_variables = ["OPENAI_API_KEY"]
+status_command = ["codex", "login", "status"]
+sign_in_command = ["codex", "login"]
+
+[auth.claude]
+label = "Claude Code"
+api_key_variables = ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"]
+status_command = ["claude", "auth", "status"]
+sign_in_command = ["claude", "auth", "login"]
+
+[auth.cursor]
+label = "Cursor CLI"
+api_key_variables = ["CURSOR_API_KEY"]
+status_command = ["agent", "status"]
+sign_in_command = ["agent", "login"]
+
+# Launch-root project discovery. Daedalus-formatted projects have a
+# `feature_files/` directory; `include_git_repositories` also lists plain Git
+# checkouts under the launch root so tasks can run against them, and
+# `include_all_directories` lists every immediate child directory.
+[projects]
+include_git_repositories = true
+include_all_directories = false
+skipped_directory_names = [
+  ".git",
+  ".daedalus-worktrees",
+  ".venv",
+  "__pycache__",
+  "node_modules",
+]
 
 [output]
 width = "95%"

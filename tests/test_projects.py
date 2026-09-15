@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tui.config import ProjectDiscoverySettings
 from tui.projects import discover_projects
 
 
@@ -46,6 +47,52 @@ class ProjectDiscoveryTests(unittest.TestCase):
             (root / "feature_files").mkdir()
 
             self.assertEqual(discover_projects(root), ())
+
+    def test_lists_plain_git_checkouts_alongside_daedalus_projects(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "formatted" / "feature_files").mkdir(parents=True)
+            (root / "plain-repo" / ".git").mkdir(parents=True)
+            (root / "just-a-folder").mkdir()
+
+            projects = discover_projects(
+                root, ProjectDiscoverySettings(include_git_repositories=True)
+            )
+
+            self.assertEqual(
+                [project.display_name for project in projects],
+                ["formatted", "plain-repo (unformatted)"],
+            )
+            self.assertTrue(projects[0].formatted)
+            self.assertFalse(projects[1].formatted)
+            self.assertTrue(projects[1].git_repository)
+
+    def test_lists_every_child_directory_when_configured(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "formatted" / "feature_files").mkdir(parents=True)
+            (root / "just-a-folder").mkdir()
+            (root / "node_modules").mkdir()
+
+            projects = discover_projects(
+                root, ProjectDiscoverySettings(include_all_directories=True)
+            )
+
+            self.assertEqual(
+                [project.display_name for project in projects],
+                ["formatted", "just-a-folder (unformatted)"],
+            )
+
+    def test_unformatted_folders_stay_hidden_by_default(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "formatted" / "feature_files").mkdir(parents=True)
+            (root / "plain-repo" / ".git").mkdir(parents=True)
+
+            self.assertEqual(
+                [project.name for project in discover_projects(root)],
+                ["formatted"],
+            )
 
     def test_returns_no_projects_for_missing_root(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import tomllib
 
+from .agent_runner import ProviderAuthPolicy
 from .orchestrator import OrchestrationSettings
 
+
+AUTH_MODES = frozenset({"account", "api-key"})
+CLAUDE_PERMISSION_MODES = frozenset(
+    {"acceptEdits", "auto", "bypassPermissions", "manual", "dontAsk", "plan"}
+)
 
 PARAMETER_DIRECTORY = "parameter_files"
 TUI_PARAMETER_FILE = "daedalus-tui.toml"
@@ -19,6 +25,63 @@ CODING_STATISTICS_PARAMETER_FILE = "daedalus-tui-coding-statistics.toml"
 class ModelOption:
     label: str
     value: str
+
+
+@dataclass(frozen=True)
+class ClaudeSettings:
+    """Non-interactive execution settings for the Claude Code provider."""
+
+    permission_mode: str = "acceptEdits"
+
+
+@dataclass(frozen=True)
+class ProviderAuthSettings:
+    """Sign-in metadata for one provider CLI.
+
+    ``api_key_variables`` names the environment variables that make the CLI bill
+    API credit instead of the operator's plan; account mode removes them from the
+    agent subprocess environment. Only variable names live here, never keys.
+    """
+
+    label: str
+    api_key_variables: tuple[str, ...] = ()
+    status_command: tuple[str, ...] = ()
+    sign_in_command: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class AuthSettings:
+    """Whether agents run from a signed-in account or from API keys."""
+
+    mode: str = "account"
+    providers: dict[str, ProviderAuthSettings] = field(default_factory=dict)
+
+    @property
+    def uses_account_login(self) -> bool:
+        return self.mode == "account"
+
+    def for_provider(self, provider: str) -> ProviderAuthSettings:
+        return self.providers.get(provider, ProviderAuthSettings(provider))
+
+    def runner_policy(self) -> ProviderAuthPolicy:
+        """Return the API-key stripping policy the agent runner applies."""
+        return ProviderAuthPolicy(
+            account_login=self.uses_account_login,
+            api_key_variables={
+                name: settings.api_key_variables for name, settings in self.providers.items()
+            },
+        )
+
+
+@dataclass(frozen=True)
+class ProjectDiscoverySettings:
+    """Which immediate launch-root children appear in the project selector."""
+
+    include_git_repositories: bool = True
+    include_all_directories: bool = False
+    skipped_directory_names: frozenset[str] = frozenset(
+        {".git", ".daedalus-worktrees", ".venv", "__pycache__", "node_modules"}
+    )
 
 
 @dataclass(frozen=True)
@@ -48,6 +111,8 @@ class TuiSettings:
     codex_models: tuple[ModelOption, ...]
     codex_reasoning: tuple[ModelOption, ...]
     cursor_model: ModelOption
+    claude_models: tuple[ModelOption, ...] = ()
+    claude_reasoning: tuple[ModelOption, ...] = ()
     modes: tuple[ModelOption, ...] = (
         ModelOption("Coding", "coding"),
         ModelOption("Ask", "ask"),
@@ -58,6 +123,39 @@ class TuiSettings:
     # cell padding. The defaults leave a cell for the sidebar scrollbar.
     task_inbox_widths: tuple[int, int, int, int] = (1, 9, 14, 7)
     layout: LayoutSettings = LayoutSettings()
+    claude: ClaudeSettings = ClaudeSettings()
+    auth: AuthSettings = AuthSettings()
+    project_discovery: ProjectDiscoverySettings = ProjectDiscoverySettings()
+
+    def models_for(self, provider: str) -> tuple[ModelOption, ...]:
+        """Return the model choices a provider exposes in the settings bar."""
+        if provider == "cursor":
+            return (self.cursor_model,)
+        if provider == "claude":
+            return self.claude_models
+        return self.codex_models
+
+    def reasoning_for(self, provider: str) -> tuple[ModelOption, ...]:
+        """Return the reasoning/effort choices a provider exposes, if any."""
+        if provider == "cursor":
+            return ()
+        if provider == "claude":
+            return self.claude_reasoning
+        return self.codex_reasoning
+
+    def default_model_for(self, provider: str) -> str:
+        """Return the model preselected when switching to ``provider``."""
+        options = self.models_for(provider)
+        if any(option.value == self.default_model for option in options):
+            return self.default_model
+        return options[0].value if options else ""
+
+    def default_reasoning_for(self, provider: str) -> str:
+        """Return the reasoning preselected when switching to ``provider``."""
+        options = self.reasoning_for(provider)
+        if any(option.value == self.default_reasoning for option in options):
+            return self.default_reasoning
+        return options[0].value if options else ""
 
 
 @dataclass(frozen=True)
@@ -78,6 +176,8 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
     codex_reasoning = tuple(_options(values.get("codex_reasoning", []), "reasoning"))
     cursor_values = values.get("cursor", {})
     cursor_model = ModelOption(str(cursor_values.get("label", "Cursor CLI")), str(cursor_values.get("value", "cursor")))
+    claude_models = tuple(_options(values.get("claude_models", []), "model"))
+    claude_reasoning = tuple(_options(values.get("claude_reasoning", []), "reasoning"))
     modes = tuple(_options(values.get("modes", []), "mode")) or TuiSettings.modes
     output = values.get("output", {})
     output_width = str(output.get("width", "95%"))
@@ -116,6 +216,18 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
     default_reasoning = str(defaults.get("reasoning", "high"))
     if not providers or not codex_models or not codex_reasoning:
         raise ValueError(f"{path} must define providers, codex_models, and codex_reasoning.")
+    if any(option.value == "claude" for option in providers) and not claude_models:
+        raise ValueError(f"{path} lists the claude provider but defines no claude_models.")
+
+    claude_values = values.get("claude", {})
+    claude = ClaudeSettings(permission_mode=str(claude_values.get("permission_mode", "acceptEdits")))
+    if claude.permission_mode not in CLAUDE_PERMISSION_MODES:
+        raise ValueError(
+            f"{path} claude.permission_mode must be one of {sorted(CLAUDE_PERMISSION_MODES)}."
+        )
+
+    auth = _auth_settings(values.get("auth", {}), path)
+    project_discovery = _project_discovery_settings(values.get("projects", {}), path)
     return TuiSettings(
         default_provider,
         default_model,
@@ -124,11 +236,67 @@ def load_tui_settings(parameter_path: Path | None = None) -> TuiSettings:
         codex_models,
         codex_reasoning,
         cursor_model,
+        claude_models,
+        claude_reasoning,
         modes,
         output_width,
         task_inbox_widths,
         layout,
+        claude,
+        auth,
+        project_discovery,
     )
+
+
+def _auth_settings(values: object, path: Path) -> AuthSettings:
+    """Build provider sign-in settings, rejecting literal keys in the file."""
+    if not isinstance(values, dict):
+        raise ValueError(f"{path} auth must be a table.")
+    mode = str(values.get("mode", "account"))
+    if mode not in AUTH_MODES:
+        raise ValueError(f"{path} auth.mode must be one of {sorted(AUTH_MODES)}.")
+
+    providers: dict[str, ProviderAuthSettings] = {}
+    for name, table in values.items():
+        if name == "mode":
+            continue
+        if not isinstance(table, dict):
+            raise ValueError(f"{path} auth.{name} must be a table.")
+        variables = _string_tuple(table.get("api_key_variables", []), path, f"auth.{name}.api_key_variables")
+        for variable in variables:
+            # The parameter file names variables; a value here would be a key.
+            if "=" in variable or len(variable) > 64:
+                raise ValueError(
+                    f"{path} auth.{name}.api_key_variables must contain variable names, not values."
+                )
+        providers[name] = ProviderAuthSettings(
+            label=str(table.get("label", name)),
+            api_key_variables=variables,
+            status_command=_string_tuple(table.get("status_command", []), path, f"auth.{name}.status_command"),
+            sign_in_command=_string_tuple(table.get("sign_in_command", []), path, f"auth.{name}.sign_in_command"),
+        )
+    return AuthSettings(mode=mode, providers=providers)
+
+
+def _project_discovery_settings(values: object, path: Path) -> ProjectDiscoverySettings:
+    if not isinstance(values, dict):
+        raise ValueError(f"{path} projects must be a table.")
+    skipped = _string_tuple(
+        values.get("skipped_directory_names", list(ProjectDiscoverySettings().skipped_directory_names)),
+        path,
+        "projects.skipped_directory_names",
+    )
+    return ProjectDiscoverySettings(
+        include_git_repositories=bool(values.get("include_git_repositories", True)),
+        include_all_directories=bool(values.get("include_all_directories", False)),
+        skipped_directory_names=frozenset(skipped),
+    )
+
+
+def _string_tuple(value: object, path: Path, key: str) -> tuple[str, ...]:
+    if not isinstance(value, list) or any(not isinstance(item, str) or not item for item in value):
+        raise ValueError(f"{path} {key} must be an array of non-empty strings.")
+    return tuple(value)
 
 
 def load_orchestration_settings(parameter_path: Path | None = None) -> OrchestrationSettings:
@@ -167,6 +335,8 @@ def load_orchestration_settings(parameter_path: Path | None = None) -> Orchestra
         graphify_executable=str(values.get("graphify_executable", "graphify")),
         supabase_db_push_enabled=bool(values.get("supabase_db_push_enabled", True)),
         supabase_executable=str(values.get("supabase_executable", "supabase")),
+        firebase_deploy_enabled=bool(values.get("firebase_deploy_enabled", True)),
+        firebase_executable=str(values.get("firebase_executable", "firebase")),
         shutdown_grace_seconds=shutdown_grace_seconds,
         debug_log_filename=str(values.get("debug_log_filename", ".daedalus-debug.log")),
     )

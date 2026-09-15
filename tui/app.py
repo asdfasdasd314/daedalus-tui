@@ -29,12 +29,24 @@ from .config import (
 from .debug_log import LOGGER, close_fault_handler, configure_debug_logging, install_fault_handler, log_exception
 from .git_worktree import GitWorktreeError, list_local_branches, push_branch, remote_exists
 from .memory import DEFAULT_MEMORY_FILE, TaskMemoryStore
-from .project_initializer import initialize_project, load_initializer_settings, validate_project_name
+from .project_initializer import (
+    BACKENDS,
+    initialize_project,
+    load_initializer_settings,
+    validate_project_name,
+)
 from .personal_supabase import (
     is_personal_supabase_registered,
     register_personal_supabase,
     schema_from_project_root,
 )
+from .firebase import (
+    is_firebase_registered,
+    load_firebase_status,
+    project_id_from_project_root,
+    register_firebase,
+)
+from .provider_auth import check_provider_auth, sign_in_instructions
 from .projects import DaedalusProject, discover_projects, is_direct_child_project
 from .plan import (
     CUSTOM_ANSWER_OPTION_ID,
@@ -166,6 +178,17 @@ SHORTCUT_SECTIONS = (
         ),
     ),
 )
+
+# Backends a project can register for. Firebase leads because registration is
+# the common case for new projects; "none" stays available for front-end-only
+# work.
+BACKEND_LABELS = {
+    "none": "No backend",
+    "firebase": "Firebase",
+    "supabase": "Personal Supabase",
+}
+BACKEND_OPTIONS = tuple((BACKEND_LABELS[name], name) for name in ("firebase", "supabase", "none"))
+
 
 COMPACT_SETTING_CATEGORIES = (
     ("Model provider", "provider"),
@@ -314,9 +337,10 @@ class ProjectInitializerScreen(ModalScreen[dict | None]):
         ("escape", "cancel_initializer", "Cancel"),
     ]
 
-    def __init__(self, launch_root: Path) -> None:
+    def __init__(self, launch_root: Path, default_backend: str = "firebase") -> None:
         super().__init__()
         self.launch_root = launch_root.resolve()
+        self.default_backend = default_backend if default_backend in BACKENDS else "none"
         self._busy = False
 
     def compose(self) -> ComposeResult:
@@ -329,9 +353,12 @@ class ProjectInitializerScreen(ModalScreen[dict | None]):
             yield Static("Project name (lowercase, digits, hyphens)", id="project-name-label")
             yield Input(placeholder="example-project", id="project-name-input")
             yield Checkbox("Also create a private GitHub repository", id="project-github-checkbox")
-            yield Checkbox(
-                "Register schema on personal Supabase",
-                id="project-personal-supabase-checkbox",
+            yield Static("Backend", id="project-backend-label")
+            yield Select(
+                list(BACKEND_OPTIONS),
+                value=self.default_backend,
+                allow_blank=False,
+                id="project-backend-select",
             )
             yield Static("", id="project-initializer-status")
             with Horizontal(id="project-initializer-actions"):
@@ -361,10 +388,7 @@ class ProjectInitializerScreen(ModalScreen[dict | None]):
         status = self.query_one("#project-initializer-status", Static)
         name_input = self.query_one("#project-name-input", Input)
         create_github = self.query_one("#project-github-checkbox", Checkbox).value
-        register_personal = self.query_one(
-            "#project-personal-supabase-checkbox",
-            Checkbox,
-        ).value
+        backend = str(self.query_one("#project-backend-select", Select).value)
         try:
             settings = load_initializer_settings()
             project_name = validate_project_name(
@@ -385,7 +409,7 @@ class ProjectInitializerScreen(ModalScreen[dict | None]):
                     "requestId": str(uuid.uuid4()),
                     "projectName": project_name,
                     "createGitHubRepository": create_github,
-                    "registerPersonalSupabase": register_personal,
+                    "backend": backend,
                 },
                 execution_root=self.launch_root,
             )
@@ -402,6 +426,163 @@ class ProjectInitializerScreen(ModalScreen[dict | None]):
         self._busy = False
         self.query_one("#create-project-button", Button).disabled = False
         status.update(str(result.get("error") or "Initialization failed."))
+
+
+class ProviderSignInScreen(ModalScreen[None]):
+    """Report a provider's sign-in status and hand over the login command.
+
+    The TUI deliberately does not host the login itself: a child CLI that takes
+    over this terminal makes the Textual application appear to vanish, which is
+    the same reason agent subprocesses run with their stdin detached.
+    """
+
+    BINDINGS = [
+        ("escape", "close_sign_in", "Close"),
+    ]
+
+    def __init__(self, provider: str, settings: TuiSettings) -> None:
+        super().__init__()
+        self.provider = provider
+        self.settings = settings
+        self.provider_settings = settings.auth.for_provider(provider)
+        self._checking = False
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="sign-in-dialog"):
+            yield Static(f"{self.provider_settings.label} sign-in", id="sign-in-title")
+            mode = "account" if self.settings.auth.uses_account_login else "API key"
+            yield Static(f"Authentication mode: {mode}", id="sign-in-mode")
+            yield Static("Checking…", id="sign-in-detail", markup=False)
+            with Horizontal(id="sign-in-actions"):
+                yield Button("Check again", id="recheck-sign-in-button", variant="primary")
+                yield Button("Close", id="close-sign-in-button")
+
+    def on_mount(self) -> None:
+        self._check()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "close-sign-in-button":
+            self.dismiss(None)
+        elif event.button.id == "recheck-sign-in-button":
+            self._check()
+
+    def action_close_sign_in(self) -> None:
+        self.dismiss(None)
+
+    def _check(self) -> None:
+        if self._checking:
+            return
+        self._checking = True
+        self.query_one("#sign-in-detail", Static).update("Checking…")
+        self.query_one("#recheck-sign-in-button", Button).disabled = True
+
+        def work() -> None:
+            try:
+                status = check_provider_auth(self.provider, self.provider_settings)
+            except Exception as error:  # pragma: no cover - defensive UI boundary
+                self.app.call_from_thread(self._show_failure, str(error))
+            else:
+                self.app.call_from_thread(self._show_status, status)
+
+        self.app.run_worker(
+            work,
+            thread=True,
+            exclusive=True,
+            group="provider-auth",
+            exit_on_error=False,
+        )
+
+    def _show_status(self, status) -> None:
+        self._checking = False
+        if not self.is_running:
+            return
+        self.query_one("#recheck-sign-in-button", Button).disabled = False
+        self.query_one("#sign-in-detail", Static).update(
+            f"{status.summary}\n\n"
+            + sign_in_instructions(status, self.settings.auth.uses_account_login)
+        )
+
+    def _show_failure(self, message: str) -> None:
+        self._checking = False
+        if not self.is_running:
+            return
+        self.query_one("#recheck-sign-in-button", Button).disabled = False
+        self.query_one("#sign-in-detail", Static).update(
+            f"Could not check {self.provider_settings.label} sign-in status.\n\n{message}"
+        )
+
+
+class BackendRegistrationScreen(ModalScreen[str | None]):
+    """Choose and scaffold the backend an existing project targets."""
+
+    BINDINGS = [
+        ("escape", "cancel_backend", "Cancel"),
+    ]
+
+    def __init__(self, project_root: Path, registered: str | None, default_backend: str) -> None:
+        super().__init__()
+        self.project_root = project_root.resolve()
+        self.registered = registered
+        self.default_backend = registered or (
+            default_backend if default_backend in BACKENDS and default_backend != "none" else "firebase"
+        )
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="backend-dialog"):
+            yield Static("Project backend", id="backend-title")
+            yield Static(f"Scaffolds backend files in {self.project_root}", id="backend-subtitle")
+            if self.registered:
+                yield Static(
+                    f"Already registered for {BACKEND_LABELS[self.registered]}.",
+                    id="backend-registered",
+                    markup=False,
+                )
+            yield Select(
+                [(label, value) for label, value in BACKEND_OPTIONS if value != "none"],
+                value=self.default_backend,
+                allow_blank=False,
+                id="backend-select",
+            )
+            yield Static(
+                "Registration writes configuration and rules only. Orchestration "
+                "applies them remotely after verification passes.",
+                id="backend-note",
+            )
+            yield Static("", id="backend-status", markup=False)
+            with Horizontal(id="backend-actions"):
+                yield Button("Register", id="register-backend-confirm", variant="primary")
+                yield Button("Cancel", id="cancel-backend-button")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "cancel-backend-button":
+            self.dismiss(None)
+        elif event.button.id == "register-backend-confirm":
+            self._register()
+
+    def action_cancel_backend(self) -> None:
+        self.dismiss(None)
+
+    def _register(self) -> None:
+        backend = str(self.query_one("#backend-select", Select).value)
+        status = self.query_one("#backend-status", Static)
+        try:
+            if backend == "firebase":
+                result = register_firebase(
+                    self.project_root,
+                    project_id=project_id_from_project_root(self.project_root),
+                )
+            else:
+                result = register_personal_supabase(
+                    self.project_root,
+                    schema=schema_from_project_root(self.project_root),
+                )
+        except ValueError as error:
+            status.update(str(error))
+            return
+        if result.status != "success":
+            status.update(result.message)
+            return
+        self.dismiss(result.message)
 
 
 class CreateTopicScreen(ModalScreen[dict | None]):
@@ -711,10 +892,13 @@ class DaedalusTuiApp(App[None]):
         self.orchestration_settings = load_orchestration_settings()
         self.debug_log_path = self.launch_root / self.orchestration_settings.debug_log_filename
         self._fault_log_file = None
-        self.runner = runner or AgentRunner()
+        self.runner = runner or AgentRunner(
+            auth_policy=self.settings.auth.runner_policy(),
+            claude_permission_mode=self.settings.claude.permission_mode,
+        )
         discovered = [
             project
-            for project in discover_projects(self.launch_root)
+            for project in discover_projects(self.launch_root, self.settings.project_discovery)
             if is_direct_child_project(project.path, self.launch_root)
         ]
         if not discovered:
@@ -788,10 +972,8 @@ class DaedalusTuiApp(App[None]):
                         )
                         yield Button("New Project", id="new-project-button")
                         yield Button("Create Topic", id="create-topic-button", variant="primary")
-                        yield Button(
-                            "Register Supabase Schema",
-                            id="register-supabase-schema-button",
-                        )
+                        yield Button("Register Backend", id="register-backend-button")
+                        yield Button("Sign In", id="sign-in-button")
                         yield Button("New Task", id="new-task-button", variant="primary")
                     with Horizontal(id="settings"):
                         yield Select(
@@ -897,7 +1079,7 @@ class DaedalusTuiApp(App[None]):
         self._apply_provider_selection(str(self.query_one("#provider-select", Select).value))
         self._refresh_target_branch_select()
         self._refresh_topic_select()
-        self._refresh_personal_supabase_button()
+        self._refresh_backend_button()
         self._refresh_push_button()
         self._refresh_task_list()
         self._refresh_compact_setting_value()
@@ -1166,35 +1348,56 @@ class DaedalusTuiApp(App[None]):
         self.push_screen(CodingStatisticsScreen(self._usage_entries(), self.statistics_settings))
 
     def action_show_new_project(self) -> None:
-        self.push_screen(ProjectInitializerScreen(self.launch_root), self._on_project_initialized)
+        self.push_screen(
+            ProjectInitializerScreen(self.launch_root, self._default_backend()),
+            self._on_project_initialized,
+        )
+
+    def _default_backend(self) -> str:
+        """Return the backend preselected for new projects."""
+        try:
+            return str(load_initializer_settings().get("default_backend", "none"))
+        except (OSError, ValueError, KeyError):
+            return "none"
 
     def action_show_create_topic(self) -> None:
         self.push_screen(CreateTopicScreen(self._active_project_path), self._on_topic_created)
 
-    def action_register_personal_supabase(self) -> None:
-        """Scaffold personal shared-Supabase schema files for the active project."""
+    def action_register_backend(self) -> None:
+        """Choose and scaffold the backend files for the active project."""
+        self.push_screen(
+            BackendRegistrationScreen(
+                self._active_project_path,
+                self._registered_backend(),
+                self._default_backend(),
+            ),
+            self._on_backend_registered,
+        )
+
+    def _on_backend_registered(self, message: str | None) -> None:
+        if message:
+            self._set_error("")
+            self._set_status(message)
+        self._refresh_backend_button()
+
+    def _registered_backend(self) -> str | None:
+        """Return the backend the active project is already registered for."""
         project_path = self._active_project_path
         try:
-            schema = schema_from_project_root(project_path)
-        except ValueError as error:
-            self._set_error(str(error))
-            self._set_status("Supabase schema registration failed")
+            if is_firebase_registered(project_path):
+                return "firebase"
+            if is_personal_supabase_registered(project_path):
+                return "supabase"
+        except (OSError, ValueError):
+            return None
+        return None
+
+    def action_show_sign_in(self) -> None:
+        """Show sign-in status for the provider selected in the settings bar."""
+        if not self.query("#provider-select"):
             return
-        if is_personal_supabase_registered(project_path, schema):
-            self._set_status(f"Schema {schema!r} already registered")
-            self._refresh_personal_supabase_button()
-            return
-        result = register_personal_supabase(project_path, schema=schema)
-        if result.status != "success":
-            self._set_error(result.message)
-            self._set_status("Supabase schema registration failed")
-            self._refresh_personal_supabase_button()
-            return
-        if result.already_registered:
-            self._set_status(f"Schema {schema!r} already registered")
-        else:
-            self._set_status(f"Registered Supabase schema {schema!r}")
-        self._refresh_personal_supabase_button()
+        provider = str(self.query_one("#provider-select", Select).value)
+        self.push_screen(ProviderSignInScreen(provider, self.settings))
 
     def action_view_topic(self) -> None:
         """Open the selected project topic in a read-only modal."""
@@ -1219,8 +1422,10 @@ class DaedalusTuiApp(App[None]):
             self.action_show_new_project()
         elif event.button.id == "create-topic-button":
             self.action_show_create_topic()
-        elif event.button.id == "register-supabase-schema-button":
-            self.action_register_personal_supabase()
+        elif event.button.id == "register-backend-button":
+            self.action_register_backend()
+        elif event.button.id == "sign-in-button":
+            self.action_show_sign_in()
         elif event.button.id == "view-topic-button":
             self.action_view_topic()
         elif event.button.id == "push-branch-button":
@@ -1340,21 +1545,14 @@ class DaedalusTuiApp(App[None]):
             provider_select.value = provider
         model_select = self.query_one("#model-select", Select)
         reasoning_select = self.query_one("#reasoning-select", Select)
-        is_cursor = provider == "cursor"
-        if is_cursor:
-            model_options = [(self.settings.cursor_model.label, self.settings.cursor_model.value)]
-            reasoning_options = [("Not applicable", "")]
-            model_value = self.settings.cursor_model.value
-            reasoning_value = ""
-            model_select.disabled = True
-            reasoning_select.disabled = True
-        else:
-            model_options = [(option.label, option.value) for option in self.settings.codex_models]
-            reasoning_options = [(option.label, option.value) for option in self.settings.codex_reasoning]
-            model_value = self.settings.default_model
-            reasoning_value = self.settings.default_reasoning
-            model_select.disabled = False
-            reasoning_select.disabled = False
+        model_options = self._provider_model_options(provider)
+        reasoning_options = self._provider_reasoning_options(provider)
+        model_value = self.settings.default_model_for(provider)
+        reasoning_value = self.settings.default_reasoning_for(provider)
+        # A provider with a single fixed model or no effort scale keeps its
+        # selector visible but inert rather than removing the control.
+        model_select.disabled = len(model_options) < 2
+        reasoning_select.disabled = not self.settings.reasoning_for(provider)
         self._set_select_options_if_changed(model_select, model_options)
         if model_select.value != model_value:
             model_select.value = model_value
@@ -1368,6 +1566,17 @@ class DaedalusTuiApp(App[None]):
         self._compact_setting_values.pop("reasoning", None)
         if self.query("#compact-settings-category"):
             self._refresh_compact_setting_value()
+
+    def _provider_model_options(self, provider: str) -> list[tuple[str, str]]:
+        """Return the model choices for a provider, for both settings layouts."""
+        return [(option.label, option.value) for option in self.settings.models_for(provider)]
+
+    def _provider_reasoning_options(self, provider: str) -> list[tuple[str, str]]:
+        """Return effort choices, or a single inert entry for providers without one."""
+        options = self.settings.reasoning_for(provider)
+        if not options:
+            return [("Not applicable", "")]
+        return [(option.label, option.value) for option in options]
 
     @staticmethod
     def _set_select_options_if_changed(
@@ -1393,15 +1602,11 @@ class DaedalusTuiApp(App[None]):
         if category == "provider":
             return [(option.label, option.value) for option in self.settings.providers]
         if category == "model":
-            provider = str(self.query_one("#provider-select", Select).value)
-            if provider == "cursor":
-                return [(self.settings.cursor_model.label, self.settings.cursor_model.value)]
-            return [(option.label, option.value) for option in self.settings.codex_models]
+            return self._provider_model_options(str(self.query_one("#provider-select", Select).value))
         if category == "reasoning":
-            provider = str(self.query_one("#provider-select", Select).value)
-            if provider == "cursor":
-                return [("Not applicable", "")]
-            return [(option.label, option.value) for option in self.settings.codex_reasoning]
+            return self._provider_reasoning_options(
+                str(self.query_one("#provider-select", Select).value)
+            )
         if category == "mode":
             return [(option.label, option.value) for option in self.settings.modes]
         if category == "topic":
@@ -1902,23 +2107,27 @@ class DaedalusTuiApp(App[None]):
             return
         self.query_one("#view-topic-button", Button).disabled = self._selected_topic() is None
 
-    def _refresh_personal_supabase_button(self) -> None:
-        """Disable registration when the active project already claimed its schema."""
-        if not self.query("#register-supabase-schema-button"):
+    def _refresh_backend_button(self) -> None:
+        """Show which backend the active project already registered, if any."""
+        if not self.query("#register-backend-button"):
             return
-        button = self.query_one("#register-supabase-schema-button", Button)
-        project_path = self._active_project_path
-        try:
-            schema = schema_from_project_root(project_path)
-            registered = is_personal_supabase_registered(project_path, schema)
-        except ValueError:
-            registered = False
-            schema = None
-        button.disabled = registered
-        if registered and schema:
-            button.tooltip = f"Schema {schema!r} already registered"
+        button = self.query_one("#register-backend-button", Button)
+        backend = self._registered_backend()
+        button.disabled = backend is not None
+        if backend == "firebase":
+            try:
+                project_id = load_firebase_status(self._active_project_path).project_id
+            except (OSError, ValueError):
+                project_id = None
+            button.tooltip = f"Firebase project {project_id!r} already registered"
+        elif backend == "supabase":
+            try:
+                schema = schema_from_project_root(self._active_project_path)
+            except ValueError:
+                schema = None
+            button.tooltip = f"Supabase schema {schema!r} already registered"
         else:
-            button.tooltip = "Claim a dedicated schema on the shared personal Supabase database"
+            button.tooltip = "Scaffold Firebase or personal Supabase files for this project"
 
     def _usage_entries(self):
         try:
@@ -1978,7 +2187,7 @@ class DaedalusTuiApp(App[None]):
         self.query_one("#directory", Static).update(self._directory_text())
         self._refresh_target_branch_select()
         self._refresh_topic_select()
-        self._refresh_personal_supabase_button()
+        self._refresh_backend_button()
         self._refresh_task_list()
         self._render_selected_task_safely("project switch")
         if draft is not None:
@@ -2000,7 +2209,7 @@ class DaedalusTuiApp(App[None]):
     def _reload_projects(self, preferred: Path | None = None) -> None:
         discovered = [
             project
-            for project in discover_projects(self.launch_root)
+            for project in discover_projects(self.launch_root, self.settings.project_discovery)
             if is_direct_child_project(project.path, self.launch_root)
         ]
         if not discovered:
@@ -2028,10 +2237,10 @@ class DaedalusTuiApp(App[None]):
                 self._switch_project(target)
             else:
                 self.query_one("#directory", Static).update(self._directory_text())
-                self._refresh_personal_supabase_button()
+                self._refresh_backend_button()
             self.query_one("#project-select", Select).value = self._project_select_value()
         else:
-            self._refresh_personal_supabase_button()
+            self._refresh_backend_button()
 
     def _refresh_project_selector(self) -> None:
         project_select = self.query_one("#project-select", Select)

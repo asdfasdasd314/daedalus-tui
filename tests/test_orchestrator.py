@@ -7,6 +7,7 @@ from tui.agent_runner import AgentResult
 from tui.git_worktree import GitWorktreeError, WorktreeContext
 from tui.graphify import GraphifyResult
 from tui.orchestrator import LocalOrchestrator, OrchestrationSettings
+from tui.firebase import DeployResult, FirebaseStatus
 from tui.supabase_migrations import PushResult
 from tui.verification import VerificationResult
 
@@ -655,6 +656,184 @@ class OrchestratorTests(unittest.TestCase):
         self.assertIn("Migration push failed after 3 attempts", failed_events[0])
         manager.remove_successful.assert_not_called()
         manager.promote.assert_not_called()
+
+    def _firebase_orchestrator(self, repository, runner, events=None, **settings):
+        context = WorktreeContext(
+            repository, "task", "base", "agent/task-task", repository / "worktree"
+        )
+        manager = Mock()
+        manager.create.return_value = context
+        manager.head.return_value = "changed"
+        orchestrator = LocalOrchestrator(
+            repository,
+            runner,
+            OrchestrationSettings(verification_commands=(("true",),), **settings),
+            (lambda phase, message, channel: events.append((phase, message, channel)))
+            if events is not None
+            else (lambda *_: None),
+        )
+        return orchestrator, manager, context
+
+    def test_firebase_deploy_skipped_when_the_project_is_not_registered(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "done")
+            orchestrator, manager, _ = self._firebase_orchestrator(repository, runner)
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch(
+                    "tui.orchestrator.load_firebase_status",
+                    return_value=FirebaseStatus(registered=False),
+                ),
+                patch("tui.orchestrator.firebase_changes_pending") as pending,
+                patch("tui.orchestrator.deploy_firebase") as deploy,
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-6-astra", "medium")
+
+        self.assertTrue(result.succeeded)
+        pending.assert_not_called()
+        deploy.assert_not_called()
+
+    def test_firebase_deploy_skipped_when_disabled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "done")
+            orchestrator, manager, _ = self._firebase_orchestrator(
+                repository, runner, firebase_deploy_enabled=False
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch(
+                    "tui.orchestrator.load_firebase_status",
+                    return_value=FirebaseStatus(True, "demo-app"),
+                ) as status,
+                patch("tui.orchestrator.deploy_firebase") as deploy,
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-6-astra", "medium")
+
+        self.assertTrue(result.succeeded)
+        status.assert_not_called()
+        deploy.assert_not_called()
+
+    def test_firebase_deploy_skipped_when_no_firebase_files_changed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "done")
+            orchestrator, manager, _ = self._firebase_orchestrator(repository, runner)
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch(
+                    "tui.orchestrator.load_firebase_status",
+                    return_value=FirebaseStatus(True, "demo-app"),
+                ),
+                patch("tui.orchestrator.firebase_changes_pending", return_value=False) as pending,
+                patch("tui.orchestrator.deploy_firebase") as deploy,
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-6-astra", "medium")
+
+        self.assertTrue(result.succeeded)
+        pending.assert_called()
+        deploy.assert_not_called()
+
+    def test_firebase_deploy_runs_once_after_verification(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "done")
+            events = []
+            orchestrator, manager, context = self._firebase_orchestrator(
+                repository, runner, events
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch(
+                    "tui.orchestrator.load_firebase_status",
+                    return_value=FirebaseStatus(True, "demo-app"),
+                ),
+                patch("tui.orchestrator.firebase_changes_pending", return_value=True),
+                patch(
+                    "tui.orchestrator.deploy_firebase",
+                    return_value=DeployResult(True, "Deploy complete!"),
+                ) as deploy,
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-6-astra", "medium")
+
+        self.assertTrue(result.succeeded)
+        deploy.assert_called_once()
+        self.assertEqual(deploy.call_args.args[0], context.path)
+        self.assertEqual(deploy.call_args.kwargs["project_id"], "demo-app")
+        self.assertTrue(any(phase == "firebase" for phase, _, _ in events))
+        self.assertTrue(any(phase == "ready" for phase, _, _ in events))
+
+    def test_firebase_deploy_failure_repairs_then_succeeds(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "done")
+            orchestrator, manager, context = self._firebase_orchestrator(repository, runner)
+            (context.path / ".agents" / "profiles").mkdir(parents=True)
+            (context.path / ".agents" / "profiles" / "coding.md").write_text(
+                "CODING_PROFILE_FOR_FIREBASE_REPAIR", encoding="utf-8"
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch(
+                    "tui.orchestrator.load_firebase_status",
+                    return_value=FirebaseStatus(True, "demo-app"),
+                ),
+                patch("tui.orchestrator.firebase_changes_pending", return_value=True),
+                patch(
+                    "tui.orchestrator.deploy_firebase",
+                    side_effect=[
+                        DeployResult(False, "firestore.rules line 4: unexpected token"),
+                        DeployResult(True, "Deploy complete!"),
+                    ],
+                ) as deploy,
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-6-astra", "medium")
+
+        self.assertTrue(result.succeeded)
+        self.assertEqual(deploy.call_count, 2)
+        repair_prompt = runner.run.call_args.args[0].prompt
+        self.assertIn("Repair the failing Firebase deploy", repair_prompt)
+        self.assertIn("firestore.rules line 4", repair_prompt)
+        self.assertIn("CODING_PROFILE_FOR_FIREBASE_REPAIR", repair_prompt)
+        manager.commit_changes.assert_any_call(context.path, "Daedalus Firebase repair 1")
+
+    def test_exhausted_firebase_deploy_fails_with_each_reason(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            runner = Mock()
+            runner.run.return_value = AgentResult("codex", 0, "done")
+            orchestrator, manager, _ = self._firebase_orchestrator(
+                repository, runner, task_verification_attempt_limit=2
+            )
+            with (
+                patch("tui.orchestrator.GitWorktreeManager", return_value=manager),
+                patch("tui.orchestrator.run_verification", return_value=VerificationResult(True, "")),
+                patch(
+                    "tui.orchestrator.load_firebase_status",
+                    return_value=FirebaseStatus(True, "demo-app"),
+                ),
+                patch("tui.orchestrator.firebase_changes_pending", return_value=True),
+                patch(
+                    "tui.orchestrator.deploy_firebase",
+                    return_value=DeployResult(False, "permission denied"),
+                ),
+            ):
+                result = orchestrator.run("Build it", "codex", "gpt-6-astra", "medium")
+
+        self.assertFalse(result.succeeded)
+        self.assertIn("Firebase deploy failed after 2 attempts", result.error)
+        self.assertIn("permission denied", result.error)
 
     def test_integration_resume_does_not_push_migrations(self):
         with tempfile.TemporaryDirectory() as directory:

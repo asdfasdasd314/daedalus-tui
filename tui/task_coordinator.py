@@ -883,6 +883,7 @@ class TaskCoordinator:
             "agent": "running",
             "verification": "verifying",
             "migrations": "verifying",
+            "firebase": "verifying",
             "repairing": "verifying",
             "ready": "ready",
             "integration": "integrating",
