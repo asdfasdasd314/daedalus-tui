@@ -17,7 +17,12 @@ from .firebase import (
     load_firebase_status,
 )
 from .graphify import update_repository
-from .git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeContext
+from .git_worktree import (
+    DAEDALUS_RUNTIME_ARTIFACTS,
+    GitWorktreeError,
+    GitWorktreeManager,
+    WorktreeContext,
+)
 from .project_config import load_project_worktree_settings
 from .prompts import (
     build_firebase_repair_prompt,
@@ -124,6 +129,10 @@ class LocalOrchestrator:
             self.repository,
             self.settings.primary_branch,
             self.settings.worktree_root,
+            runtime_artifacts=(
+                *DAEDALUS_RUNTIME_ARTIFACTS,
+                self.settings.debug_log_filename,
+            ),
         )
         try:
             project_worktree_settings = load_project_worktree_settings(self.repository)

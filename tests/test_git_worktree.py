@@ -7,6 +7,11 @@ from tui.git_worktree import GitWorktreeError, GitWorktreeManager, WorktreeConte
 from tui.project_config import ProjectWorktreeSettings
 
 
+def status_process(stdout: str):
+    """A CompletedProcess-alike carrying raw `git status --porcelain` stdout."""
+    return type("Process", (), {"returncode": 0, "stdout": stdout, "stderr": ""})()
+
+
 class GitWorktreeTests(unittest.TestCase):
     def test_list_local_branches_returns_short_ref_names(self):
         with patch("tui.git_worktree.subprocess.run") as run:
@@ -48,11 +53,43 @@ class GitWorktreeTests(unittest.TestCase):
     def test_primary_validation_rejects_dirty_repository_when_target_checked_out(self):
         manager = GitWorktreeManager(Path("/repo"))
         with patch("tui.git_worktree.subprocess.run") as run, patch.object(
-            manager, "git_output", side_effect=["main", " M changed.py"]
-        ):
+            manager, "git_output", return_value="main"
+        ), patch.object(manager, "run_git", return_value=status_process(" M changed.py\n")):
             run.return_value = type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})()
             with self.assertRaises(GitWorktreeError):
                 manager._validate_primary()
+
+    def test_primary_validation_names_the_uncommitted_paths(self):
+        manager = GitWorktreeManager(Path("/repo"))
+        with patch("tui.git_worktree.subprocess.run") as run, patch.object(
+            manager, "git_output", return_value="main"
+        ), patch.object(manager, "run_git", return_value=status_process(" M changed.py\n")):
+            run.return_value = type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            with self.assertRaisesRegex(GitWorktreeError, "changed.py"):
+                manager.validate_primary()
+
+    def test_primary_validation_ignores_daedalus_own_runtime_files(self):
+        """The TUI writes its debug log on every launch; that must not block tasks."""
+        manager = GitWorktreeManager(Path("/repo"))
+        status = " M .daedalus-debug.log\n M .daedalus-debug.log.1\n?? .daedalus-memory.json\n"
+        with patch("tui.git_worktree.subprocess.run") as run, patch.object(
+            manager, "git_output", return_value="main"
+        ), patch.object(manager, "run_git", return_value=status_process(status)):
+            run.return_value = type("Process", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            manager.validate_primary()
+
+    def test_dirty_paths_keeps_real_changes_alongside_runtime_files(self):
+        manager = GitWorktreeManager(Path("/repo"))
+        status = " M .daedalus-debug.log\n M tui/app.py\nR  old.py -> new.py\n"
+        with patch.object(manager, "run_git", return_value=status_process(status)):
+            self.assertEqual(manager.dirty_paths(Path("/repo")), ["tui/app.py", "new.py"])
+
+    def test_runtime_artifacts_are_configurable(self):
+        manager = GitWorktreeManager(Path("/repo"), runtime_artifacts=(".custom-debug.log",))
+        self.assertTrue(manager.is_runtime_artifact(".custom-debug.log"))
+        self.assertTrue(manager.is_runtime_artifact(".custom-debug.log.2"))
+        self.assertFalse(manager.is_runtime_artifact(".daedalus-debug.log"))
+        self.assertFalse(manager.is_runtime_artifact(".custom-debug.log.backup"))
 
     def test_primary_validation_allows_other_checked_out_branch(self):
         manager = GitWorktreeManager(Path("/repo"), primary_branch="develop")

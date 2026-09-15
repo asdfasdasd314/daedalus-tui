@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 import uuid
 
 from .project_config import ProjectWorktreeSettings
+
+
+#: Files Daedalus itself writes into the project it is operating on. The TUI
+#: appends to its debug log on every launch, so if these counted as working-tree
+#: changes the primary worktree would be permanently dirty and *every* task
+#: would fail at worktree creation before an agent ever ran.
+DAEDALUS_RUNTIME_ARTIFACTS: tuple[str, ...] = (
+    ".daedalus-debug.log",
+    ".daedalus-memory.json",
+)
 
 
 class GitWorktreeError(RuntimeError):
@@ -87,10 +98,17 @@ class WorktreeContext:
 
 
 class GitWorktreeManager:
-    def __init__(self, repository: Path, primary_branch: str = "main", root_name: str = ".daedalus-worktrees"):
+    def __init__(
+        self,
+        repository: Path,
+        primary_branch: str = "main",
+        root_name: str = ".daedalus-worktrees",
+        runtime_artifacts: Sequence[str] = DAEDALUS_RUNTIME_ARTIFACTS,
+    ):
         self.repository = repository.resolve()
         self.primary_branch = primary_branch
         self.root_name = root_name
+        self.runtime_artifacts = tuple(name for name in runtime_artifacts if name)
 
     def create(self, task_id: str) -> WorktreeContext:
         self._validate_primary()
@@ -246,8 +264,38 @@ class GitWorktreeManager:
             self.run_git(["worktree", "prune"])
         self.run_git(["branch", "-D", context.branch_name])
 
+    def is_runtime_artifact(self, relative_path: str) -> bool:
+        """Return whether a status entry is one of Daedalus' own runtime files.
+
+        Rotated log backups (``.daedalus-debug.log.1``) count too, because the
+        rotating handler creates them without the project ever asking.
+        """
+        entry = relative_path.strip()
+        for artifact in self.runtime_artifacts:
+            if entry == artifact:
+                return True
+            if entry.startswith(f"{artifact}.") and entry[len(artifact) + 1 :].isdigit():
+                return True
+        return False
+
+    def dirty_paths(self, directory: Path) -> list[str]:
+        """Return working-tree changes excluding Daedalus' own runtime files."""
+        # Read the raw stdout rather than git_output(): the porcelain status
+        # column is leading whitespace for unstaged changes, and stripping it
+        # would shift every path by one character.
+        status = self.run_git(["status", "--porcelain"], directory).stdout
+        paths: list[str] = []
+        for line in status.splitlines():
+            entry = line[3:] if len(line) > 3 else ""
+            if " -> " in entry:
+                entry = entry.split(" -> ", 1)[1]
+            entry = entry.strip().strip('"')
+            if entry and not self.is_runtime_artifact(entry):
+                paths.append(entry)
+        return paths
+
     def is_clean(self, directory: Path) -> bool:
-        return not self.git_output(["status", "--porcelain"], directory)
+        return not self.dirty_paths(directory)
 
     def head(self, directory: Path) -> str:
         return self.git_output(["rev-parse", "HEAD"], directory)
@@ -275,9 +323,16 @@ class GitWorktreeManager:
             raise GitWorktreeError(
                 f"Target branch {self.primary_branch!r} does not exist as a local branch."
             )
-        if self.is_primary_checked_out() and not self.is_clean(self.repository):
+        if not self.is_primary_checked_out():
+            return
+        dirty = self.dirty_paths(self.repository)
+        if dirty:
+            listed = ", ".join(dirty[:5])
+            if len(dirty) > 5:
+                listed += f", and {len(dirty) - 5} more"
             raise GitWorktreeError(
-                "Primary worktree must be clean before starting or promoting an agent."
+                "Primary worktree must be clean before starting or promoting an agent. "
+                f"Uncommitted changes: {listed}."
             )
 
     def _validate_primary(self) -> None:
